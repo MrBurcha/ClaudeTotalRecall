@@ -21,6 +21,23 @@ linux:
     - pacman
   category: Development
   maintainer: MrBurcha
+# Deps con nombres de Arch: el default de electron-builder usa nomenclatura
+# Debian (p.ej. http-parser), que no existe en los repos de Arch. El .deb
+# conserva sus defaults; solo el pacman necesita este override.
+pacman:
+  depends:
+    - c-ares
+    - ffmpeg
+    - gtk3
+    - libevent
+    - libvpx
+    - libxslt
+    - libxss
+    - minizip
+    - nss
+    - re2
+    - snappy
+    - libnotify
 # El CI (release en tag) publica los artefactos en el Release de este repo.
 publish:
   provider: github
