@@ -2,6 +2,9 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { app, BrowserWindow } from 'electron'
 import { registerIpc } from './ipc'
+import { SyncScheduler } from './syncScheduler'
+
+let scheduler: SyncScheduler | null = null
 
 // En prod el ícono lo pone el bundle empaquetado (build/icon.*). En dev usamos
 // build/icon.png desde la raíz del proyecto si existe (resiliente si aún no está).
@@ -48,12 +51,25 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   if (hasDevIcon && process.platform === 'darwin') app.dock?.setIcon(devIcon)
-  registerIpc()
   createWindow()
+
+  // El motor empuja su estado a todas las ventanas vivas. Se crea antes de
+  // registrar el IPC (los handlers sync:* lo consultan) y arranca tras el boot.
+  scheduler = new SyncScheduler((state) => {
+    for (const w of BrowserWindow.getAllWindows()) {
+      if (!w.isDestroyed()) w.webContents.send('sync:state', state)
+    }
+  })
+  registerIpc(scheduler)
+  if (!process.env.CLAUDETR_SMOKE) void scheduler.start()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+app.on('before-quit', () => {
+  scheduler?.stop()
 })
 
 app.on('window-all-closed', () => {

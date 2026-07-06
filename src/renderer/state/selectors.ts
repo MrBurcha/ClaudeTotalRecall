@@ -14,6 +14,30 @@ export function conflicts(s: Pick<AppState, 'status'>): string[] {
   return s.status?.conflicted ?? []
 }
 
+/**
+ * Archivos en conflicto. Prioriza los que reporta el motor de auto-sync (llegan
+ * por push en tiempo real, sin esperar un refresh de repoStatus); cae al
+ * status del repo si el motor todavía no habló.
+ */
+export function conflictFiles(s: Pick<AppState, 'status' | 'syncEngine'>): string[] {
+  const fromEngine = s.syncEngine?.conflicts ?? []
+  return fromEngine.length > 0 ? fromEngine : (s.status?.conflicted ?? [])
+}
+
+export function hasConflict(s: Pick<AppState, 'status' | 'syncEngine'>): boolean {
+  return s.syncEngine?.status === 'conflict' || conflictFiles(s).length > 0
+}
+
+/** Tono de la constelación derivado del estado del motor (color del héroe). */
+export type EngineTone = 'ok' | 'syncing' | 'conflict' | 'offline'
+export function engineTone(s: Pick<AppState, 'status' | 'syncEngine'>): EngineTone {
+  if (hasConflict(s)) return 'conflict'
+  const st = s.syncEngine?.status
+  if (st === 'syncing') return 'syncing'
+  if (st === 'offline') return 'offline'
+  return 'ok'
+}
+
 export type OnboardingStep = 'preflight' | 'connect' | 'register' | 'first-project' | 'done'
 
 /**

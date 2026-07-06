@@ -61,11 +61,14 @@ export function Constellation({
   currentId,
   status,
   activeOp,
+  tone = 'ok',
 }: {
   machines: Record<string, Machine>
   currentId: string | null
   status: RepoStatus | null
   activeOp: ActiveOp | null
+  /** color del héroe según el motor de auto-sync */
+  tone?: 'ok' | 'syncing' | 'conflict' | 'offline'
 }): JSX.Element {
   const reduced = usePrefersReducedMotion()
   const particlesRef = useRef<SVGGElement>(null)
@@ -78,8 +81,10 @@ export function Constellation({
   if (activeOp) direction = activeOp.verb === 'gather' ? 'up' : 'down'
   else if (status && status.ahead > 0) direction = 'up'
   else if (status && status.behind > 0) direction = 'down'
+  // Un ciclo del motor mueve en ambos sentidos: si no hay dirección clara, subimos.
+  if (!direction && tone === 'syncing') direction = 'up'
 
-  const active = !!activeOp
+  const active = !!activeOp || tone === 'syncing'
   const enabled = !reduced && direction !== null && currentLink !== null
   useConstellationMotion(particlesRef, currentLink, direction, enabled, active ? 1.8 : 1)
 
@@ -87,7 +92,7 @@ export function Constellation({
     direction === 'up' ? status?.ahead ?? 0 : direction === 'down' ? status?.behind ?? 0 : 0
 
   return (
-    <div className="constellation">
+    <div className={cx('constellation', tone !== 'ok' && `constellation--${tone}`)}>
       <svg
         className="constellation__svg"
         viewBox={`0 0 ${W} ${H}`}

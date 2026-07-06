@@ -345,3 +345,132 @@
   border-color: var(--accent);
   color: var(--accent-fg);
 }
+
+/* ══ Auto-sync: barra de estado ═══════════════════════════════════════════════ */
+.sync-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  transition: border-color var(--dur-base), background var(--dur-base);
+}
+.sync-bar--danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  background: var(--danger-weak);
+}
+.sync-bar__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.sync-bar__state {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+.sync-bar__meta {
+  font-size: var(--text-xs);
+}
+
+/* Ícono girando (sync en curso). base.css lo frena bajo reduced-motion. */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.icon--spin,
+.btn.is-syncing .icon {
+  animation: spin 0.9s linear infinite;
+  transform-origin: center;
+  color: var(--accent);
+}
+
+/* ══ Switch (toggle de automático) ════════════════════════════════════════════ */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+}
+.switch--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.switch__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.switch__track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--panel-3);
+  border: 1px solid var(--border-strong);
+  transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+.switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform var(--dur-base) var(--ease-spring), background var(--dur-fast);
+}
+.switch__input:checked + .switch__track {
+  background: var(--accent-weak);
+  border-color: var(--accent);
+}
+.switch__input:checked + .switch__track .switch__thumb {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+.switch__input:focus-visible + .switch__track {
+  box-shadow: var(--ring);
+}
+.switch__label {
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+}
+
+/* ══ Panel Avanzado (colapsable dentro de Sincronización) ═════════════════════ */
+.advanced {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  overflow: hidden;
+}
+.advanced__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--text-sm);
+  transition: background var(--dur-fast);
+}
+.advanced__head:hover {
+  background: var(--panel-2);
+}
+.advanced__title {
+  font-weight: var(--weight-semibold);
+}
+.advanced__body {
+  padding: 0 var(--space-5) var(--space-5);
+}

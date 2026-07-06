@@ -6,7 +6,8 @@ import { loadSettingsLocal, saveSettingsLocal } from '../core/localState'
 import { PlanDriftError } from '../core/plan'
 import { runPreflight } from '../core/preflight'
 import * as svc from '../core/service'
-import type { Plan, SettingsObject, Verb } from '../core/types'
+import type { AutoSyncPrefs, Plan, SettingsObject, Verb } from '../core/types'
+import type { SyncScheduler } from './syncScheduler'
 
 /**
  * Caché de Plans previsualizados: plan:execute recibe un planId y ejecuta el
@@ -22,9 +23,14 @@ function meta(): { id: string; createdAt: string } {
   return { id: randomUUID(), createdAt: new Date().toISOString() }
 }
 
-export function registerIpc(): void {
+export function registerIpc(scheduler: SyncScheduler): void {
   ipcMain.handle('app:version', () => app.getVersion())
   ipcMain.handle('preflight:run', () => runPreflight())
+
+  // Motor de auto-sync (estado en tiempo real vía webContents.send('sync:state'))
+  ipcMain.handle('sync:getState', () => scheduler.getState())
+  ipcMain.handle('sync:setAuto', (_e, prefs: AutoSyncPrefs) => scheduler.setAuto(prefs))
+  ipcMain.handle('sync:now', () => scheduler.syncNow())
 
   // Config / repo
   ipcMain.handle('config:load', () => svc.loadRepoConfig(adapter()).catch(() => null))
@@ -33,7 +39,11 @@ export function registerIpc(): void {
   ipcMain.handle('repo:pull', () => svc.pullRepo(adapter()))
 
   // Máquinas
-  ipcMain.handle('machine:register', (_e, name?: string) => svc.registerMachine(adapter(), name))
+  ipcMain.handle('machine:register', async (_e, name?: string) => {
+    const r = await svc.registerMachine(adapter(), name)
+    void scheduler.reload() // recién ahora hay identidad ⇒ el motor puede arrancar
+    return r
+  })
   ipcMain.handle('machine:current', () => svc.currentMachineId(adapter()))
 
   // Proyectos
@@ -89,7 +99,11 @@ export function registerIpc(): void {
   ipcMain.handle('conflict:resolve', (_e, a: { file: string; side: 'local' | 'remote' }) =>
     svc.resolveConflict(adapter(), a.file, a.side),
   )
-  ipcMain.handle('conflict:complete', () => svc.completeConflictMerge(adapter()))
+  ipcMain.handle('conflict:complete', async () => {
+    const r = await svc.completeConflictMerge(adapter())
+    await scheduler.resumeAfterConflict() // baja el merge resuelto y reanuda auto
+    return r
+  })
 
   // settings.local.json
   ipcMain.handle('settingsLocal:load', () => loadSettingsLocal(adapter()))
