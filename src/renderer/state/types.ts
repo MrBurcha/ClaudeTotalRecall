@@ -1,4 +1,12 @@
-import type { Config, Plan, PlanAction, PreflightResult, RepoStatus, Verb } from '../../core/types'
+import type {
+  Config,
+  Plan,
+  PlanAction,
+  PreflightResult,
+  RepoStatus,
+  SyncEngineState,
+  Verb,
+} from '../../core/types'
 
 /** Secciones navegables del steady-state (el wizard es un takeover aparte). */
 export type Route = 'home' | 'projects' | 'machines' | 'settings'
@@ -71,4 +79,6 @@ export interface AppState {
   toasts: ToastItem[] // cola
   palette: PaletteState
   wizardOpen: boolean // takeover del wizard forzado on-demand
+  // motor de auto-sync (lo empuja el main; null hasta el primer getState)
+  syncEngine: SyncEngineState | null
 }

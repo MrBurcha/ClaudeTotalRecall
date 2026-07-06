@@ -1,3 +1,4 @@
+import type { RepoStatus, SyncEngineState } from '../../core/types'
 import type { ActiveOp, AppState, ModalDescriptor, PaletteState, Route, Snapshot, Theme, ToastItem } from './types'
 
 /** Acciones del reducer. Todo es puro y sincrónico; la I/O vive en useActions. */
@@ -14,6 +15,8 @@ export type Action =
   | { t: 'dismissToast'; id: number }
   | { t: 'palette'; patch: Partial<PaletteState> }
   | { t: 'wizard'; open: boolean }
+  | { t: 'syncState'; state: SyncEngineState }
+  | { t: 'status'; status: RepoStatus | null }
 
 export const initialState: AppState = {
   config: null,
@@ -30,6 +33,7 @@ export const initialState: AppState = {
   toasts: [],
   palette: { open: false, query: '', index: 0 },
   wizardOpen: false,
+  syncEngine: null,
 }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -58,6 +62,10 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, palette: { ...state.palette, ...action.patch } }
     case 'wizard':
       return { ...state, wizardOpen: action.open }
+    case 'syncState':
+      return { ...state, syncEngine: action.state }
+    case 'status':
+      return { ...state, status: action.status }
     default:
       return state
   }

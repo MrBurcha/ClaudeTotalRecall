@@ -1,62 +1,81 @@
+import { useEffect, useRef, useState } from 'react'
 import { StatusDot } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Icon } from '../components/Icon'
-import { Kbd } from '../components/Kbd'
 import { Skeleton } from '../components/Skeleton'
 import { Constellation } from '../features/constellation/Constellation'
-import { ConflictResolver } from '../features/conflicts/ConflictResolver'
-import { canSync, conflicts, onboardingStep } from '../state/selectors'
+import { AdvancedSync } from '../features/sync/AdvancedSync'
+import { AutoToggle } from '../features/sync/AutoToggle'
+import { SyncNowButton } from '../features/sync/SyncNowButton'
+import { relativeTime } from '../features/sync/relativeTime'
+import { conflictFiles, engineTone, hasConflict, onboardingStep } from '../state/selectors'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 
-function SyncKey({
-  verb,
-  hint,
-  shortcut,
-  disabled,
-  onClick,
-}: {
-  verb: 'gather' | 'scatter'
-  hint: string
-  shortcut: string
-  disabled: boolean
-  onClick: () => void
-}): JSX.Element {
-  const gather = verb === 'gather'
-  return (
-    <button className="sync-key" disabled={disabled} onClick={onClick}>
-      <span className="sync-key__icon">
-        <Icon name={gather ? 'arrow-up' : 'arrow-down'} size={22} />
-      </span>
-      <span className="sync-key__text">
-        <span className="sync-key__title">{gather ? 'Gather' : 'Scatter'}</span>
-        <span className="sync-key__sub">{hint}</span>
-      </span>
-      <Kbd>{shortcut}</Kbd>
-    </button>
-  )
+/** Texto de estado de la barra según el motor. */
+function statusLabel(state: ReturnType<typeof useAppState>): string {
+  if (hasConflict(state)) return 'Conflicto'
+  const eng = state.syncEngine
+  if (!eng) return 'Cargando…'
+  if (eng.status === 'syncing') return 'Sincronizando…'
+  if (eng.status === 'offline') return 'Sin conexión'
+  return 'Al día'
+}
+
+function statusMeta(state: ReturnType<typeof useAppState>, now: number): string {
+  const eng = state.syncEngine
+  if (hasConflict(state)) {
+    const n = conflictFiles(state).length
+    return `${n} archivo${n === 1 ? '' : 's'} por resolver`
+  }
+  if (!eng) return ''
+  if (eng.status === 'syncing') return 'poniendo todo en orden…'
+  if (eng.status === 'offline') return 'sin conexión, reintenta solo'
+  const bits: string[] = []
+  if (eng.lastSyncedAt) bits.push(`última vez ${relativeTime(eng.lastSyncedAt, now)}`)
+  bits.push(eng.auto ? 'automático activado' : 'automático desactivado')
+  return bits.join(' · ')
 }
 
 export function SyncHome(): JSX.Element {
   const state = useAppState()
   const actions = useActions()
-  const { config, status, machineId, activeOp, busy, loading } = state
-  const sync = canSync(state)
-  const files = conflicts(state)
-  const blocked = !sync || busy || files.length > 0
+  const { config, status, machineId, activeOp, loading, syncEngine } = state
+  const files = conflictFiles(state)
+  const conflict = hasConflict(state)
+  const tone = engineTone(state)
+  const syncing = syncEngine?.status === 'syncing'
+
+  const [advOpen, setAdvOpen] = useState(false)
+  const advRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (conflict) setAdvOpen(true)
+  }, [conflict])
+
+  // Refresca el "hace X" del último sync sin depender de un evento del backend.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 20_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const goResolve = (): void => {
+    setAdvOpen(true)
+    requestAnimationFrame(() => advRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
+  const dotTone = conflict ? 'danger' : tone === 'offline' ? 'warn' : syncEngine?.auto ? 'ok' : 'muted'
 
   return (
     <div className="view">
       <div className="view__head">
         <span className="view__eyebrow">Estación de sincronización</span>
-        <h1 className="view__title">Tu memoria, en órbita</h1>
+        <h1 className="view__title">Tu memoria, sincronizada sola</h1>
         <p className="view__sub">
-          Subí los cambios de esta máquina al repo (gather) o traé lo último a esta máquina
-          (scatter). Cada acción muestra un preview antes de tocar disco.
+          ClaudeTR mantiene la memoria de Claude Code al día entre tus máquinas: sube al instante
+          cuando editás y baja del repo cada pocos minutos. Sin apretar nada.
         </p>
       </div>
-
-      {files.length > 0 && <ConflictResolver files={files} />}
 
       {loading ? (
         <Skeleton h={300} radius={14} />
@@ -66,46 +85,42 @@ export function SyncHome(): JSX.Element {
           currentId={machineId}
           status={status}
           activeOp={activeOp}
+          tone={tone}
         />
       )}
 
-      <div className="telemetry">
-        <div className="telem">
-          <span className="telem__label">Rama</span>
-          <span className="telem__value">
-            <Icon name="git-branch" size={14} />
-            {status?.branch ?? '—'}
-          </span>
+      <div className={`sync-bar${conflict ? ' sync-bar--danger' : ''}`}>
+        <div className="sync-bar__status">
+          {syncing ? (
+            <Icon name="sync" size={18} className="icon--spin" />
+          ) : (
+            <StatusDot tone={dotTone} />
+          )}
+          <div className="stack stack-1">
+            <span className="sync-bar__state">{statusLabel(state)}</span>
+            <span className="sync-bar__meta muted mono">{statusMeta(state, now)}</span>
+          </div>
         </div>
-        <div className="telem">
-          <span className="telem__label">Para subir</span>
-          <span className="telem__value nums">
-            <Icon name="arrow-up" size={14} />
-            {status?.ahead ?? 0}
-          </span>
-        </div>
-        <div className="telem">
-          <span className="telem__label">Por bajar</span>
-          <span className="telem__value nums">
-            <Icon name="arrow-down" size={14} />
-            {status?.behind ?? 0}
-          </span>
-        </div>
-        <div className="telem">
-          <span className="telem__label">Estado</span>
-          <span className="telem__value">
-            <StatusDot tone={status ? (status.dirty ? 'warn' : 'ok') : 'muted'} />
-            {status ? (status.dirty ? 'con cambios' : 'limpio') : '—'}
-          </span>
-        </div>
-        <div className="telem">
-          <span className="telem__label">Secretos</span>
-          <span className="telem__value">
-            <Icon name="lock" size={14} />
-            excluidos
-          </span>
+        <div className="cluster">
+          <AutoToggle />
+          <SyncNowButton />
         </div>
       </div>
+
+      {conflict && (
+        <div className="card card--danger">
+          <div className="row between">
+            <span className="cluster">
+              <Icon name="alert" size={18} />
+              La sincronización está frenada por {files.length} conflicto
+              {files.length === 1 ? '' : 's'}. Resolvelo para que siga sola.
+            </span>
+            <Button variant="danger" icon="arrow-down" onClick={goResolve}>
+              Resolver conflicto
+            </Button>
+          </div>
+        </div>
+      )}
 
       {onboardingStep(state) === 'first-project' && (
         <div className="card">
@@ -121,28 +136,7 @@ export function SyncHome(): JSX.Element {
         </div>
       )}
 
-      <div className="sync-keys">
-        <SyncKey
-          verb="gather"
-          shortcut="⌘G"
-          hint={
-            status && status.ahead > 0 ? `máquina → repo · ${status.ahead} para subir` : 'máquina → repo'
-          }
-          disabled={blocked}
-          onClick={() => actions.openPlan('gather')}
-        />
-        <SyncKey
-          verb="scatter"
-          shortcut="⌘S"
-          hint={
-            status && status.behind > 0
-              ? `repo → máquina · ${status.behind} por bajar`
-              : 'repo → máquina'
-          }
-          disabled={blocked}
-          onClick={() => actions.openPlan('scatter')}
-        />
-      </div>
+      <AdvancedSync ref={advRef} open={advOpen} onToggle={() => setAdvOpen((o) => !o)} files={files} />
     </div>
   )
 }

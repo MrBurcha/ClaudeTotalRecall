@@ -1,5 +1,5 @@
 import type { IconName } from '../../components/Icon'
-import { canSync, conflicts } from '../../state/selectors'
+import { canSync, hasConflict } from '../../state/selectors'
 import type { AppState } from '../../state/types'
 import type { Actions } from '../../state/useActions'
 
@@ -20,27 +20,47 @@ export interface Command {
  */
 export function buildCommands(state: AppState, actions: Actions): Command[] {
   const sync = canSync(state)
-  const blocked = !sync || conflicts(state).length > 0
+  const blocked = !sync || hasConflict(state)
   const registered = !!state.machineId
+  const auto = state.syncEngine?.auto ?? true
 
   return [
     {
+      id: 'sync-now',
+      title: 'Sincronizar ahora',
+      subtitle: 'ciclo completo (sube y baja)',
+      icon: 'sync',
+      group: 'Sincronizar',
+      keywords: ['sync', 'sincronizar', 'ahora', 'now'],
+      disabled: blocked,
+      run: () => void actions.syncNow(),
+    },
+    {
+      id: 'auto-toggle',
+      title: auto ? 'Desactivar sincronización automática' : 'Activar sincronización automática',
+      icon: 'orbit',
+      group: 'Sincronizar',
+      keywords: ['auto', 'automatico', 'automático', 'toggle'],
+      disabled: !registered,
+      run: () => void actions.setAutoSync(!auto),
+    },
+    {
       id: 'gather',
       title: 'Subir cambios (gather)',
-      subtitle: 'máquina → repo',
+      subtitle: 'avanzado · máquina → repo',
       icon: 'arrow-up',
       group: 'Sincronizar',
-      keywords: ['gather', 'subir', 'push'],
+      keywords: ['gather', 'subir', 'push', 'avanzado'],
       disabled: blocked,
       run: () => void actions.openPlan('gather'),
     },
     {
       id: 'scatter',
       title: 'Traer cambios (scatter)',
-      subtitle: 'repo → máquina',
+      subtitle: 'avanzado · repo → máquina',
       icon: 'arrow-down',
       group: 'Sincronizar',
-      keywords: ['scatter', 'bajar', 'pull'],
+      keywords: ['scatter', 'bajar', 'pull', 'avanzado'],
       disabled: blocked,
       run: () => void actions.openPlan('scatter'),
     },

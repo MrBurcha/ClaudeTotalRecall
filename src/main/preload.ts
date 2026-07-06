@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
   Config,
   Plan,
@@ -6,6 +6,7 @@ import type {
   PreflightResult,
   RepoStatus,
   SettingsObject,
+  SyncEngineState,
   Verb,
 } from '../core/types'
 import type {
@@ -67,6 +68,20 @@ const api = {
   settingsLocalLoad: () => ipcRenderer.invoke('settingsLocal:load') as Promise<SettingsObject>,
   settingsLocalSave: (obj: SettingsObject) =>
     ipcRenderer.invoke('settingsLocal:save', obj) as Promise<void>,
+
+  // Auto-sync: estado actual (pull), cambio de prefs, disparo manual, y la
+  // suscripción al push en tiempo real (devuelve una función para desuscribirse).
+  syncGetState: () => ipcRenderer.invoke('sync:getState') as Promise<SyncEngineState>,
+  syncSetAuto: (enabled: boolean, intervalMs: number) =>
+    ipcRenderer.invoke('sync:setAuto', { enabled, intervalMs }) as Promise<SyncEngineState>,
+  syncNow: () => ipcRenderer.invoke('sync:now') as Promise<SyncEngineState>,
+  onSyncState: (cb: (state: SyncEngineState) => void) => {
+    const listener = (_e: IpcRendererEvent, state: SyncEngineState) => cb(state)
+    ipcRenderer.on('sync:state', listener)
+    return () => {
+      ipcRenderer.removeListener('sync:state', listener)
+    }
+  },
 }
 
 export type ClaudeTrApi = typeof api

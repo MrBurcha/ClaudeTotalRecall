@@ -2,7 +2,7 @@ import { StatusDot } from '../components/Badge'
 import { Icon, type IconName } from '../components/Icon'
 import { IconButton } from '../components/IconButton'
 import { Kbd } from '../components/Kbd'
-import { conflicts } from '../state/selectors'
+import { conflictFiles } from '../state/selectors'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 import type { Route } from '../state/types'
@@ -17,7 +17,7 @@ const NAV: { route: Route; label: string; icon: IconName }[] = [
 export function Sidebar(): JSX.Element {
   const state = useAppState()
   const actions = useActions()
-  const nConflicts = conflicts(state).length
+  const nConflicts = conflictFiles(state).length
 
   return (
     <nav className="sidebar">

@@ -141,3 +141,22 @@
   fill: var(--accent);
   text-anchor: middle;
 }
+
+/*
+ * Tonos del motor de auto-sync: recolorean el héroe reasignando las variables de
+ * acento que usan vault/links/nodos/partículas (cascada a los descendientes).
+ * conflicto → rojo (pide atención); offline → ámbar apagado (se recupera solo).
+ */
+.constellation--conflict {
+  --accent: var(--danger);
+  --accent-line: color-mix(in srgb, var(--danger) 46%, transparent);
+  --radar: color-mix(in srgb, var(--danger) 9%, transparent);
+  --node-current: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+.constellation--offline {
+  --accent: var(--warn);
+  --accent-line: color-mix(in srgb, var(--warn) 42%, transparent);
+  --radar: color-mix(in srgb, var(--warn) 8%, transparent);
+  opacity: 0.9;
+}

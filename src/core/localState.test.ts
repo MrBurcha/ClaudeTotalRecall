@@ -4,10 +4,13 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createPlatformAdapter, type PlatformAdapter } from '../platform'
 import {
+  DEFAULT_AUTOSYNC,
   ensureSettingsLocal,
+  loadAutoSyncPrefs,
   loadLocalState,
   loadSettingsLocal,
   localStatePath,
+  saveAutoSyncPrefs,
   saveLocalState,
   saveSettingsLocal,
   settingsLocalPath,
@@ -55,6 +58,36 @@ describe('loadLocalState', () => {
     await mkdir(adapter.configHome(), { recursive: true })
     await writeFile(localStatePath(adapter), JSON.stringify({ nope: true }), 'utf8')
     await expect(loadLocalState(adapter)).rejects.toThrow()
+  })
+})
+
+describe('preferencias de auto-sync', () => {
+  it('devuelve el default cuando no hay local.json', async () => {
+    expect(await loadAutoSyncPrefs(adapter)).toEqual(DEFAULT_AUTOSYNC)
+  })
+
+  it('devuelve el default para un local.json viejo sin autoSync (back-compat)', async () => {
+    await saveLocalState(adapter, { machineId: 'm1' })
+    expect(await loadAutoSyncPrefs(adapter)).toEqual(DEFAULT_AUTOSYNC)
+  })
+
+  it('round-trip: guarda y lee las prefs sin perder la identidad', async () => {
+    await saveLocalState(adapter, { machineId: 'm1' })
+    await saveAutoSyncPrefs(adapter, { enabled: false, intervalMs: 30_000 })
+    expect(await loadAutoSyncPrefs(adapter)).toEqual({ enabled: false, intervalMs: 30_000 })
+    expect((await loadLocalState(adapter))?.machineId).toBe('m1')
+  })
+
+  it('re-registrar la máquina no pisa las prefs ya guardadas', async () => {
+    await saveLocalState(adapter, { machineId: 'm1' })
+    await saveAutoSyncPrefs(adapter, { enabled: false, intervalMs: 45_000 })
+    // saveLocalState con sólo la identidad (como hace registerMachine) las preserva.
+    await saveLocalState(adapter, { machineId: 'm1' })
+    expect(await loadAutoSyncPrefs(adapter)).toEqual({ enabled: false, intervalMs: 45_000 })
+  })
+
+  it('saveAutoSyncPrefs falla si la máquina no está registrada', async () => {
+    await expect(saveAutoSyncPrefs(adapter, DEFAULT_AUTOSYNC)).rejects.toThrow()
   })
 })
 

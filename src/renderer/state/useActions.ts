@@ -175,6 +175,37 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     await openPlan(verb)
   }
 
+  // ── Auto-sync (motor en el main) ─────────────────────────────────────────────
+  /** Disparo manual: corre un ciclo completo y refresca el telemetry del repo. */
+  const syncNow = async (): Promise<void> => {
+    try {
+      dispatch({ t: 'syncState', state: await api.syncNow() })
+      await refresh()
+    } catch (e) {
+      notify(normalizeError(e), 'err')
+    }
+  }
+
+  /** Activa/desactiva el auto-sync conservando el intervalo actual. */
+  const setAutoSync = async (enabled: boolean): Promise<void> => {
+    const intervalMs = stateRef.current.syncEngine?.intervalMs ?? 120_000
+    try {
+      dispatch({ t: 'syncState', state: await api.syncSetAuto(enabled, intervalMs) })
+    } catch (e) {
+      notify(normalizeError(e), 'err')
+    }
+  }
+
+  /** Cambia el intervalo de poll del remoto conservando el on/off. */
+  const setSyncInterval = async (intervalMs: number): Promise<void> => {
+    const enabled = stateRef.current.syncEngine?.auto ?? true
+    try {
+      dispatch({ t: 'syncState', state: await api.syncSetAuto(enabled, intervalMs) })
+    } catch (e) {
+      notify(normalizeError(e), 'err')
+    }
+  }
+
   return {
     notify,
     dismissToast,
@@ -196,6 +227,9 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     openPlan,
     executePlan,
     rebuildPlan,
+    syncNow,
+    setAutoSync,
+    setSyncInterval,
   }
 }
 

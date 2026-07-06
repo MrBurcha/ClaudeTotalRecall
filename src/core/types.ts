@@ -42,8 +42,16 @@ export function emptyConfig(remote: string): Config {
 // Estado local (fuera del repo, en ~/.config/claudetr/).
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Preferencias de auto-sync, por-máquina (fuera del repo). Ver core/syncEngine.ts. */
+export const AutoSyncSchema = z.object({
+  enabled: z.boolean(),
+  intervalMs: z.number().int().positive(),
+})
+export type AutoSyncPrefs = z.infer<typeof AutoSyncSchema>
+
 export const LocalStateSchema = z.object({
   machineId: z.string().min(1),
+  autoSync: AutoSyncSchema.optional(),
 })
 export type LocalState = z.infer<typeof LocalStateSchema>
 
@@ -116,4 +124,30 @@ export interface PreflightCheck {
 export interface PreflightResult {
   ok: boolean
   checks: PreflightCheck[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Estado del motor de auto-sync (lo empuja main → renderer en tiempo real).
+// Vive en core/types para que renderer y preload lo importen type-only sin
+// cruzar la regla de capas. El scheduler concreto vive en main/syncScheduler.ts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type SyncStatus =
+  | 'idle' // al día
+  | 'syncing' // corriendo un ciclo
+  | 'offline' // error de red/git; reintenta en el próximo poll (ámbar)
+  | 'conflict' // conflicto de merge por resolver a mano (rojo, auto pausado)
+
+export interface SyncEngineState {
+  status: SyncStatus
+  /** preferencia: ¿auto-sync activado? (el poll/watch corren sólo si es true) */
+  auto: boolean
+  /** cada cuánto se hace poll del remoto (ms) */
+  intervalMs: number
+  /** epoch ms del último ciclo exitoso, o null si aún no hubo en esta sesión */
+  lastSyncedAt: number | null
+  /** archivos en conflicto (vacío salvo status 'conflict') */
+  conflicts: string[]
+  /** último error de red/git (null salvo status 'offline') */
+  lastError: string | null
 }
