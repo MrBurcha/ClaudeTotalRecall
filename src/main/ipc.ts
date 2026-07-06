@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import { app, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { createPlatformAdapter } from '../platform'
 import { loadSettingsLocal, saveSettingsLocal } from '../core/localState'
 import { PlanDriftError } from '../core/plan'
@@ -26,6 +26,20 @@ function meta(): { id: string; createdAt: string } {
 export function registerIpc(scheduler: SyncScheduler): void {
   ipcMain.handle('app:version', () => app.getVersion())
   ipcMain.handle('preflight:run', () => runPreflight())
+
+  // Ventana: controles de la barra de título custom (frameless). La ventana se
+  // resuelve desde el sender, sin depender de una referencia global.
+  ipcMain.handle('window:minimize', (_e) => BrowserWindow.fromWebContents(_e.sender)?.minimize())
+  ipcMain.handle('window:maximize', (_e) => {
+    const w = BrowserWindow.fromWebContents(_e.sender)
+    if (w?.isMaximized()) w.unmaximize()
+    else w?.maximize()
+    return !!w?.isMaximized()
+  })
+  ipcMain.handle('window:close', (_e) => BrowserWindow.fromWebContents(_e.sender)?.close())
+  ipcMain.handle('window:isMaximized', (_e) =>
+    !!BrowserWindow.fromWebContents(_e.sender)?.isMaximized(),
+  )
 
   // Motor de auto-sync (estado en tiempo real vía webContents.send('sync:state'))
   ipcMain.handle('sync:getState', () => scheduler.getState())

@@ -11,6 +11,7 @@ import { Projects } from './Projects'
 import { Settings } from './Settings'
 import { Sidebar } from './Sidebar'
 import { SyncHome } from './SyncHome'
+import { TitleBar } from './TitleBar'
 
 export function AppShell(): JSX.Element {
   const state = useAppState()
@@ -54,6 +55,7 @@ export function AppShell(): JSX.Element {
 
   return (
     <div className="app">
+      <TitleBar />
       <Sidebar />
       <main className="content">
         {state.route === 'home' && <SyncHome />}

@@ -38,6 +38,9 @@ export type IconName =
   | 'file-plus'
   | 'file-diff'
   | 'file-minus'
+  | 'minimize'
+  | 'maximize'
+  | 'restore'
 
 const ICONS: Record<IconName, ReactNode> = {
   orbit: (
@@ -163,6 +166,15 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
       <path d="M14 3v5h5M9.5 14.5h5" />
+    </>
+  ),
+  // Controles de la barra de título custom.
+  minimize: <path d="M6 12h12" />,
+  maximize: <rect x="6" y="6" width="12" height="12" rx="1.5" />,
+  restore: (
+    <>
+      <rect x="5" y="9" width="10" height="10" rx="1.5" />
+      <path d="M9 9V6.5A1.5 1.5 0 0 1 10.5 5H18a1.5 1.5 0 0 1 1.5 1.5V13a1.5 1.5 0 0 1-1.5 1.5H15" />
     </>
   ),
 }
