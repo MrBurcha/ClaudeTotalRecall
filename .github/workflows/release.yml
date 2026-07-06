@@ -46,13 +46,42 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Ambos jobs suben sus binarios al Release en estado draft; este job final
-  # lo publica una sola vez, ya con todos los assets (mac + linux) presentes.
+  # arma las notas desde el CHANGELOG y lo publica una sola vez, ya con todos
+  # los assets (mac + linux) presentes.
   publish:
     needs: [macos, linux]
     runs-on: ubuntu-latest
     steps:
-      - name: Publicar el Release (quitar el estado draft)
-        run: gh release edit "$TAG" --draft=false --latest -R "$REPO"
+      - uses: actions/checkout@v4
+      # Extrae la sección "## [x.y.z]" del CHANGELOG como cuerpo del Release. Si
+      # la versión no está documentada, deja que GitHub autogenere las notas
+      # (--generate-notes) para no publicar nunca un Release con cuerpo vacío.
+      - name: Armar notas del Release desde el CHANGELOG
+        id: notes
+        run: |
+          VERSION="${TAG#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ ("^## \\[" ver "\\]") {flag=1; next}
+            /^## \[/ {flag=0}
+            flag {print}
+          ' CHANGELOG.md | sed '/./,$!d' > release-notes.md
+          if [ -s release-notes.md ]; then
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          TAG: ${{ github.ref_name }}
+      - name: Publicar el Release con notas del CHANGELOG
+        if: steps.notes.outputs.generate == 'false'
+        run: gh release edit "$TAG" --draft=false --latest --notes-file release-notes.md -R "$REPO"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+      - name: Publicar el Release con notas autogeneradas (fallback)
+        if: steps.notes.outputs.generate == 'true'
+        run: gh release edit "$TAG" --draft=false --latest --generate-notes -R "$REPO"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
