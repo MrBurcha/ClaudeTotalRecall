@@ -91,6 +91,7 @@
 
   /* ── Layout ─────────────────────────────────────────────────────────────── */
   --sidebar: 236px;
+  --titlebar: 36px;
 
   font-synthesis: none;
   color-scheme: dark;

@@ -6,6 +6,12 @@ directories:
 files:
   - out/**/*
   - package.json
+# El PNG del ícono no viaja en `files` (el bundle es out/ + package.json); lo
+# copiamos a resources/ para que la ventana lo use en runtime vía
+# process.resourcesPath (la barra de tareas/overview de Linux lo toman de ahí).
+extraResources:
+  - from: build/icon.png
+    to: icon.png
 # Uso personal: builds SIN firmar (decisión del usuario).
 mac:
   target:
@@ -21,6 +27,12 @@ linux:
     - pacman
   category: Development
   maintainer: MrBurcha
+  # GNOME/mutter asocia la ventana a su .desktop por WM_CLASS, case-sensitive.
+  # Electron reporta WM_CLASS "claudetr" (el name de package.json), pero el default
+  # de electron-builder es StartupWMClass=productName ("ClaudeTR") → no matchea y el
+  # DE muestra un ícono genérico. Lo forzamos al WM_CLASS real.
+  desktop:
+    StartupWMClass: claudetr
 # Deps con nombres de Arch: el default de electron-builder usa nomenclatura
 # Debian (p.ej. http-parser), que no existe en los repos de Arch. El .deb
 # conserva sus defaults; solo el pacman necesita este override.

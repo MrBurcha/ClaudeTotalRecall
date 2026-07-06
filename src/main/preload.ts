@@ -82,6 +82,22 @@ const api = {
       ipcRenderer.removeListener('sync:state', listener)
     }
   },
+
+  // Ventana (barra de título custom, frameless): controles + estado maximizado en
+  // vivo. `platform` deja que el renderer decida si dibuja botones propios (Linux/
+  // Windows) o cede a los semáforos nativos (macOS).
+  windowMinimize: () => ipcRenderer.invoke('window:minimize') as Promise<void>,
+  windowMaximize: () => ipcRenderer.invoke('window:maximize') as Promise<boolean>,
+  windowClose: () => ipcRenderer.invoke('window:close') as Promise<void>,
+  windowIsMaximized: () => ipcRenderer.invoke('window:isMaximized') as Promise<boolean>,
+  onWindowState: (cb: (maximized: boolean) => void) => {
+    const listener = (_e: IpcRendererEvent, maximized: boolean) => cb(maximized)
+    ipcRenderer.on('window:state', listener)
+    return () => {
+      ipcRenderer.removeListener('window:state', listener)
+    }
+  },
+  platform: process.platform,
 }
 
 export type ClaudeTrApi = typeof api
