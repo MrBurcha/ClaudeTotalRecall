@@ -5,6 +5,16 @@ Todos los cambios notables de ClaudeTR se documentan acá.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.4] - 2026-07-06
+
+### Arreglado
+- **El fondo del DMG no se veía en macOS 26.2.** No era un problema del arte ni de la config:
+  macOS 26.2 dejó de resolver el registro `pBBk` (background *bookmark*) que `dmgbuild` escribía
+  en el `.DS_Store`, dejando el DMG sin fondo (afecta a todos los instaladores, no solo a este —
+  ver electron-builder #9072). Se parchea `dmgbuild` (vía `patch-package`) para no escribir ese
+  bookmark; queda el `backgroundImageAlias`, que macOS 26.2 sí resuelve. El volumen ahora monta
+  con nombre versionado ("ClaudeTR x.y.z") para que Finder lea siempre el `.DS_Store` fresco.
+
 ## [0.1.3] - 2026-07-06
 
 ### Agregado
@@ -51,6 +61,7 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 - Empaquetado macOS (`.dmg`) y Linux (AppImage + deb + pacman), publicado por CI al pushear
   un tag `v*.*.*`.
 
+[0.1.4]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.4
 [0.1.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.3
 [0.1.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.2
 [0.1.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.1
