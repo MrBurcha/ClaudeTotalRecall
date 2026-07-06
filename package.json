@@ -1,0 +1,48 @@
+{
+  "name": "claudetr",
+  "version": "0.1.0",
+  "description": "ClaudeTR (Claude Total Recall) — sync Claude Code memory across machines via a private GitHub repo",
+  "author": "MrBurcha",
+  "license": "MIT",
+  "main": "./out/main/main.js",
+  "bin": {
+    "claudetr": "./dist-cli/index.js"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build:app": "electron-vite build",
+    "preview": "electron-vite preview",
+    "build:cli": "tsup",
+    "cli:check": "npm run build:cli && node dist-cli/index.js check",
+    "icon": "bash scripts/make-icon.sh",
+    "build:mac": "npm run build:app && electron-builder --mac --config electron-builder.yml",
+    "build:linux": "npm run build:app && electron-builder --linux --config electron-builder.yml",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "eslint": "^8.57.1",
+    "prettier": "^3.4.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

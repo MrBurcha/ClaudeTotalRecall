@@ -1,0 +1,56 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# Necesario para que electron-builder cree/edite el Release del tag.
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build:app
+      - name: Build & publish dmg (sin firmar)
+        run: npx electron-builder --mac --config electron-builder.yml --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Uso personal: no firmar ni notarizar.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build:app
+      - name: Build & publish AppImage + deb
+        run: npx electron-builder --linux --config electron-builder.yml --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Ambos jobs suben sus binarios al Release en estado draft; este job final
+  # lo publica una sola vez, ya con todos los assets (mac + linux) presentes.
+  publish:
+    needs: [macos, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publicar el Release (quitar el estado draft)
+        run: gh release edit "$TAG" --draft=false --latest -R "$REPO"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}

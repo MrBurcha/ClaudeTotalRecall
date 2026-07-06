@@ -1,0 +1,28 @@
+appId: com.mrburcha.claudetr
+productName: ClaudeTR
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+# Uso personal: builds SIN firmar (decisión del usuario).
+mac:
+  target:
+    - dmg
+  category: public.app-category.developer-tools
+  identity: null
+dmg:
+  title: ClaudeTR
+linux:
+  target:
+    - AppImage
+    - deb
+    - pacman
+  category: Development
+  maintainer: MrBurcha
+# El CI (release en tag) publica los artefactos en el Release de este repo.
+publish:
+  provider: github
+  owner: MrBurcha
+  repo: ClaudeTotalRecall
