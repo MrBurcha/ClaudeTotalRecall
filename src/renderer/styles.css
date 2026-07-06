@@ -130,6 +130,27 @@ h1 {
   padding: 18px;
   margin-bottom: 16px;
 }
+.card.highlight {
+  animation: card-pulse 2.5s ease-out;
+}
+@keyframes card-pulse {
+  0% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  70% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  100% {
+    border-color: var(--border);
+    box-shadow: none;
+  }
+}
+.hint {
+  color: var(--accent);
+  font-size: 13px;
+}
 .card h2 {
   font-size: 14px;
   margin: 0 0 12px;

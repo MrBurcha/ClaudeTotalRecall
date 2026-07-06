@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Config, Plan, PreflightResult, Project, RepoStatus, Verb } from '../core/types'
 
 const api = window.claudetr
@@ -56,7 +56,9 @@ export function App(): JSX.Element {
         await refresh()
         if (m) notify(m)
       } catch (e) {
-        notify(e instanceof Error ? e.message : String(e), true)
+        // Electron prefija las excepciones que cruzan ipcMain.handle; lo sacamos.
+        const raw = e instanceof Error ? e.message : String(e)
+        notify(raw.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, ''), true)
       } finally {
         setBusy(false)
       }
@@ -326,7 +328,22 @@ function Projects(props: {
 }): JSX.Element {
   const { config, machineId, busy, run } = props
   const [newName, setNewName] = useState('')
+  const [existsHint, setExistsHint] = useState<string | null>(null)
+  const [highlightName, setHighlightName] = useState<string | null>(null)
   const projects = config ? Object.entries(config.projects) : []
+
+  /** El proyecto ya existe: en vez de error, avisamos y llevamos a su tarjeta. */
+  const guideToExisting = (n: string, project?: Project) => {
+    const others = project
+      ? [...new Set(Object.values(project.folders).flatMap((bm) => Object.keys(bm)))].filter(
+          (m) => m !== machineId,
+        )
+      : []
+    const where = others.length ? ` (también en: ${others.join(', ')})` : ''
+    setExistsHint(`El proyecto "${n}" ya existe${where}. Asignale un path local en su tarjeta.`)
+    setHighlightName(n)
+    setTimeout(() => setHighlightName(null), 2500)
+  }
 
   return (
     <>
@@ -343,19 +360,32 @@ function Projects(props: {
             style={{ maxWidth: 280 }}
             placeholder="mi-proyecto"
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => {
+              setNewName(e.target.value)
+              setExistsHint(null)
+            }}
           />
           <button
             className="btn primary"
             disabled={busy || !machineId || !newName.trim()}
-            onClick={() =>
-              run(async () => {
-                const n = newName.trim()
-                await api.projectCreate(n)
+            onClick={() => {
+              const n = newName.trim()
+              const existing = config?.projects[n]
+              if (existing) {
+                guideToExisting(n, existing)
+                return
+              }
+              void run(async () => {
+                // La config local puede estar vieja: otra máquina pudo crearlo ya.
+                const { alreadyExists } = await api.projectCreate(n)
+                if (alreadyExists) {
+                  guideToExisting(n)
+                  return
+                }
                 setNewName('')
                 return `Proyecto "${n}" creado.`
               })
-            }
+            }}
           >
             Crear
           </button>
@@ -363,6 +393,11 @@ function Projects(props: {
         <p className="muted" style={{ marginTop: 8, marginBottom: 0 }}>
           Nombre lógico que une el proyecto entre tus máquinas (letras, números, . _ -).
         </p>
+        {existsHint && (
+          <p className="hint" style={{ marginTop: 8, marginBottom: 0 }}>
+            ⓘ {existsHint}
+          </p>
+        )}
         {!machineId && <p className="muted">Registrá esta máquina primero.</p>}
       </div>
 
@@ -379,6 +414,7 @@ function Projects(props: {
             machineId={machineId}
             busy={busy}
             run={run}
+            highlight={highlightName === pname}
           />
         ))
       )}
@@ -392,15 +428,21 @@ function ProjectCard(props: {
   machineId: string | null
   busy: boolean
   run: RunFn
+  highlight?: boolean
 }): JSX.Element {
-  const { name, project, machineId, busy, run } = props
+  const { name, project, machineId, busy, run, highlight } = props
   const mid = machineId ?? ''
   const folders = Object.entries(project.folders)
   const [newSlot, setNewSlot] = useState('memory')
   const [newPath, setNewPath] = useState('')
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (highlight) cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [highlight])
 
   return (
-    <div className="card">
+    <div ref={cardRef} className={`card${highlight ? ' highlight' : ''}`}>
       <div className="row between">
         <h2 style={{ margin: 0 }}>{name}</h2>
         <button

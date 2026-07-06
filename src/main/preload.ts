@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { Config, Plan, PreflightResult, RepoStatus, SettingsObject, Verb } from '../core/types'
 import type {
   ConnectResult,
+  CreateProjectResult,
   GatherResult,
   RegisterResult,
   ScatterResult,
@@ -26,7 +27,8 @@ const api = {
     ipcRenderer.invoke('machine:register', name) as Promise<RegisterResult>,
   machineCurrent: () => ipcRenderer.invoke('machine:current') as Promise<string | null>,
 
-  projectCreate: (name: string) => ipcRenderer.invoke('project:create', name) as Promise<void>,
+  projectCreate: (name: string) =>
+    ipcRenderer.invoke('project:create', name) as Promise<CreateProjectResult>,
   projectSetFolder: (name: string, slot: string, path: string) =>
     ipcRenderer.invoke('project:setFolder', { name, slot, path }) as Promise<void>,
   projectRemoveFolder: (name: string, slot: string) =>

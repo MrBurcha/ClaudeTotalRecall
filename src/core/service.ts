@@ -186,13 +186,25 @@ function assertSafeName(kind: 'proyecto' | 'ranura', value: string): string {
   return v
 }
 
-/** Crea un proyecto vacío (sin carpetas). Error si ya existe. */
-export async function createProject(adapter: PlatformAdapter, name: string): Promise<void> {
+export interface CreateProjectResult {
+  alreadyExists: boolean
+}
+
+/** Crea un proyecto vacío (sin carpetas). Si ya existe, no toca nada y lo informa. */
+export async function createProject(
+  adapter: PlatformAdapter,
+  name: string,
+): Promise<CreateProjectResult> {
   const proj = assertSafeName('proyecto', name)
+  let alreadyExists = false
   await commitConfigChange(adapter, `ClaudeTR: nuevo proyecto ${proj}`, (config) => {
-    if (config.projects[proj]) throw new Error(`El proyecto "${proj}" ya existe.`)
+    if (config.projects[proj]) {
+      alreadyExists = true
+      return
+    }
     config.projects[proj] = { folders: {} }
   })
+  return { alreadyExists }
 }
 
 /**

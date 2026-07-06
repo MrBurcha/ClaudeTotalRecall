@@ -162,11 +162,16 @@ describe('operaciones de proyecto (CRUD)', () => {
   }
   const cfg = (a: ReturnType<typeof adapterFor>) => loadConfig(configPath(a))
 
-  it('crea proyecto vacío; rechaza duplicados y nombres inválidos', async () => {
+  it('crea proyecto vacío; sobre uno existente es no-op y lo informa; rechaza nombres inválidos', async () => {
     const a = await setup()
-    await createProject(a, 'demo-core')
+    expect(await createProject(a, 'demo-core')).toEqual({ alreadyExists: false })
     expect((await cfg(a)).projects['demo-core']).toEqual({ folders: {} })
-    await expect(createProject(a, 'demo-core')).rejects.toThrow()
+
+    // Re-crear no pisa el proyecto: sus carpetas quedan intactas.
+    await setProjectFolder(a, 'demo-core', 'memory', '/tmp/x')
+    expect(await createProject(a, 'demo-core')).toEqual({ alreadyExists: true })
+    expect((await cfg(a)).projects['demo-core'].folders.memory.m1).toBe('/tmp/x')
+
     await expect(createProject(a, 'nombre con espacios')).rejects.toThrow()
     await expect(createProject(a, '..')).rejects.toThrow()
   })
