@@ -17,8 +17,10 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Notas
 - Los builds siguen **sin notarizar** (uso personal, sin cuenta Apple Developer). En una
-  descarga nueva puede aparecer el aviso suave "desarrollador no identificado": abrí con
-  **click derecho → Abrir**, o sacá la cuarentena una vez con `xattr -cr /Applications/ClaudeTR.app`.
+  descarga nueva aparece el aviso "Apple no pudo verificar…". En **macOS 15+** el viejo
+  *click derecho → Abrir* fue eliminado; abrí desde **Ajustes del Sistema → Privacidad y
+  Seguridad → "Abrir igualmente"** (paso único), o sacá la cuarentena con
+  `xattr -cr /Applications/ClaudeTR.app`. Para cero diálogos hace falta notarización (paga).
 
 ## [0.1.1] - 2026-07-05
 
