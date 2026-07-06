@@ -1,0 +1,9 @@
+/* Punto de entrada del sistema de diseño. El orden importa: primero los
+ * tokens (variables), luego reset/base, utilidades, componentes y la
+ * constelación. Lo importa main.tsx en lugar del viejo styles.css. */
+@import './tokens.css';
+@import './base.css';
+@import './utilities.css';
+@import './components.css';
+@import './screens.css';
+@import './constellation.css';

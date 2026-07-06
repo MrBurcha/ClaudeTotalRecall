@@ -1,0 +1,143 @@
+/*
+ * La constelación: la máquina actual y sus pares orbitando el vault (repo).
+ * Toda la boldness de la app vive acá; el resto se mantiene quieto.
+ * Movimiento en dos capas: links + latido del vault (CSS), partículas (rAF).
+ * base.css corta toda animación bajo prefers-reduced-motion → el componente
+ * cae a un render estático con badges de dirección.
+ */
+
+.constellation {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 50% 46%, var(--radar) 0%, transparent 60%),
+    var(--panel);
+  overflow: hidden;
+}
+.constellation__svg {
+  display: block;
+  width: 100%;
+  /* Alto acotado: el viewBox 600×360 escala con preserveAspectRatio=meet y
+     queda centrado, en vez de estirarse a ~830px a lo ancho del panel. */
+  height: clamp(300px, 44vh, 396px);
+}
+
+/* Anillos de radar (decoración estática). */
+.const-ring {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+/* Links nodo → vault. */
+.const-link {
+  fill: none;
+  stroke: var(--link);
+  stroke-width: 1.5;
+}
+.const-link--flow {
+  stroke: var(--accent-line);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 2 8;
+  animation: link-flow 1.1s linear infinite;
+}
+.const-link--down {
+  animation-direction: reverse;
+}
+.const-link--dirty {
+  stroke: color-mix(in srgb, var(--warn) 55%, var(--link));
+}
+@keyframes link-flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+/* Nodos (máquinas). */
+.const-node {
+  fill: var(--panel-3);
+  stroke: var(--node);
+  stroke-width: 1.5;
+}
+.const-node--current {
+  fill: color-mix(in srgb, var(--accent) 22%, var(--panel));
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.const-node__glyph {
+  color: var(--muted);
+}
+.const-glyph--accent {
+  color: var(--accent);
+}
+.const-node__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--muted);
+  text-anchor: middle;
+}
+.const-node__label--current {
+  fill: var(--text);
+  font-weight: 600;
+}
+
+/* Vault central (repo). */
+.const-vault-glow {
+  fill: var(--accent);
+  opacity: 0.14;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: vault-breathe 4.2s var(--ease-out) infinite;
+}
+.const-vault--active .const-vault-glow {
+  animation-duration: 1.1s;
+  opacity: 0.3;
+}
+@keyframes vault-breathe {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.22;
+    transform: scale(1.1);
+  }
+}
+.const-vault-core {
+  fill: color-mix(in srgb, var(--accent) 28%, var(--panel));
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.const-vault__glyph {
+  color: var(--accent);
+}
+.const-vault__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--accent);
+  text-anchor: middle;
+}
+
+/* Partículas de flujo (posicionadas por rAF vía atributos cx/cy). */
+.const-particle {
+  fill: var(--accent);
+}
+.const-particle--down {
+  fill: var(--ok);
+}
+
+/* Badges de dirección para el fallback estático (reduced-motion). */
+.const-dirbadge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  fill: var(--accent);
+  text-anchor: middle;
+}

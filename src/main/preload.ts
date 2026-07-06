@@ -1,5 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { Config, Plan, PreflightResult, RepoStatus, SettingsObject, Verb } from '../core/types'
+import type {
+  Config,
+  Plan,
+  PlanAction,
+  PreflightResult,
+  RepoStatus,
+  SettingsObject,
+  Verb,
+} from '../core/types'
 import type {
   ConnectResult,
   CreateProjectResult,
@@ -7,6 +15,16 @@ import type {
   RegisterResult,
   ScatterResult,
 } from '../core/service'
+
+/**
+ * Resultado de ejecutar un Plan. Si el disco cambió desde el preview, el core
+ * tira PlanDriftError; el handler lo mapea a `{ ok:false, drift:true, drifted }`
+ * porque Electron solo serializa `message` de un throw (perdería `drifted`).
+ * El plan queda cacheado por su id → "Forzar" re-ejecuta con el mismo planId.
+ */
+export type ExecOutcome =
+  | { ok: true; result: GatherResult | ScatterResult }
+  | { ok: false; drift: true; drifted: PlanAction[] }
 
 /**
  * El ÚNICO puente renderer ↔ main. El renderer nunca toca fs/child_process:
@@ -37,8 +55,8 @@ const api = {
   projectPickFolder: () => ipcRenderer.invoke('project:pickFolder') as Promise<string | null>,
 
   planBuild: (verb: Verb) => ipcRenderer.invoke('plan:build', verb) as Promise<Plan>,
-  planExecute: (verb: Verb, planId: string) =>
-    ipcRenderer.invoke('plan:execute', { verb, planId }) as Promise<GatherResult | ScatterResult>,
+  planExecute: (verb: Verb, planId: string, force?: boolean) =>
+    ipcRenderer.invoke('plan:execute', { verb, planId, force }) as Promise<ExecOutcome>,
 
   conflictList: () => ipcRenderer.invoke('conflict:list') as Promise<string[]>,
   conflictResolve: (file: string, side: 'local' | 'remote') =>

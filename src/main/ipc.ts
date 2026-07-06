@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { app, dialog, ipcMain } from 'electron'
 import { createPlatformAdapter } from '../platform'
 import { loadSettingsLocal, saveSettingsLocal } from '../core/localState'
+import { PlanDriftError } from '../core/plan'
 import { runPreflight } from '../core/preflight'
 import * as svc from '../core/service'
 import type { Plan, SettingsObject, Verb } from '../core/types'
@@ -61,16 +62,27 @@ export function registerIpc(): void {
     planCache.set(plan.id, plan)
     return plan
   })
-  ipcMain.handle('plan:execute', async (_e, args: { verb: Verb; planId: string }) => {
-    const plan = planCache.get(args.planId)
-    if (!plan) throw new Error('Plan expirado; reconstruilo (el preview ya no es válido).')
-    const res =
-      args.verb === 'gather'
-        ? await svc.syncGather(adapter(), plan)
-        : await svc.syncScatter(adapter(), plan)
-    planCache.delete(args.planId)
-    return res
-  })
+  ipcMain.handle(
+    'plan:execute',
+    async (_e, args: { verb: Verb; planId: string; force?: boolean }) => {
+      const plan = planCache.get(args.planId)
+      if (!plan) throw new Error('Plan expirado; reconstruilo (el preview ya no es válido).')
+      const opts = { force: args.force }
+      try {
+        const result =
+          args.verb === 'gather'
+            ? await svc.syncGather(adapter(), plan, opts)
+            : await svc.syncScatter(adapter(), plan, opts)
+        planCache.delete(args.planId) // solo se consume tras éxito
+        return { ok: true, result }
+      } catch (e) {
+        // Drift: mapeamos el error tipado a forma serializable (el plan queda en
+        // caché para que "Forzar" reuse el mismo planId). El resto se relanza.
+        if (e instanceof PlanDriftError) return { ok: false, drift: true, drifted: e.drifted }
+        throw e
+      }
+    },
+  )
 
   // Conflictos
   ipcMain.handle('conflict:list', () => svc.listConflicts(adapter()))
