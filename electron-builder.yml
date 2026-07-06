@@ -25,6 +25,23 @@ mac:
 afterPack: scripts/afterPack.cjs
 dmg:
   title: ClaudeTR
+  # Fondo con las instrucciones de instalación/apertura (build/background.png +
+  # background@2x.png para retina). Coords en px desde arriba-izquierda, al centro
+  # del ícono: la app a la izquierda, el alias a Aplicaciones a la derecha.
+  background: build/background.png
+  window:
+    width: 640
+    height: 500
+  iconSize: 120
+  iconTextSize: 13
+  contents:
+    - x: 165
+      y: 195
+      type: file
+    - x: 475
+      y: 195
+      type: link
+      path: /Applications
 linux:
   target:
     - AppImage

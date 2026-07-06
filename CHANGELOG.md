@@ -5,6 +5,14 @@ Todos los cambios notables de ClaudeTR se documentan acá.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.3] - 2026-07-06
+
+### Agregado
+- **DMG con fondo de instalación.** Al abrir la imagen se ve una ventana guiada: el arrastre
+  de **ClaudeTR → Aplicaciones** con una flecha, y una tarjeta con las **dos formas de abrir**
+  la app en macOS (Ajustes → Privacidad y Seguridad → "Abrir igualmente", o `xattr -cr`). Sigue
+  la identidad visual "Estación de sincronización" (dark, periwinkle, constelación).
+
 ## [0.1.2] - 2026-07-06
 
 ### Arreglado
@@ -43,6 +51,7 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 - Empaquetado macOS (`.dmg`) y Linux (AppImage + deb + pacman), publicado por CI al pushear
   un tag `v*.*.*`.
 
+[0.1.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.3
 [0.1.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.2
 [0.1.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.1
 [0.1.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.0
