@@ -1,6 +1,6 @@
 {
   "name": "claudetr",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "ClaudeTR (Claude Total Recall) — sync Claude Code memory across machines via a private GitHub repo",
   "author": "MrBurcha",
   "license": "MIT",

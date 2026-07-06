@@ -12,12 +12,17 @@ files:
 extraResources:
   - from: build/icon.png
     to: icon.png
-# Uso personal: builds SIN firmar (decisión del usuario).
+# Uso personal: sin certificado Developer ID ni notarización (decisión del
+# usuario). El bundle se firma ad-hoc en `afterPack` (ver abajo) para que macOS
+# en Apple Silicon no lo marque como "dañado".
 mac:
   target:
     - dmg
   category: public.app-category.developer-tools
   identity: null
+# El bundle sale sin cert; este hook lo firma ad-hoc tras empaquetarlo (antes
+# de armar el dmg) para sellar los recursos y evitar el veredicto "dañado".
+afterPack: scripts/afterPack.cjs
 dmg:
   title: ClaudeTR
 linux:

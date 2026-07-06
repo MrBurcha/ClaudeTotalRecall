@@ -39,14 +39,26 @@ node dist-cli/index.js gather  [--dry-run] [--yes]
 node dist-cli/index.js scatter [--dry-run] [--yes]
 ```
 
-## Empaquetado (sin firmar, uso personal)
+## Empaquetado (firma ad-hoc, uso personal)
 
 ```bash
 npm run build:mac    # release/ClaudeTR-<v>-arm64.dmg   (verificado)
 npm run build:linux  # AppImage + deb + pacman  (correr en Linux o CI, no cross desde macOS)
 ```
 
-En macOS, al ser sin firmar, la primera vez abrí con **click derecho → Abrir**.
+### macOS: instalar y abrir
+
+Los builds son **ad-hoc** (sin certificado Developer ID ni notarización de Apple).
+La firma ad-hoc (ver `scripts/afterPack.cjs`) sella los recursos del bundle para que
+macOS **no** lo marque como *"dañado"* en Apple Silicon; pero al no estar notarizado,
+la primera vez abrí con **click derecho → Abrir**.
+
+Si igual aparece un aviso de Gatekeeper (por ejemplo bajando el `.dmg` desde un
+GitHub Release, que le pega el atributo de cuarentena), sacale la cuarentena una vez:
+
+```bash
+xattr -cr /Applications/ClaudeTR.app
+```
 
 ## Layout
 
