@@ -429,6 +429,7 @@
     "conflictsResolved": "Se resolvieron conflictos",
     "change": "Cambio",
     "files_one": "{{count}} archivo",
-    "files_other": "{{count}} archivos"
+    "files_other": "{{count}} archivos",
+    "moreFiles": "+{{count}} más"
   }
 }

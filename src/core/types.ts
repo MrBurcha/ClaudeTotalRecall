@@ -144,6 +144,13 @@ export type HistoryType =
   | 'conflicts'
   | 'other'
 
+/** A single file touched by a commit, as reported by `git log --name-status`. */
+export interface FileChange {
+  status: 'added' | 'modified' | 'deleted' | 'renamed' | 'other'
+  /** repo-relative path (for renames, the new path) */
+  path: string
+}
+
 export interface HistoryEntry {
   hash: string
   /** ISO timestamp (author date) */
@@ -158,6 +165,8 @@ export interface HistoryEntry {
   pin?: string
   /** number of files changed in the commit */
   files: number
+  /** the files touched (added/modified/deleted), for the activity detail (#8) */
+  changes: FileChange[]
 }
 
 export interface PreflightCheck {

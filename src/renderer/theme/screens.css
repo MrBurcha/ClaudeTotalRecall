@@ -163,6 +163,40 @@
   margin-top: 4px;
   padding-left: 4px;
 }
+/* Per-file changes under an activity entry (#8): aligned under the row icon. */
+.activity-files {
+  list-style: none;
+  margin: 6px 0 0;
+  padding-left: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.activity-file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+}
+.activity-file__glyph {
+  flex: none;
+  width: 1ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.activity-file--added .activity-file__glyph {
+  color: var(--ok);
+}
+.activity-file--modified .activity-file__glyph {
+  color: var(--warn);
+}
+.activity-file--deleted .activity-file__glyph {
+  color: var(--danger);
+}
+.activity-file--renamed .activity-file__glyph {
+  color: var(--accent);
+}
 .folder-slot {
   padding: 2px 8px;
   flex: none;

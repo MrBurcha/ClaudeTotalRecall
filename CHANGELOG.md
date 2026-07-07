@@ -7,6 +7,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Recent activity now lists the files touched by each sync** (#8): every `outgoing` entry expands
+  to show the files added / modified / deleted (from `git log --name-status`, with colored `+` / `~` /
+  `−` markers), and the history fetch cap was raised from 20 to 100. Config entries (pin, register,
+  set/remove source) keep their semantic label without the redundant `claudetr.json` line.
+
 ## [0.2.0] - 2026-07-07
 
 ### Added
