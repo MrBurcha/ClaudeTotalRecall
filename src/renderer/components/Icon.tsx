@@ -6,7 +6,6 @@ import type { ReactNode } from 'react'
  * size from the context. Replaces the unicode glyphs (↑ ↓ ⓘ ·) of the old UI.
  */
 export type IconName =
-  | 'orbit'
   | 'monitor'
   | 'folder'
   | 'folder-open'
@@ -43,13 +42,6 @@ export type IconName =
   | 'restore'
 
 const ICONS: Record<IconName, ReactNode> = {
-  orbit: (
-    <>
-      <circle cx="12" cy="12" r="2.5" />
-      <ellipse cx="12" cy="12" rx="10" ry="4.4" />
-      <circle cx="2" cy="12" r="1.3" fill="currentColor" stroke="none" />
-    </>
-  ),
   monitor: (
     <>
       <rect x="3" y="4" width="18" height="13" rx="2" />

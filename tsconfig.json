@@ -19,7 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@core/*": ["src/core/*"],
-      "@platform/*": ["src/platform/*"]
+      "@platform/*": ["src/platform/*"],
+      "@build/*": ["build/*"]
     }
   },
   "include": ["src", "electron.vite.config.ts", "vitest.config.ts", "tsup.config.ts"]

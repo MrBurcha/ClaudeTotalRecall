@@ -76,10 +76,13 @@
   gap: var(--space-3);
   padding: var(--space-2) var(--space-2) var(--space-5);
 }
-.brand__mark {
-  color: var(--accent);
+.brand-mark {
   flex: none;
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 45%, transparent));
+  border-radius: 24%;
+  object-fit: cover;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.35);
 }
 .brand__name {
   font-weight: var(--weight-bold);

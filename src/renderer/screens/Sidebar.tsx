@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { StatusDot } from '../components/Badge'
+import { BrandMark } from '../components/BrandMark'
 import { Icon, type IconName } from '../components/Icon'
 import { IconButton } from '../components/IconButton'
 import { Kbd } from '../components/Kbd'
@@ -9,7 +10,7 @@ import { useActions } from '../state/useActions'
 import type { Route } from '../state/types'
 
 const NAV: { route: Route; labelKey: string; icon: IconName }[] = [
-  { route: 'home', labelKey: 'nav.home', icon: 'orbit' },
+  { route: 'home', labelKey: 'nav.home', icon: 'sync' },
   { route: 'projects', labelKey: 'nav.projects', icon: 'folder' },
   { route: 'settings', labelKey: 'nav.settings', icon: 'sliders' },
 ]
@@ -23,7 +24,7 @@ export function Sidebar(): JSX.Element {
   return (
     <nav className="sidebar">
       <div className="brand">
-        <Icon name="orbit" size={22} className="brand__mark" />
+        <BrandMark size={22} />
         <div>
           <div className="brand__name">Claude Total Recall</div>
         </div>

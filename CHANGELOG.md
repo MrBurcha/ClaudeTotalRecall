@@ -13,6 +13,10 @@ and the project uses [Semantic Versioning](https://semver.org/).
   icon. A branded drive icon is deferred to #18 (pending the visual-identity cleanup in #9).
 
 ### Changed
+- **Unified the app's brand mark** (#9): the sidebar, About dialog and onboarding wizard now show the
+  real app icon as a rounded tile (CSS bezel) instead of the old orbit/oval glyph, which is removed
+  from the icon set. The mark is a single swappable asset (`build/icon.png` → `npm run icons`), and the
+  navigation/actions that used the orbit glyph now use the sync icon.
 - **Recent activity now lists the files touched by each sync** (#8): every `outgoing` entry expands
   to show the files added / modified / deleted (from `git log --name-status`, with colored `+` / `~` /
   `−` markers), and the history fetch cap was raised from 20 to 100. Config entries (pin, register,
