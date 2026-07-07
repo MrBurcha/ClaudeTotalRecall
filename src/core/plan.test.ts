@@ -168,6 +168,66 @@ describe('Plan action types', () => {
   })
 })
 
+describe('file slots and pinned files (#11)', () => {
+  it('syncs a project file-slot and a global pinned file, skips missing and secret sources', async () => {
+    const sb = await seed()
+
+    // Sources on machine 1: a single project file, a global pinned file, a secret
+    // pointed at directly, and a missing file. All are file kind.
+    const singleSrc = join(sb.home1, '.claude', 'SINGLE.md')
+    const pinSrc = join(sb.home1, '.claude', 'PIN.md')
+    const secretSrc = join(sb.home1, '.claude', 'secret.jsonl')
+    await writeFile(singleSrc, 'single file\n')
+    await writeFile(pinSrc, 'pinned file\n')
+    await writeFile(secretSrc, '{"x":1}')
+
+    sb.config.projects.proj.folders.single = { m1: singleSrc, m2: join(sb.home2, '.claude', 'SINGLE.md') }
+    sb.config.projects.proj.folders.missing = { m1: join(sb.home1, '.claude', 'NOPE.md') }
+    sb.config.projects.proj.folders.secret = { m1: secretSrc }
+    sb.config.projects.proj.slotKinds = { single: 'file', missing: 'file', secret: 'file' }
+    sb.config.pinnedFiles = {
+      rules: { m1: pinSrc, m2: join(sb.home2, '.claude', 'PIN.md') },
+    }
+
+    const ctx1 = ctxFor(sb, sb.home1, 'm1', { local: 'x' })
+    const plan = await buildOutgoingPlan(ctx1, META)
+    const bySlot = new Map(plan.actions.map((a) => [a.slot, a]))
+
+    // File slot present → create at the exact logical path (not mirrored under it).
+    expect(bySlot.get('project:proj/single')).toMatchObject({
+      type: 'create',
+      logicalPath: 'memories/projects/proj/single',
+    })
+    // Pinned file → create under memories/pinned/<pin>.
+    expect(bySlot.get('pinned:rules')).toMatchObject({
+      type: 'create',
+      logicalPath: 'memories/pinned/rules',
+    })
+    // Missing source → skip (NOT delete), secret source → skip.
+    expect(bySlot.get('project:proj/missing')).toMatchObject({ type: 'skip', reasonCode: 'sourceMissing' })
+    expect(bySlot.get('project:proj/secret')).toMatchObject({ type: 'skip', reasonCode: 'secretExcluded' })
+
+    await executeOutgoing(plan, ctx1)
+    expect(await read(join(sb.repoDir, 'memories/projects/proj/single'))).toBe('single file\n')
+    expect(await read(join(sb.repoDir, 'memories/pinned/rules'))).toBe('pinned file\n')
+    // Secret never entered the repo.
+    expect(await exists(join(sb.repoDir, 'memories/pinned/secret'))).toBe(false)
+
+    // A file slot never mirror-deletes: with the source gone, re-planning yields a
+    // skip (a dir slot would emit a delete for the repo copy).
+    await rm(singleSrc)
+    const after = await buildOutgoingPlan(ctx1, META)
+    expect(after.actions.find((a) => a.slot === 'project:proj/single')?.type).toBe('skip')
+    expect(await exists(join(sb.repoDir, 'memories/projects/proj/single'))).toBe(true)
+
+    // Incoming on machine 2 rebuilds both the file slot and the pinned file.
+    const ctx2 = ctxFor(sb, sb.home2, 'm2', { local: 'y' })
+    await executeIncoming(await buildIncomingPlan(ctx2, META), ctx2)
+    expect(await read(join(sb.home2, '.claude/SINGLE.md'))).toBe('single file\n')
+    expect(await read(join(sb.home2, '.claude/PIN.md'))).toBe('pinned file\n')
+  })
+})
+
 describe('TOCTOU revalidation', () => {
   it('aborts with PlanDriftError if the source changed, unless force', async () => {
     const sb = await seed()

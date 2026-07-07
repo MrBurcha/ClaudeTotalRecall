@@ -61,6 +61,30 @@ export function projectSlotLogicalPath(projectName: string, slot: string): strin
   return `memories/projects/${projectName}/${slot}`
 }
 
+/** Tipo de una ranura de proyecto: archivo puntual vs carpeta espejada (default 'dir'). */
+export function projectSlotKind(config: Config, projectName: string, slot: string): 'file' | 'dir' {
+  return config.projects[projectName]?.slotKinds?.[slot] ?? 'dir'
+}
+
+/** Un archivo fijado global mapeado para una máquina. */
+export interface PinnedFileItem {
+  pinId: string
+  /** ruta absoluta literal en esta máquina (ya expandida al guardarse) */
+  realPath: string
+  /** logicalPath en el repo (memories/pinned/<pinId>) */
+  logicalPath: string
+}
+
+/** Archivos fijados globales que tienen ruta en `machineId` (siempre kind 'file'). */
+export function pinnedFileItems(config: Config, machineId: string): PinnedFileItem[] {
+  const out: PinnedFileItem[] = []
+  for (const [pinId, byMachine] of Object.entries(config.pinnedFiles ?? {})) {
+    const p = byMachine[machineId]
+    if (p) out.push({ pinId, realPath: p, logicalPath: `memories/pinned/${pinId}` })
+  }
+  return out
+}
+
 /**
  * True si dos paths absolutos son el mismo o uno está anidado dentro del otro.
  * Normaliza ambos (colapsa `.`/`..`/trailing slash con `resolve`) y compara en el
@@ -91,15 +115,22 @@ export function machineSyncedPaths(
   config: Config,
   adapter: PlatformAdapter,
   machineId: string,
-  exclude?: { project: string; slot: string },
+  exclude?: { project: string; slot: string } | { pin: string },
 ): SyncedPath[] {
   const out: SyncedPath[] = []
+  const excludeSlot = exclude && 'project' in exclude ? exclude : undefined
+  const excludePin = exclude && 'pin' in exclude ? exclude.pin : undefined
   for (const [projectName, project] of Object.entries(config.projects)) {
     for (const [slot, folder] of Object.entries(project.folders)) {
-      if (exclude && exclude.project === projectName && exclude.slot === slot) continue
+      if (excludeSlot && excludeSlot.project === projectName && excludeSlot.slot === slot) continue
       const p = folder[machineId]
       if (p) out.push({ path: p, where: `${projectName}/${slot}` })
     }
+  }
+  for (const [pinId, byMachine] of Object.entries(config.pinnedFiles ?? {})) {
+    if (excludePin === pinId) continue
+    const p = byMachine[machineId]
+    if (p) out.push({ path: p, where: `pinned/${pinId}` })
   }
   for (const item of userLevelItems(adapter)) {
     if (item.kind === 'dir') out.push({ path: item.realPath, where: `~/.claude/${item.slot}` })

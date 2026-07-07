@@ -217,6 +217,10 @@
       "exists": "Ya existe un proyecto llamado \"{{name}}\".",
       "notFound": "No se encontró el proyecto \"{{name}}\"."
     },
+    "pin": {
+      "invalidName": "Nombre de archivo fijado inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo.",
+      "folderNested": "Este archivo se solapa con \"{{conflict}}\" ({{where}}), que ya se sincroniza en esta máquina."
+    },
     "slot": {
       "invalidName": "Nombre de ranura inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo."
     },
@@ -251,7 +255,8 @@
     "noRepoSettings": "no hay settings.json en el repo",
     "sourceMissing": "el origen no existe",
     "notInSource": "no existe en el origen",
-    "noPathForMachine": "sin ruta para la máquina \"{{machine}}\""
+    "noPathForMachine": "sin ruta para la máquina \"{{machine}}\"",
+    "secretExcluded": "archivo secreto, nunca se sincroniza"
   },
   "machines": {
     "title": "Máquinas",
@@ -287,13 +292,16 @@
     "newProject": "Nuevo proyecto",
     "nameLabel": "Nombre",
     "renamed": "Proyecto renombrado a \"{{to}}\".",
-    "folderCount_one": "{{count}} carpeta",
-    "folderCount_other": "{{count}} carpetas",
+    "sourceCount_one": "{{count}} origen",
+    "sourceCount_other": "{{count}} orígenes",
     "registerMachineFirst": "Registra esta máquina primero",
     "registerMachineHint": "Necesitas registrar esta computadora antes de asignar carpetas.",
     "noProjectsYet": "Ningún proyecto todavía",
     "noProjectsHint": "Crea uno para sincronizar carpetas de memoria específicas.",
     "folder": "Carpeta",
+    "file": "Archivo",
+    "sourceType": "Tipo de origen",
+    "addSource": "Origen",
     "delete": "Eliminar",
     "deleted": "Proyecto \"{{name}}\" eliminado.",
     "deleteProject": {
@@ -301,7 +309,7 @@
       "body": "¿Eliminar \"{{name}}\" para todas las máquinas? No borra tus carpetas locales, solo la configuración de sincronización."
     },
     "noFoldersYet": "Sin carpetas todavía",
-    "noFoldersHint": "Agrega una carpeta para que este proyecto se sincronice en esta máquina.",
+    "noSourcesHint": "Agrega una carpeta o archivo para que este proyecto se sincronice en esta máquina.",
     "removeFolder": {
       "title": "Quitar carpeta",
       "body": "¿Quitar la ranura \"{{slot}}\" de esta máquina? No borra la carpeta, solo deja de sincronizarla aquí."
@@ -316,11 +324,13 @@
     "logicalName": "Nombre lógico",
     "projectNamePlaceholder": "mi-proyecto",
     "projectNameHint": "Une el proyecto entre tus máquinas (letras, números, . _ -).",
-    "pickOrPasteFolder": "Elige o pega una carpeta.",
-    "folderSaved": "Carpeta \"{{slot}}\" guardada en {{project}}.",
+    "pickOrPastePath": "Elige o pega una ruta.",
+    "folderSaved": "Se guardó \"{{slot}}\" en {{project}}.",
     "slotLabel": "Ranura",
     "folderPathPlaceholder": "/ruta/a/la/carpeta",
-    "choose": "Elegir…",
+    "filePathPlaceholder": "/ruta/al/archivo",
+    "chooseFolder": "Elegir carpeta",
+    "chooseFile": "Elegir archivo",
     "project": {
       "nameEmpty": "El nombre de proyecto no puede estar vacío.",
       "nameInvalid": "Nombre de proyecto inválido. Usa solo letras, números, punto, guion y guion bajo."
@@ -383,5 +393,42 @@
       "sub": "Tu memoria está lista para sincronizar entre máquinas.",
       "goToSync": "Ir a Sincronización"
     }
+  },
+  "pinned": {
+    "title": "Archivos fijados",
+    "sub": "Archivos sueltos que se sincronizan de forma global, fuera de cualquier proyecto (por ejemplo un CLAUDE.md específico).",
+    "registerFirst": "Registra esta máquina primero para fijar archivos.",
+    "empty": "Ningún archivo fijado todavía.",
+    "add": "Fijar un archivo",
+    "nameLabel": "Nombre",
+    "namePlaceholder": "mi-archivo",
+    "nameRequired": "Dale un nombre al archivo fijado.",
+    "noPathHere": "sin ruta en esta máquina",
+    "editPath": "Editar ruta",
+    "remove": "Quitar",
+    "removed": "Archivo fijado \"{{pin}}\" quitado.",
+    "saved": "Archivo fijado \"{{pin}}\" guardado.",
+    "deleteFile": {
+      "title": "Quitar archivo fijado",
+      "body": "¿Quitar \"{{pin}}\" para todas las máquinas? No borra el archivo, solo deja de sincronizarlo."
+    }
+  },
+  "activity": {
+    "title": "Actividad reciente",
+    "empty": "Sin actividad todavía.",
+    "outgoingLocal": "Sincronizado desde esta máquina",
+    "outgoingRemote": "Sincronizado desde otra máquina",
+    "sourceUpdated": "Se actualizó el origen {{slot}} en {{project}}",
+    "sourceRemoved": "Se quitó el origen {{slot}} de {{project}}",
+    "projectCreated": "Se creó el proyecto {{name}}",
+    "projectDeleted": "Se eliminó el proyecto {{name}}",
+    "projectRenamed": "Se renombró el proyecto {{from}} → {{to}}",
+    "machineRegistered": "Se registró la máquina {{machine}}",
+    "filePinned": "Se fijó el archivo {{pin}}",
+    "fileUnpinned": "Se dejó de fijar el archivo {{pin}}",
+    "conflictsResolved": "Se resolvieron conflictos",
+    "change": "Cambio",
+    "files_one": "{{count}} archivo",
+    "files_other": "{{count}} archivos"
   }
 }

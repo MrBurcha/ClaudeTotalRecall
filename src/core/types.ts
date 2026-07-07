@@ -17,9 +17,13 @@ export type Machine = z.infer<typeof MachineSchema>
 /**
  * A logical project. `folders` is a map of logical slots (default "memory")
  * and each slot maps machineId → literal absolute path on that machine.
+ * `slotKinds` marks a slot as a single pinpoint FILE vs a mirrored DIRECTORY;
+ * a slot absent from it defaults to 'dir'. Optional/additive so an older app
+ * version reads a newer config without failing (zod strips unknown keys).
  */
 export const ProjectSchema = z.object({
   folders: z.record(z.string(), z.record(z.string(), z.string())),
+  slotKinds: z.record(z.string(), z.enum(['file', 'dir'])).optional(),
 })
 export type Project = z.infer<typeof ProjectSchema>
 
@@ -31,6 +35,12 @@ export const ConfigSchema = z.object({
   }),
   machines: z.record(z.string(), MachineSchema),
   projects: z.record(z.string(), ProjectSchema),
+  /**
+   * Global pinpoint files synced outside any project: pinId → machineId →
+   * literal absolute path. Always files, mapped to `memories/pinned/<pinId>`.
+   * Optional/additive (same back-compat rationale as `Project.slotKinds`).
+   */
+  pinnedFiles: z.record(z.string(), z.record(z.string(), z.string())).optional(),
 })
 export type Config = z.infer<typeof ConfigSchema>
 
@@ -115,6 +125,39 @@ export interface RepoStatus {
   behind: number
   dirty: boolean
   conflicted: string[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Activity history (#8): derived from the repo's git log, presented in app terms.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type HistoryType =
+  | 'outgoing' // a machine pushed its memory (↑ local / ↓ from another machine)
+  | 'set-folder'
+  | 'remove-folder'
+  | 'new-project'
+  | 'delete-project'
+  | 'rename-project'
+  | 'register'
+  | 'pin'
+  | 'unpin'
+  | 'conflicts'
+  | 'other'
+
+export interface HistoryEntry {
+  hash: string
+  /** ISO timestamp (author date) */
+  at: string
+  type: HistoryType
+  /** machine that produced it, when the commit message carries it */
+  machineId?: string
+  project?: string
+  slot?: string
+  from?: string
+  to?: string
+  pin?: string
+  /** number of files changed in the commit */
+  files: number
 }
 
 export interface PreflightCheck {

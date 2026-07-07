@@ -7,6 +7,20 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **File sources for projects** (#11): a project source can now be a single **file**, not only a
+  folder. When adding a source you pick its kind (folder or file); a file source syncs as one
+  file (never mirror-deleted) to `memories/projects/<project>/<slot>`. Stored per project as
+  `slotKinds` (optional, defaults to `dir`, so older app versions ignore it).
+- **Global pinned files** (#11): single files synced globally, outside any project (e.g. a
+  specific `CLAUDE.md`), managed in **Settings → Pinned files** and stored under
+  `memories/pinned/<name>`. Secrets (`.credentials.json`, `.claude.json`, `*.jsonl`) are still
+  hard-excluded, and the same nesting guard rejects a file already covered by a synced folder.
+- **Recent activity** (#8): a collapsible timeline on the Sync home, derived from the memories
+  repo's git log and classified into typed entries (outgoing ↑/↓ with machine + file count,
+  set/remove source, project created/deleted/renamed, machine registered, file pinned/unpinned,
+  conflicts resolved). Direction shows ↑ for this machine and ↓ for another.
+
 ### Changed
 - **Renamed the sync verbs** `gather`/`scatter` → **`outgoing`/`incoming`** (UI: *Outgoing / Saliente*
   and *Incoming / Entrante*). The rename spans the UI, the `Verb` type, CLI subcommands

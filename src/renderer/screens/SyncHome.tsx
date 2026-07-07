@@ -8,6 +8,7 @@ import { Skeleton } from '../components/Skeleton'
 import { Constellation } from '../features/constellation/Constellation'
 import { AdvancedSync } from '../features/sync/AdvancedSync'
 import { AutoToggle } from '../features/sync/AutoToggle'
+import { RecentActivity } from '../features/sync/RecentActivity'
 import { SyncNowButton } from '../features/sync/SyncNowButton'
 import { relativeParts } from '../features/sync/relativeTime'
 import { conflictFiles, engineTone, hasConflict, onboardingStep } from '../state/selectors'
@@ -137,6 +138,8 @@ export function SyncHome(): JSX.Element {
           </div>
         </div>
       )}
+
+      <RecentActivity />
 
       <AdvancedSync ref={advRef} open={advOpen} onToggle={() => setAdvOpen((o) => !o)} files={files} />
     </div>

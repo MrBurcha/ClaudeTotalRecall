@@ -5,10 +5,19 @@ import type { PlatformAdapter } from '../platform'
 import { loadConfig, saveConfig } from './config'
 import { AppError } from './errors'
 import { Git } from './git'
+import { classifyCommit } from './history'
 import { ensureSettingsLocal, loadLocalState, loadSettingsLocal, saveLocalState } from './localState'
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
 import { machineSyncedPaths, pathsCollide } from './resolve'
-import { emptyConfig, type Config, type Machine, type Plan, type RepoStatus, type Verb } from './types'
+import {
+  emptyConfig,
+  type Config,
+  type HistoryEntry,
+  type Machine,
+  type Plan,
+  type RepoStatus,
+  type Verb,
+} from './types'
 
 // ── local locations (working copy = clone of the repo under configHome) ─────
 export function workingCopyDir(adapter: PlatformAdapter): string {
@@ -52,6 +61,7 @@ async function initStructure(dir: string, remote: string): Promise<void> {
     'memories/user/agents',
     'memories/user/skills',
     'memories/projects',
+    'memories/pinned',
   ]
   for (const d of dirs) {
     await mkdir(join(dir, d), { recursive: true })
@@ -191,7 +201,7 @@ export async function currentMachineId(adapter: PlatformAdapter): Promise<string
 // The gendered kind is gone: each kind maps to its own error code + full message
 // (project.invalidName / slot.invalidName) so the renderer can localize cleanly.
 const SAFE_NAME = /^[A-Za-z0-9._-]+$/
-function assertSafeName(kind: 'project' | 'slot', value: string): string {
+function assertSafeName(kind: 'project' | 'slot' | 'pin', value: string): string {
   const v = value.trim()
   if (!SAFE_NAME.test(v) || /^\.+$/.test(v)) {
     throw new AppError(
@@ -226,7 +236,9 @@ export async function createProject(
 
 /**
  * Upserts the literal path of a slot for THIS machine (creates the project/slot
- * if missing). Expands `~` and trims.
+ * if missing). Expands `~` and trims. `kind` marks the slot as a single pinpoint
+ * file vs a mirrored directory (default 'dir'); it is a per-slot property, so it
+ * is persisted once and shared across machines.
  */
 export async function setProjectFolder(
   adapter: PlatformAdapter,
@@ -234,6 +246,7 @@ export async function setProjectFolder(
   slot: string,
   absolutePath: string,
   machineId?: string,
+  kind: 'file' | 'dir' = 'dir',
 ): Promise<void> {
   const id = machineId ?? (await currentMachineId(adapter))
   if (!id) {
@@ -246,7 +259,7 @@ export async function setProjectFolder(
   const sl = assertSafeName('slot', slot)
   const path = adapter.expandHome(absolutePath.trim())
   if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
-  await commitConfigChange(adapter, `Claude Total Recall: ${proj}/${sl} on ${id}`, (config) => {
+  await commitConfigChange(adapter, `Claude Total Recall: set ${proj}/${sl} on ${id}`, (config) => {
     // Recursion guard (#20): reject a folder that overlaps another path already
     // synced on THIS machine — outgoing/incoming and the watcher work recursively, so
     // a nested folder would sync the same files twice. Runs against the freshly
@@ -265,6 +278,7 @@ export async function setProjectFolder(
     const folder = project.folders[sl] ?? {}
     folder[id] = path
     project.folders[sl] = folder
+    project.slotKinds = { ...(project.slotKinds ?? {}), [sl]: kind }
     config.projects[proj] = project
   })
 }
@@ -286,7 +300,10 @@ export async function removeProjectFolder(
       const folder = project?.folders[slot]
       if (!folder) return
       delete folder[id]
-      if (Object.keys(folder).length === 0) delete project.folders[slot]
+      if (Object.keys(folder).length === 0) {
+        delete project.folders[slot]
+        if (project.slotKinds) delete project.slotKinds[slot]
+      }
     },
   )
 }
@@ -332,6 +349,47 @@ export async function renameProject(
   )
 }
 
+// ── pinned files (global pinpoint files, outside any project) ────────────────
+/**
+ * Upserts a global pinned FILE path for THIS machine (creates the pin if
+ * missing). Same nesting guard as project folders. Kind is always 'file'.
+ */
+export async function setPinnedFile(
+  adapter: PlatformAdapter,
+  pinId: string,
+  absolutePath: string,
+  machineId?: string,
+): Promise<void> {
+  const id = machineId ?? (await currentMachineId(adapter))
+  if (!id) throw new AppError('machine.notRegistered', 'Machine not registered.')
+  const pin = assertSafeName('pin', pinId)
+  const path = adapter.expandHome(absolutePath.trim())
+  if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
+  await commitConfigChange(adapter, `Claude Total Recall: pin ${pin} on ${id}`, (config) => {
+    for (const other of machineSyncedPaths(config, adapter, id, { pin })) {
+      if (pathsCollide(path, other.path)) {
+        throw new AppError(
+          'pin.folderNested',
+          `This file overlaps "${other.path}" (${other.where}), already synced on this machine.`,
+          { conflict: other.path, where: other.where },
+        )
+      }
+    }
+    const pins = config.pinnedFiles ?? {}
+    const byMachine = pins[pin] ?? {}
+    byMachine[id] = path
+    pins[pin] = byMachine
+    config.pinnedFiles = pins
+  })
+}
+
+/** Removes an entire pinned file (all machines). */
+export async function removePinnedFile(adapter: PlatformAdapter, pinId: string): Promise<void> {
+  await commitConfigChange(adapter, `Claude Total Recall: unpin ${pinId}`, (config) => {
+    if (config.pinnedFiles) delete config.pinnedFiles[pinId]
+  })
+}
+
 // ── conflicts ───────────────────────────────────────────────────────────────
 export async function listConflicts(adapter: PlatformAdapter): Promise<string[]> {
   return new Git(workingCopyDir(adapter)).listConflicts()
@@ -360,6 +418,21 @@ export async function completeConflictMerge(
 // ── status ──────────────────────────────────────────────────────────────────
 export function repoStatus(adapter: PlatformAdapter): Promise<RepoStatus> {
   return new Git(workingCopyDir(adapter)).status()
+}
+
+/**
+ * Activity history (#8): the repo's git log classified into typed entries.
+ * Merges, the initial-structure seed and external commits are filtered out.
+ */
+export async function history(adapter: PlatformAdapter, limit = 50): Promise<HistoryEntry[]> {
+  const raw = await new Git(workingCopyDir(adapter)).log(limit)
+  const out: HistoryEntry[] = []
+  for (const r of raw) {
+    const c = classifyCommit(r.subject)
+    if (!c) continue
+    out.push({ hash: r.hash, at: r.at, files: r.files, ...c })
+  }
+  return out
 }
 
 export async function pullRepo(

@@ -29,6 +29,16 @@ export interface CommitResult {
   committed: boolean
 }
 
+export interface RawLogEntry {
+  hash: string
+  /** ISO author date (%aI) */
+  at: string
+  author: string
+  subject: string
+  /** número de archivos cambiados (líneas de --numstat) */
+  files: number
+}
+
 /**
  * Wrapper fino de git ligado a un working copy (cwd). Política de conflictos =
  * MERGE (no rebase): en un conflicto "ours" = local (HEAD) y "theirs" = remoto
@@ -95,6 +105,31 @@ export class Git {
     const conflicted = await this.listConflicts()
     const { ahead, behind } = await this.aheadBehind()
     return { branch, ahead, behind, dirty, conflicted }
+  }
+
+  /**
+   * Últimos `limit` commits con conteo de archivos. Usa `raw` (no tira) para
+   * tolerar un repo sin commits → []. El separador de registro va al INICIO del
+   * formato así cada bloque queda como "<header>\n<numstat…>" (header + sus líneas
+   * de --numstat juntas); los campos van separados por US (\x1f).
+   */
+  async log(limit = 50): Promise<RawLogEntry[]> {
+    const SEP = '\x1f'
+    const REC = '\x1e'
+    const fmt = `${REC}%H${SEP}%aI${SEP}%an${SEP}%s`
+    const r = await this.raw(['log', `-n${limit}`, '--numstat', `--pretty=format:${fmt}`])
+    if (r.code !== 0) return []
+    const out: RawLogEntry[] = []
+    for (const rec of r.stdout.split(REC)) {
+      if (!rec.trim()) continue
+      const lines = rec.split('\n')
+      const [hash, at, author, subject] = lines[0].split(SEP)
+      if (!hash) continue
+      // numstat lines look like "added\tdeleted\tpath" — one per changed file.
+      const files = lines.slice(1).filter((l) => l.includes('\t')).length
+      out.push({ hash, at, author, subject: subject ?? '', files })
+    }
+    return out
   }
 
   async fetch(): Promise<void> {

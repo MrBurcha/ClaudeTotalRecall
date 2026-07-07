@@ -42,7 +42,7 @@ Two verbs move files between the machine and a **working copy** (a clone of the 
 - **outgoing** = machine → working copy → commit/pull/push
 - **incoming** = working copy → machine (never touches the remote; CLI pulls first)
 
-What syncs: user-level items (`~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, `settings.json`) defined in `resolve.ts` (`USER_LEVEL_SPEC`), plus per-project folders declared in config. They map to logical paths `memories/user/…` and `memories/projects/<name>/<slot>/…` in the repo.
+What syncs: user-level items (`~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, `settings.json`) defined in `resolve.ts` (`USER_LEVEL_SPEC`), plus per-project sources declared in config. A project source is either a **folder** (mirrored) or a single **file** (`Project.slotKinds`, default `dir`); both map to `memories/projects/<name>/<slot>/…`. Separately, **global pinned files** (`Config.pinnedFiles`) are single files synced outside any project, at `memories/pinned/<name>`. User-level items map to `memories/user/…`. `slotKinds`/`pinnedFiles` are optional (forward-compatible: an older app ignores them).
 
 Key invariants (preserve these when changing core):
 

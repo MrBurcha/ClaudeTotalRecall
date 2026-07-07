@@ -71,6 +71,7 @@ export function registerIpc(scheduler: SyncScheduler): void {
   handle('config:load', () => svc.loadRepoConfig(adapter()).catch(() => null))
   handle('repo:connect', (_e, remote: string) => svc.connectRepo(remote, adapter()))
   handle('repo:status', () => svc.repoStatus(adapter()))
+  handle('repo:history', (_e, limit?: number) => svc.history(adapter(), limit))
   handle('repo:pull', () => svc.pullRepo(adapter()))
 
   // Machines
@@ -83,8 +84,10 @@ export function registerIpc(scheduler: SyncScheduler): void {
 
   // Projects
   handle('project:create', (_e, name: string) => svc.createProject(adapter(), name))
-  handle('project:setFolder', (_e, p: { name: string; slot: string; path: string }) =>
-    svc.setProjectFolder(adapter(), p.name, p.slot, p.path),
+  handle(
+    'project:setFolder',
+    (_e, p: { name: string; slot: string; path: string; kind?: 'file' | 'dir' }) =>
+      svc.setProjectFolder(adapter(), p.name, p.slot, p.path, undefined, p.kind),
   )
   handle('project:removeFolder', (_e, p: { name: string; slot: string }) =>
     svc.removeProjectFolder(adapter(), p.name, p.slot),
@@ -101,6 +104,21 @@ export function registerIpc(scheduler: SyncScheduler): void {
     })
     return r.canceled || r.filePaths.length === 0 ? null : r.filePaths[0]
   })
+  // Native single-file picker, shared by project file-slots and pinned files.
+  handle('path:pickFile', async () => {
+    const a = adapter()
+    const r = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      defaultPath: a.claudeHome(),
+    })
+    return r.canceled || r.filePaths.length === 0 ? null : r.filePaths[0]
+  })
+
+  // Pinned files (global pinpoint files, outside any project)
+  handle('pinned:set', (_e, p: { pinId: string; path: string }) =>
+    svc.setPinnedFile(adapter(), p.pinId, p.path),
+  )
+  handle('pinned:remove', (_e, pinId: string) => svc.removePinnedFile(adapter(), pinId))
 
   // Plan
   handle('plan:build', async (_e, verb: Verb) => {

@@ -2,37 +2,41 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/Button'
 import { IconButton } from '../../components/IconButton'
+import { SegmentedControl } from '../../components/SegmentedControl'
 import { api, normalizeError } from '../../state/api'
 import { useActions } from '../../state/useActions'
 import { validateName } from './names'
 
 /**
- * Inline folder editor (replaces the old FolderFormModal). Used both to edit an
- * existing folder (slot fixed) and to add a new one (slot editable, default
- * "memory"). Reuses the native folder picker via `api.projectPickFolder`. Errors
- * (e.g. the nesting guard) surface inline; on success it refreshes + closes.
+ * Inline source editor for a project slot. A source can be a whole FOLDER
+ * (mirrored) or a single FILE (#11). When adding, a segmented control picks the
+ * kind; when editing an existing slot the kind is fixed (it is the identity of
+ * the synced content). Reuses the native pickers (`projectPickFolder`/`pickFile`).
  */
 export function FolderEditor({
   project,
   slot: fixedSlot,
   path: initialPath,
+  kind: initialKind,
   onDone,
 }: {
   project: string
   slot?: string
   path?: string
+  kind?: 'file' | 'dir'
   onDone: () => void
 }): JSX.Element {
   const { t } = useTranslation()
   const actions = useActions()
   const editing = fixedSlot !== undefined
   const [slot, setSlot] = useState(fixedSlot ?? 'memory')
+  const [kind, setKind] = useState<'file' | 'dir'>(initialKind ?? 'dir')
   const [path, setPath] = useState(initialPath ?? '')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   const pick = async (): Promise<void> => {
-    const chosen = await api.projectPickFolder()
+    const chosen = kind === 'file' ? await api.pickFile() : await api.projectPickFolder()
     if (chosen) {
       setPath(chosen)
       setError(null)
@@ -49,13 +53,13 @@ export function FolderEditor({
       }
     }
     if (!path.trim()) {
-      setError(t('projects.pickOrPasteFolder'))
+      setError(t('projects.pickOrPastePath'))
       return
     }
     setSubmitting(true)
     setError(null)
     try {
-      await api.projectSetFolder(project, s, path.trim())
+      await api.projectSetFolder(project, s, path.trim(), kind)
       actions.notify(t('projects.folderSaved', { slot: s, project }), 'ok')
       await actions.refresh()
       onDone()
@@ -82,17 +86,38 @@ export function FolderEditor({
             }}
           />
         )}
+        {!editing && (
+          <SegmentedControl<'dir' | 'file'>
+            ariaLabel={t('projects.sourceType')}
+            value={kind}
+            onChange={(k) => {
+              setKind(k)
+              setError(null)
+            }}
+            options={[
+              { value: 'dir', label: t('projects.folder') },
+              { value: 'file', label: t('projects.file') },
+            ]}
+          />
+        )}
         <input
           className="input input--mono grow"
-          placeholder={t('projects.folderPathPlaceholder')}
+          placeholder={t(
+            kind === 'file' ? 'projects.filePathPlaceholder' : 'projects.folderPathPlaceholder',
+          )}
           value={path}
           onChange={(e) => {
             setPath(e.target.value)
             setError(null)
           }}
         />
-        <Button size="sm" icon="folder-open" disabled={submitting} onClick={pick}>
-          {t('projects.choose')}
+        <Button
+          size="sm"
+          icon={kind === 'file' ? 'file-plus' : 'folder-open'}
+          disabled={submitting}
+          onClick={pick}
+        >
+          {t(kind === 'file' ? 'projects.chooseFile' : 'projects.chooseFolder')}
         </Button>
         <IconButton
           icon="check"
