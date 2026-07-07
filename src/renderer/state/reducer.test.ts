@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { initialState, reducer } from './reducer'
+import { emptyConfig } from '../../core/types'
 import type { ModalDescriptor, Snapshot, ToastItem } from './types'
 
 const projectCreate: ModalDescriptor = { kind: 'project-create' }
@@ -50,6 +51,19 @@ describe('reducer', () => {
     expect(s.palette).toEqual({ open: true, query: 'gath', index: 0 })
     s = reducer(s, { t: 'palette', patch: { index: 2 } })
     expect(s.palette).toEqual({ open: true, query: 'gath', index: 2 })
+  })
+
+  it('config replaces the shared config live (machines/projects a remote sync brought)', () => {
+    // Regression guard for issues #17/#10: after a sync cycle settles, the store
+    // reloads config so newly-synced machines/projects surface without a restart.
+    const config = emptyConfig('git@example.com:me/mem.git')
+    config.machines['m2'] = { os: 'linux', hostname: 'laptop', home: '/home/me' }
+    const s = reducer(initialState, { t: 'config', config })
+    expect(s.config).toBe(config)
+    expect(Object.keys(s.config?.machines ?? {})).toContain('m2')
+    // it touches only the config slice
+    expect(s.status).toBe(initialState.status)
+    expect(s.syncEngine).toBe(initialState.syncEngine)
   })
 
   it('navigate, theme, wizard and activeOp update their slice', () => {
