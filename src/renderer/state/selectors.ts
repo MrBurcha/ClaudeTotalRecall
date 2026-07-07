@@ -1,9 +1,9 @@
 import type { AppState } from './types'
 
 /**
- * Selectores puros: centralizan las reglas de gating que en el App.tsx viejo
- * estaban repetidas inline en cada vista. Aceptan subconjuntos estructurales
- * de AppState para ser fáciles de testear sin construir el estado entero.
+ * Pure selectors: they centralize the gating rules that in the old App.tsx were
+ * repeated inline in every view. They accept structural subsets of AppState so
+ * they're easy to test without building the whole state.
  */
 
 export function canSync(s: Pick<AppState, 'config' | 'machineId' | 'preflight'>): boolean {
@@ -15,9 +15,9 @@ export function conflicts(s: Pick<AppState, 'status'>): string[] {
 }
 
 /**
- * Archivos en conflicto. Prioriza los que reporta el motor de auto-sync (llegan
- * por push en tiempo real, sin esperar un refresh de repoStatus); cae al
- * status del repo si el motor todavía no habló.
+ * Conflicted files. Prioritizes the ones reported by the auto-sync engine (they
+ * arrive via real-time push, without waiting for a repoStatus refresh); falls back
+ * to the repo status if the engine hasn't spoken yet.
  */
 export function conflictFiles(s: Pick<AppState, 'status' | 'syncEngine'>): string[] {
   const fromEngine = s.syncEngine?.conflicts ?? []
@@ -28,7 +28,7 @@ export function hasConflict(s: Pick<AppState, 'status' | 'syncEngine'>): boolean
   return s.syncEngine?.status === 'conflict' || conflictFiles(s).length > 0
 }
 
-/** Tono de la constelación derivado del estado del motor (color del héroe). */
+/** Constellation tone derived from the engine's state (hero color). */
 export type EngineTone = 'ok' | 'syncing' | 'conflict' | 'offline'
 export function engineTone(s: Pick<AppState, 'status' | 'syncEngine'>): EngineTone {
   if (hasConflict(s)) return 'conflict'
@@ -41,8 +41,8 @@ export function engineTone(s: Pick<AppState, 'status' | 'syncEngine'>): EngineTo
 export type OnboardingStep = 'preflight' | 'connect' | 'register' | 'first-project' | 'done'
 
 /**
- * En qué paso del onboarding está la máquina, derivado del estado real.
- * Es la cadena dura de precondiciones del backend (register exige connect, etc).
+ * Which onboarding step the machine is on, derived from the real state.
+ * It's the hard chain of backend preconditions (register requires connect, etc).
  */
 export function onboardingStep(
   s: Pick<AppState, 'preflight' | 'config' | 'machineId'>,
@@ -55,8 +55,8 @@ export function onboardingStep(
 }
 
 /**
- * ¿Hay que secuestrar al usuario con el wizard? 'first-project' NO bloquea
- * (se puede usar la app sin proyectos), así que no cuenta.
+ * Do we need to hijack the user with the wizard? 'first-project' does NOT block
+ * (the app can be used without projects), so it doesn't count.
  */
 export function needsOnboarding(
   s: Pick<AppState, 'preflight' | 'config' | 'machineId'>,

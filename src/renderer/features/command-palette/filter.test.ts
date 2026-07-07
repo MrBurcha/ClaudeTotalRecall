@@ -9,34 +9,34 @@ const items = [
 ]
 
 describe('scoreMatch', () => {
-  it('query vacía matchea todo con score 0', () => {
+  it('empty query matches everything with score 0', () => {
     expect(scoreMatch('', items[0])).toBe(0)
   })
-  it('prefijo del título gana al substring', () => {
+  it('title prefix beats substring', () => {
     expect(scoreMatch('subir', items[0])).toBe(0)
-    expect(scoreMatch('cambios', items[0])).toBe(1) // límite de palabra
+    expect(scoreMatch('cambios', items[0])).toBe(1) // word boundary
   })
-  it('matchea por keyword aunque no esté en el título', () => {
+  it('matches by keyword even when not in the title', () => {
     expect(scoreMatch('push', items[0])).toBe(3)
   })
-  it('devuelve null si no matchea', () => {
+  it('returns null when there is no match', () => {
     expect(scoreMatch('zzz', items[0])).toBeNull()
   })
 })
 
 describe('filterCommands', () => {
-  it('sin query devuelve todo en orden', () => {
+  it('with no query returns everything in order', () => {
     expect(filterCommands('', items)).toHaveLength(4)
   })
-  it('filtra y ordena por relevancia', () => {
+  it('filters and sorts by relevance', () => {
     const r = filterCommands('cambi', items)
     expect(r.map((x) => x.title)).toEqual([
-      'Cambiar a tema claro', // prefijo
-      'Subir cambios (gather)', // límite de palabra
+      'Cambiar a tema claro', // prefix
+      'Subir cambios (gather)', // word boundary
       'Traer cambios (scatter)',
     ])
   })
-  it('busca por keyword', () => {
+  it('searches by keyword', () => {
     expect(filterCommands('scatter', items).map((x) => x.title)).toEqual(['Traer cambios (scatter)'])
   })
 })

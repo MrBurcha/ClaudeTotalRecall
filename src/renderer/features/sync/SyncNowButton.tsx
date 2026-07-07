@@ -1,14 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/Button'
 import { canSync, hasConflict } from '../../state/selectors'
 import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 
 /**
- * Botón primario de la vista simple: dispara un ciclo completo del motor. Funciona
- * aunque el auto esté apagado; se deshabilita mientras corre o si hay conflicto
- * (en ese caso se resuelve por el panel Avanzado).
+ * Primary button of the simple view: triggers a full engine cycle. Works even if
+ * auto is off; it's disabled while running or if there's a conflict (in that case
+ * it's resolved through the Advanced panel).
  */
 export function SyncNowButton(): JSX.Element {
+  const { t } = useTranslation()
   const state = useAppState()
   const actions = useActions()
   const syncing = state.syncEngine?.status === 'syncing'
@@ -22,7 +24,7 @@ export function SyncNowButton(): JSX.Element {
       disabled={disabled}
       onClick={() => void actions.syncNow()}
     >
-      {syncing ? 'Sincronizando…' : 'Sincronizar ahora'}
+      {syncing ? t('sync.syncing') : t('sync.syncNow')}
     </Button>
   )
 }

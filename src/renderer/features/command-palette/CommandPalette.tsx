@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../../components/Icon'
 import { Kbd } from '../../components/Kbd'
 import { Overlay } from '../../components/Overlay'
@@ -8,14 +9,16 @@ import { buildCommands, type Command } from './commands'
 import { filterCommands } from './filter'
 
 export function CommandPalette(): JSX.Element | null {
+  const { t, i18n } = useTranslation()
   const state = useAppState()
   const actions = useActions()
   const { open, query, index } = state.palette
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // i18n.language in the deps so titles/groups re-translate when the language changes.
   const results: Command[] = useMemo(
-    () => filterCommands(query, buildCommands(state, actions)),
-    [query, state, actions],
+    () => filterCommands(query, buildCommands(state, actions, t)),
+    [query, state, actions, t, i18n.language],
   )
 
   useEffect(() => {
@@ -50,13 +53,13 @@ export function CommandPalette(): JSX.Element | null {
   let lastGroup = ''
   return (
     <Overlay variant="palette" onClose={actions.closePalette}>
-      <div className="palette" role="dialog" aria-modal="true" aria-label="Paleta de comandos">
+      <div className="palette" role="dialog" aria-modal="true" aria-label={t('palette.ariaLabel')}>
         <div className="palette__search">
           <Icon name="search" size={18} />
           <input
             ref={inputRef}
             className="palette__input"
-            placeholder="Buscar una acción…"
+            placeholder={t('palette.searchPlaceholder')}
             value={query}
             onChange={(e) => actions.setPaletteQuery(e.target.value)}
             onKeyDown={onKeyDown}
@@ -64,7 +67,7 @@ export function CommandPalette(): JSX.Element | null {
           <Kbd>Esc</Kbd>
         </div>
         <div className="palette__list">
-          {results.length === 0 && <div className="palette__group muted">Sin resultados</div>}
+          {results.length === 0 && <div className="palette__group muted">{t('palette.noResults')}</div>}
           {results.map((cmd, i) => {
             const header = cmd.group !== lastGroup ? cmd.group : null
             lastGroup = cmd.group
@@ -90,10 +93,10 @@ export function CommandPalette(): JSX.Element | null {
         <div className="palette__foot">
           <span className="cluster">
             <Kbd>↑</Kbd>
-            <Kbd>↓</Kbd> navegar
+            <Kbd>↓</Kbd> {t('palette.navigate')}
           </span>
           <span className="cluster">
-            <Kbd>⏎</Kbd> ejecutar
+            <Kbd>⏎</Kbd> {t('palette.execute')}
           </span>
         </div>
       </div>

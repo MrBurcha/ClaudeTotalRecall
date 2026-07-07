@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
@@ -10,36 +11,34 @@ import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 
 function AboutModal(): JSX.Element {
+  const { t } = useTranslation()
   const { version } = useAppState()
   const actions = useActions()
   return (
     <Modal
-      title="Acerca de ClaudeTR"
+      title={t('about.title')}
       size="sm"
       onClose={actions.closeModal}
       footer={
         <Button variant="primary" onClick={actions.closeModal}>
-          Cerrar
+          {t('common.close')}
         </Button>
       }
     >
       <div className="cluster">
         <Icon name="orbit" size={20} className="brand__mark" />
-        <b>ClaudeTR</b>
+        <b>Claude Total Recall</b>
         <span className="pill mono">v{version ?? '—'}</span>
       </div>
-      <p className="muted">
-        Sincroniza la memoria de Claude Code entre tus máquinas vía un repo privado de GitHub.
-      </p>
+      <p className="muted">{t('about.body')}</p>
       <p className="muted cluster">
-        <Icon name="lock" size={14} /> Nunca viajan secretos: .credentials.json, .claude.json ni
-        transcripts (*.jsonl).
+        <Icon name="lock" size={14} /> {t('about.secrets')}
       </p>
     </Modal>
   )
 }
 
-/** Renderiza el modal del tope del stack (a lo sumo uno a la vez en la práctica). */
+/** Renders the modal on top of the stack (at most one at a time in practice). */
 export function ModalHost(): JSX.Element | null {
   const { modals } = useAppState()
   const top = modals[modals.length - 1]

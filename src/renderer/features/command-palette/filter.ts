@@ -1,7 +1,7 @@
 /**
- * Ranking de comandos por query (puro, testeable). Substring case-insensitive
- * sobre título + subtítulo + keywords; ordena prefijo > límite-de-palabra >
- * substring. Puntaje menor = mejor.
+ * Ranks commands by query (pure, testable). Case-insensitive substring over
+ * title + subtitle + keywords; orders prefix > word-boundary > substring. Lower
+ * score = better.
  */
 export interface Rankable {
   title: string

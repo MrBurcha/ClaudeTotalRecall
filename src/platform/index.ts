@@ -1,3 +1,4 @@
+import { AppError } from '../core/errors'
 import type { PlatformAdapter } from './PlatformAdapter'
 import { LinuxAdapter } from './linux'
 import { MacosAdapter } from './macos'
@@ -7,7 +8,7 @@ export { BasePlatformAdapter } from './PlatformAdapter'
 export { LinuxAdapter } from './linux'
 export { MacosAdapter } from './macos'
 
-/** Selecciona el adapter por process.platform. Windows = rama futura. */
+/** Picks the adapter by process.platform. Windows is a future branch. */
 export function createPlatformAdapter(
   platform: NodeJS.Platform = process.platform,
   home?: string,
@@ -18,8 +19,10 @@ export function createPlatformAdapter(
     case 'linux':
       return new LinuxAdapter(home)
     default:
-      throw new Error(
-        `Plataforma no soportada: ${platform}. ClaudeTR soporta macOS y Linux (Windows a futuro).`,
+      throw new AppError(
+        'platform.unsupported',
+        `Unsupported platform: ${platform}. Claude Total Recall supports macOS and Linux (Windows later).`,
+        { platform },
       )
   }
 }

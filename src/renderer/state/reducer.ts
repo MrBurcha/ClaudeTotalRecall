@@ -1,7 +1,7 @@
 import type { RepoStatus, SyncEngineState } from '../../core/types'
 import type { ActiveOp, AppState, ModalDescriptor, PaletteState, Route, Snapshot, Theme, ToastItem } from './types'
 
-/** Acciones del reducer. Todo es puro y sincrónico; la I/O vive en useActions. */
+/** Reducer actions. Everything is pure and synchronous; I/O lives in useActions. */
 export type Action =
   | { t: 'hydrate'; snap: Snapshot }
   | { t: 'busy'; busy: boolean }

@@ -2,7 +2,7 @@ import { Toast } from './Toast'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 
-/** Renderiza la cola de toasts (los 3 más recientes) abajo a la derecha. */
+/** Renders the toast queue (the 3 most recent) at the bottom right. */
 export function ToastHost(): JSX.Element | null {
   const { toasts } = useAppState()
   const { dismissToast } = useActions()

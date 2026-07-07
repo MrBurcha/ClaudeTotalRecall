@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Config que vive en el repo (claudetr.json). Ver §7/§8 del plan.
+// Config that lives in the repo (claudetr.json). See §7/§8 of the plan.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const OsSchema = z.enum(['linux', 'macos']) // 'windows' se suma después
+export const OsSchema = z.enum(['linux', 'macos']) // 'windows' added later
 export type Os = z.infer<typeof OsSchema>
 
 export const MachineSchema = z.object({
@@ -15,8 +15,8 @@ export const MachineSchema = z.object({
 export type Machine = z.infer<typeof MachineSchema>
 
 /**
- * Un proyecto lógico. `folders` es un mapa de ranuras lógicas (default "memory")
- * y cada ranura mapea machineId → path absoluto literal en esa máquina.
+ * A logical project. `folders` is a map of logical slots (default "memory")
+ * and each slot maps machineId → literal absolute path on that machine.
  */
 export const ProjectSchema = z.object({
   folders: z.record(z.string(), z.record(z.string(), z.string())),
@@ -26,7 +26,7 @@ export type Project = z.infer<typeof ProjectSchema>
 export const ConfigSchema = z.object({
   version: z.literal(1),
   repo: z.object({
-    // git acepta HTTPS, SSH (git@…) y file://; no forzamos formato de URL.
+    // git accepts HTTPS, SSH (git@…) and file://; we don't enforce a URL format.
     remote: z.string().min(1),
   }),
   machines: z.record(z.string(), MachineSchema),
@@ -39,10 +39,10 @@ export function emptyConfig(remote: string): Config {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Estado local (fuera del repo, en ~/.config/claudetr/).
+// Local state (outside the repo, in ~/.config/claudetr/).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Preferencias de auto-sync, por-máquina (fuera del repo). Ver core/syncEngine.ts. */
+/** Per-machine auto-sync preferences (outside the repo). See core/syncEngine.ts. */
 export const AutoSyncSchema = z.object({
   enabled: z.boolean(),
   intervalMs: z.number().int().positive(),
@@ -55,40 +55,44 @@ export const LocalStateSchema = z.object({
 })
 export type LocalState = z.infer<typeof LocalStateSchema>
 
-/** settings.json es un objeto JSON arbitrario; el merge es shallow por top-level key. */
+/** settings.json is an arbitrary JSON object; the merge is shallow per top-level key. */
 export type SettingsObject = Record<string, unknown>
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Plan (dry-run obligatorio). Ver §10.
+// Plan (mandatory dry-run). See §10.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type Verb = 'gather' | 'scatter'
 
 export type PlanActionType =
-  | 'create' // el destino no existe
-  | 'overwrite' // el destino existe y cambia (hash distinto)
-  | 'delete' // el destino existe y sobra
-  | 'noop' // origen y destino idénticos (mismo hash)
-  | 'skip' // ranura sin path para esta máquina, o excluida por guard
+  | 'create' // the destination doesn't exist
+  | 'overwrite' // the destination exists and changes (different hash)
+  | 'delete' // the destination exists and is extraneous
+  | 'noop' // source and destination identical (same hash)
+  | 'skip' // slot with no path for this machine, or excluded by guard
 
 export interface PlanAction {
-  /** id legible de la ranura/archivo, p.ej. "user:CLAUDE.md" o "project:demo-core/memory/foo.md" */
+  /** readable id of the slot/file, e.g. "user:CLAUDE.md" or "project:demo-core/memory/foo.md" */
   slot: string
-  /** path lógico dentro del repo (relativo a la raíz del working copy) */
+  /** logical path within the repo (relative to the working copy root) */
   logicalPath: string
-  /** path absoluto origen (null si no aplica) */
+  /** absolute source path (null if not applicable) */
   from: string | null
-  /** path absoluto destino (null si no aplica) */
+  /** absolute destination path (null if not applicable) */
   to: string | null
   type: PlanActionType
   hashFrom?: string
   hashTo?: string
-  /** motivo humano, sobre todo para skip/delete */
+  /** human reason, mostly for skip/delete (English default; localized by reasonCode) */
   reason?: string
+  /** stable code the renderer maps to a localized reason ('planReason.<reasonCode>') */
+  reasonCode?: string
+  /** interpolation params for the localized reason (e.g. { machine }) */
+  reasonParams?: Record<string, string | number>
   /**
-   * Marca acciones cuyo contenido NO es una copia directa sino un cómputo
-   * (el merge/split de settings.json, §6). El executor recomputa el contenido
-   * en vez de copiar el archivo.
+   * Marks actions whose content is NOT a direct copy but a computation
+   * (the settings.json merge/split, §6). The executor recomputes the content
+   * instead of copying the file.
    */
   transform?: 'settings-gather' | 'settings-scatter'
 }
@@ -96,13 +100,13 @@ export interface PlanAction {
 export interface Plan {
   id: string
   verb: Verb
-  /** ISO timestamp; lo estampa quien construye el Plan (inyectado, no Date.now interno) */
+  /** ISO timestamp; stamped by whoever builds the Plan (injected, not an internal Date.now) */
   createdAt: string
   actions: PlanAction[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Estado del repo y preflight.
+// Repo status and preflight.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface RepoStatus {
@@ -116,9 +120,16 @@ export interface RepoStatus {
 export interface PreflightCheck {
   name: 'git' | 'gh' | 'gh-auth'
   ok: boolean
+  /** English default; the renderer prefers detailKey when present (path/stderr stay literal) */
   detail?: string
-  /** sugerencia accionable si !ok (comando o link) */
+  /** actionable suggestion if !ok (command or link); English default, see fixKey */
   fix?: string
+  /** stable code the renderer maps to a localized detail ('preflight.<detailKey>') */
+  detailKey?: string
+  /** stable code the renderer maps to a localized fix ('preflight.<fixKey>') */
+  fixKey?: string
+  /** interpolation params for the localized detail/fix */
+  params?: Record<string, string | number>
 }
 
 export interface PreflightResult {
@@ -127,27 +138,27 @@ export interface PreflightResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Estado del motor de auto-sync (lo empuja main → renderer en tiempo real).
-// Vive en core/types para que renderer y preload lo importen type-only sin
-// cruzar la regla de capas. El scheduler concreto vive en main/syncScheduler.ts.
+// Auto-sync engine state (pushed by main → renderer in real time).
+// Lives in core/types so renderer and preload can import it type-only without
+// crossing the layering rule. The concrete scheduler lives in main/syncScheduler.ts.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type SyncStatus =
-  | 'idle' // al día
-  | 'syncing' // corriendo un ciclo
-  | 'offline' // error de red/git; reintenta en el próximo poll (ámbar)
-  | 'conflict' // conflicto de merge por resolver a mano (rojo, auto pausado)
+  | 'idle' // up to date
+  | 'syncing' // running a cycle
+  | 'offline' // network/git error; retries on the next poll (amber)
+  | 'conflict' // merge conflict to resolve by hand (red, auto paused)
 
 export interface SyncEngineState {
   status: SyncStatus
-  /** preferencia: ¿auto-sync activado? (el poll/watch corren sólo si es true) */
+  /** preference: is auto-sync enabled? (poll/watch run only if true) */
   auto: boolean
-  /** cada cuánto se hace poll del remoto (ms) */
+  /** how often the remote is polled (ms) */
   intervalMs: number
-  /** epoch ms del último ciclo exitoso, o null si aún no hubo en esta sesión */
+  /** epoch ms of the last successful cycle, or null if none yet this session */
   lastSyncedAt: number | null
-  /** archivos en conflicto (vacío salvo status 'conflict') */
+  /** files in conflict (empty unless status is 'conflict') */
   conflicts: string[]
-  /** último error de red/git (null salvo status 'offline') */
+  /** last network/git error (null unless status is 'offline') */
   lastError: string | null
 }

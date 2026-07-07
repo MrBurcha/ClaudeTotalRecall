@@ -20,7 +20,7 @@ let tmpHome: string
 let adapter: PlatformAdapter
 
 beforeEach(async () => {
-  tmpHome = await mkdtemp(join(tmpdir(), 'claudetr-localstate-'))
+  tmpHome = await mkdtemp(join(tmpdir(), 'claude-total-recall-localstate-'))
   adapter = createPlatformAdapter(process.platform, tmpHome)
 })
 
@@ -61,32 +61,32 @@ describe('loadLocalState', () => {
   })
 })
 
-describe('preferencias de auto-sync', () => {
-  it('devuelve el default cuando no hay local.json', async () => {
+describe('auto-sync preferences', () => {
+  it('returns the default when there is no local.json', async () => {
     expect(await loadAutoSyncPrefs(adapter)).toEqual(DEFAULT_AUTOSYNC)
   })
 
-  it('devuelve el default para un local.json viejo sin autoSync (back-compat)', async () => {
+  it('returns the default for an old local.json without autoSync (back-compat)', async () => {
     await saveLocalState(adapter, { machineId: 'm1' })
     expect(await loadAutoSyncPrefs(adapter)).toEqual(DEFAULT_AUTOSYNC)
   })
 
-  it('round-trip: guarda y lee las prefs sin perder la identidad', async () => {
+  it('round-trip: saves and reads the prefs without losing the identity', async () => {
     await saveLocalState(adapter, { machineId: 'm1' })
     await saveAutoSyncPrefs(adapter, { enabled: false, intervalMs: 30_000 })
     expect(await loadAutoSyncPrefs(adapter)).toEqual({ enabled: false, intervalMs: 30_000 })
     expect((await loadLocalState(adapter))?.machineId).toBe('m1')
   })
 
-  it('re-registrar la máquina no pisa las prefs ya guardadas', async () => {
+  it('re-registering the machine does not clobber already-saved prefs', async () => {
     await saveLocalState(adapter, { machineId: 'm1' })
     await saveAutoSyncPrefs(adapter, { enabled: false, intervalMs: 45_000 })
-    // saveLocalState con sólo la identidad (como hace registerMachine) las preserva.
+    // saveLocalState with only the identity (as registerMachine does) preserves them.
     await saveLocalState(adapter, { machineId: 'm1' })
     expect(await loadAutoSyncPrefs(adapter)).toEqual({ enabled: false, intervalMs: 45_000 })
   })
 
-  it('saveAutoSyncPrefs falla si la máquina no está registrada', async () => {
+  it('saveAutoSyncPrefs fails if the machine is not registered', async () => {
     await expect(saveAutoSyncPrefs(adapter, DEFAULT_AUTOSYNC)).rejects.toThrow()
   })
 })

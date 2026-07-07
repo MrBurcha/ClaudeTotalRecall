@@ -14,10 +14,10 @@ import type { AppState, Theme } from './types'
 const StateContext = createContext<AppState>(initialState)
 const DispatchContext = createContext<Dispatch<Action>>(() => undefined)
 
-/** Lee el tema persistido; el default es dark (dark-first). CSP no gobierna localStorage. */
+/** Reads the persisted theme; the default is dark (dark-first). CSP doesn't govern localStorage. */
 export function readStoredTheme(): Theme {
   try {
-    return localStorage.getItem('claudetr:theme') === 'light' ? 'light' : 'dark'
+    return localStorage.getItem('claude-total-recall:theme') === 'light' ? 'light' : 'dark'
   } catch {
     return 'dark'
   }
@@ -29,12 +29,12 @@ export function AppStateProvider({ children }: { children: ReactNode }): JSX.Ele
     theme: readStoredTheme(),
   }))
 
-  // Estado del motor de auto-sync: se pide el actual y se escucha el push en vivo.
+  // Auto-sync engine state: request the current one and listen for the live push.
   useEffect(() => {
     let alive = true
-    // Al asentar un ciclo (no 'syncing'), refrescamos también el RepoStatus: el
-    // motor empuja su estado pero no la telemetría (ahead/behind/dirty), así que
-    // sin esto el panel Avanzado queda con números viejos aunque diga "Al día".
+    // When a cycle settles (not 'syncing'), we also refresh the RepoStatus: the
+    // engine pushes its state but not the telemetry (ahead/behind/dirty), so
+    // without this the Avanzado panel keeps stale numbers even if it says "Al día".
     const apply = (s: SyncEngineState): void => {
       dispatch({ t: 'syncState', state: s })
       if (s.status !== 'syncing') {
@@ -44,7 +44,7 @@ export function AppStateProvider({ children }: { children: ReactNode }): JSX.Ele
             if (alive) dispatch({ t: 'status', status })
           })
           .catch(() => {
-            /* sin repo todavía; se ignora */
+            /* no repo yet; ignored */
           })
       }
     }
@@ -54,7 +54,7 @@ export function AppStateProvider({ children }: { children: ReactNode }): JSX.Ele
         if (alive) apply(s)
       })
       .catch(() => {
-        /* aún no listo; el push llegará cuando el motor arranque */
+        /* not ready yet; the push will arrive when the engine starts */
       })
     const off = api.onSyncState((s) => apply(s))
     return () => {

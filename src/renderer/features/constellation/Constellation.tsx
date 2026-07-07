@@ -1,4 +1,6 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import type { Machine, RepoStatus } from '../../../core/types'
 import { Icon, type IconName } from '../../components/Icon'
 import { usePrefersReducedMotion } from '../../hooks/useMediaQuery'
@@ -6,7 +8,7 @@ import type { ActiveOp } from '../../state/types'
 import { computeConstellation } from './layout'
 import { useConstellationMotion, type FlowDirection } from './useConstellationMotion'
 
-// Coordenadas lógicas fijas: el SVG escala responsive vía viewBox (sin medir DOM).
+// Fixed logical coordinates: the SVG scales responsively via viewBox (no DOM measuring).
 const W = 600
 const H = 360
 const PARTICLES = 7
@@ -19,7 +21,7 @@ function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ')
 }
 
-/** Ícono posicionado dentro del SVG vía foreignObject (reusa el componente Icon). */
+/** Icon positioned inside the SVG via foreignObject (reuses the Icon component). */
 function Glyph({
   x,
   y,
@@ -41,19 +43,20 @@ function Glyph({
 }
 
 function describe(
+  t: TFunction,
   currentId: string | null,
   status: RepoStatus | null,
   activeOp: ActiveOp | null,
 ): string {
   if (activeOp)
-    return `Sincronizando: ${activeOp.verb === 'gather' ? 'subiendo al repo' : 'bajando del repo'}.`
-  if (!currentId) return 'Constelación de máquinas alrededor del repo.'
-  if (!status) return `Máquina ${currentId} conectada al repo.`
+    return t(activeOp.verb === 'gather' ? 'constellation.syncingUp' : 'constellation.syncingDown')
+  if (!currentId) return t('constellation.overview')
+  if (!status) return t('constellation.connected', { machineId: currentId })
   const parts: string[] = []
-  if (status.ahead > 0) parts.push(`${status.ahead} para subir`)
-  if (status.behind > 0) parts.push(`${status.behind} para bajar`)
-  if (parts.length === 0) return `Máquina ${currentId}: al día con el repo.`
-  return `Máquina ${currentId}: ${parts.join(', ')}.`
+  if (status.ahead > 0) parts.push(t('constellation.toUpload', { count: status.ahead }))
+  if (status.behind > 0) parts.push(t('constellation.toDownload', { count: status.behind }))
+  if (parts.length === 0) return t('constellation.upToDate', { machineId: currentId })
+  return t('constellation.machineStatus', { machineId: currentId, parts: parts.join(', ') })
 }
 
 export function Constellation({
@@ -67,21 +70,22 @@ export function Constellation({
   currentId: string | null
   status: RepoStatus | null
   activeOp: ActiveOp | null
-  /** color del héroe según el motor de auto-sync */
+  /** hero color according to the auto-sync engine */
   tone?: 'ok' | 'syncing' | 'conflict' | 'offline'
 }): JSX.Element {
+  const { t } = useTranslation()
   const reduced = usePrefersReducedMotion()
   const particlesRef = useRef<SVGGElement>(null)
   const { vault, nodes, links } = computeConstellation(machines, currentId, { w: W, h: H })
   const currentLink = links.find((l) => l.isCurrent) ?? null
 
-  // Solo el link de la máquina actual porta dirección real (el backend no sabe
-  // el estado de las otras máquinas).
+  // Only the current machine's link carries a real direction (the backend
+  // doesn't know the state of the other machines).
   let direction: FlowDirection | null = null
   if (activeOp) direction = activeOp.verb === 'gather' ? 'up' : 'down'
   else if (status && status.ahead > 0) direction = 'up'
   else if (status && status.behind > 0) direction = 'down'
-  // Un ciclo del motor mueve en ambos sentidos: si no hay dirección clara, subimos.
+  // One engine cycle moves in both directions: if there's no clear direction, we upload.
   if (!direction && tone === 'syncing') direction = 'up'
 
   const active = !!activeOp || tone === 'syncing'
@@ -98,7 +102,7 @@ export function Constellation({
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label={describe(currentId, status, activeOp)}
+        aria-label={describe(t, currentId, status, activeOp)}
       >
         <circle className="const-ring" cx={vault.x} cy={vault.y} r={66} />
         <circle className="const-ring" cx={vault.x} cy={vault.y} r={116} />

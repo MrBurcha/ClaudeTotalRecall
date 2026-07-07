@@ -9,12 +9,12 @@ import { Git } from './git'
 let root: string
 
 async function configUser(g: Git): Promise<void> {
-  await g.config('user.email', 'test@claudetr.local')
-  await g.config('user.name', 'ClaudeTR Test')
+  await g.config('user.email', 'test@claude-total-recall.local')
+  await g.config('user.name', 'Claude Total Recall Test')
   await g.config('commit.gpgsign', 'false')
 }
 
-/** Crea un remote bare seedeado con a.txt en main. Devuelve el path del remote. */
+/** Creates a bare remote seeded with a.txt on main. Returns the remote path. */
 async function freshRemote(name: string): Promise<string> {
   const remote = join(root, `${name}.git`)
   await run('git', ['init', '--bare', '--initial-branch=main', remote])
@@ -35,14 +35,14 @@ async function cloneConfigured(remote: string, dir: string): Promise<Git> {
 }
 
 beforeAll(async () => {
-  root = await mkdtemp(join(tmpdir(), 'claudetr-git-'))
+  root = await mkdtemp(join(tmpdir(), 'claude-total-recall-git-'))
 })
 afterAll(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
 describe('Git status / commit', () => {
-  it('reporta branch, ahead/behind y dirty; commit sube ahead', async () => {
+  it('reports branch, ahead/behind and dirty; commit increments ahead', async () => {
     const remote = await freshRemote('status')
     const a = await cloneConfigured(remote, join(root, 'status-A'))
 
@@ -63,15 +63,15 @@ describe('Git status / commit', () => {
     expect(st.ahead).toBe(0)
   })
 
-  it('commit devuelve committed:false cuando el working tree está limpio', async () => {
+  it('commit returns committed:false when the working tree is clean', async () => {
     const remote = await freshRemote('noop')
     const a = await cloneConfigured(remote, join(root, 'noop-A'))
     expect((await a.commit('nada')).committed).toBe(false)
   })
 })
 
-describe('push rechazado → pull(merge) → retry', () => {
-  it('B es rechazado, mergea sin conflicto y reintenta', async () => {
+describe('push rejected → pull(merge) → retry', () => {
+  it('B is rejected, merges without conflict and retries', async () => {
     const remote = await freshRemote('reject')
     const a = await cloneConfigured(remote, join(root, 'reject-A'))
     const b = await cloneConfigured(remote, join(root, 'reject-B'))
@@ -81,7 +81,7 @@ describe('push rechazado → pull(merge) → retry', () => {
     await a.commit('A edita a.txt')
     expect((await a.push()).ok).toBe(true)
 
-    // B toca un archivo distinto → no hay conflicto real
+    // B touches a different file → no real conflict
     await writeFile(join(b.cwd, 'c.txt'), 'from B\n')
     await b.add()
     await b.commit('B agrega c.txt')
@@ -98,8 +98,8 @@ describe('push rechazado → pull(merge) → retry', () => {
   })
 })
 
-describe('resolución de conflictos (merge: ours=local, theirs=remoto)', () => {
-  it('quedate con REMOTO deja la versión del repo (theirs)', async () => {
+describe('conflict resolution (merge: ours=local, theirs=remote)', () => {
+  it('keeping REMOTE leaves the repo version (theirs)', async () => {
     const remote = await freshRemote('conf-remote')
     const a = await cloneConfigured(remote, join(root, 'conf-remote-A'))
     const b = await cloneConfigured(remote, join(root, 'conf-remote-B'))
@@ -124,7 +124,7 @@ describe('resolución de conflictos (merge: ours=local, theirs=remoto)', () => {
     expect((await b.push()).ok).toBe(true)
   })
 
-  it('quedate con LOCAL deja tu versión (ours)', async () => {
+  it('keeping LOCAL leaves your version (ours)', async () => {
     const remote = await freshRemote('conf-local')
     const a = await cloneConfigured(remote, join(root, 'conf-local-A'))
     const b = await cloneConfigured(remote, join(root, 'conf-local-B'))

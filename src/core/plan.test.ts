@@ -35,7 +35,7 @@ interface Sandbox {
 const bases: string[] = []
 
 async function seed(): Promise<Sandbox> {
-  const base = await mkdtemp(join(tmpdir(), 'claudetr-plan-'))
+  const base = await mkdtemp(join(tmpdir(), 'claude-total-recall-plan-'))
   bases.push(base)
   const home1 = join(base, 'home1')
   const home2 = join(base, 'home2')
@@ -50,7 +50,7 @@ async function seed(): Promise<Sandbox> {
   await mkdir(p1, { recursive: true })
   await writeFile(join(p1, 'note.md'), 'project note\n')
 
-  // Secretos plantados dentro de dirs sincronizados: NUNCA deben entrar al Plan.
+  // Secrets planted inside synced dirs: they must NEVER enter the Plan.
   await writeFile(join(claude1, 'commands', '.credentials.json'), 'SECRET')
   await writeFile(join(claude1, 'commands', 'x.jsonl'), '{"t":1}')
   await writeFile(join(claude1, 'commands', '.claude.json'), 'DURABLE')
@@ -70,7 +70,7 @@ async function seed(): Promise<Sandbox> {
       proj: {
         folders: {
           memory: { m1: p1, m2: p2 },
-          extra: { m2: join(home2, 'extra') }, // sin path para m1 → skip
+          extra: { m2: join(home2, 'extra') }, // no path for m1 → skip
         },
       },
     },
@@ -93,13 +93,13 @@ afterEach(async () => {
 })
 
 describe('gather → scatter round-trip', () => {
-  it('reproduce archivos cross-machine, sanea settings y excluye secretos', async () => {
+  it('reproduces files cross-machine, sanitizes settings and excludes secrets', async () => {
     const sb = await seed()
     const ctx1 = ctxFor(sb, sb.home1, 'm1', { local: 'ignored' })
 
     const plan = await buildGatherPlan(ctx1, META)
 
-    // Guard: ningún secreto en el Plan.
+    // Guard: no secret in the Plan.
     for (const a of plan.actions) {
       expect(a.logicalPath).not.toMatch(/\.credentials\.json|\.jsonl$|\.claude\.json/)
       if (a.from) expect(a.from).not.toMatch(/\.credentials\.json|\.jsonl$|\.claude\.json/)
@@ -107,34 +107,34 @@ describe('gather → scatter round-trip', () => {
 
     await executeGather(plan, ctx1)
 
-    // Repo poblado con nombres lógicos.
+    // Repo populated with logical names.
     expect(await read(join(sb.repoDir, 'memories/user/CLAUDE.md'))).toBe('user memory\n')
     expect(await read(join(sb.repoDir, 'memories/user/commands/foo.md'))).toBe('cmd\n')
     expect(await read(join(sb.repoDir, 'memories/projects/proj/memory/note.md'))).toBe(
       'project note\n',
     )
-    // settings compartido = real sin la clave local.
+    // shared settings = real without the local key.
     expect(JSON.parse(await read(join(sb.repoDir, 'memories/user/settings.json')))).toEqual({ a: 1 })
 
-    // Secretos ausentes en el repo.
+    // Secrets absent from the repo.
     expect(await exists(join(sb.repoDir, 'memories/user/commands/.credentials.json'))).toBe(false)
     expect(await exists(join(sb.repoDir, 'memories/user/commands/x.jsonl'))).toBe(false)
     expect(await exists(join(sb.repoDir, 'memories/user/commands/.claude.json'))).toBe(false)
 
-    // Idempotencia: re-planear gather no produce copias.
+    // Idempotency: re-planning gather produces no copies.
     const again = await buildGatherPlan(ctx1, META)
     expect(again.actions.filter((a) => a.type === 'create' || a.type === 'overwrite')).toHaveLength(
       0,
     )
 
-    // Scatter a la máquina 2 (home vacío + path de proyecto propio).
+    // Scatter to machine 2 (empty home + its own project path).
     const ctx2 = ctxFor(sb, sb.home2, 'm2', { local: 'M2VAL' })
     const splan = await buildScatterPlan(ctx2, META)
     await executeScatter(splan, ctx2)
 
     expect(await read(join(sb.home2, '.claude/CLAUDE.md'))).toBe('user memory\n')
     expect(await read(join(sb.home2, '.claude/commands/foo.md'))).toBe('cmd\n')
-    // settings real = compartido + override local de m2.
+    // real settings = shared + m2 local override.
     expect(JSON.parse(await read(join(sb.home2, '.claude/settings.json')))).toEqual({
       a: 1,
       local: 'M2VAL',
@@ -143,17 +143,17 @@ describe('gather → scatter round-trip', () => {
   })
 })
 
-describe('tipos de acción del Plan', () => {
-  it('detecta create / overwrite / noop / delete / skip', async () => {
+describe('Plan action types', () => {
+  it('detects create / overwrite / noop / delete / skip', async () => {
     const sb = await seed()
     const ctx1 = ctxFor(sb, sb.home1, 'm1', { local: 'x' })
 
     await executeGather(await buildGatherPlan(ctx1, META), ctx1)
 
-    // Cambios en la máquina.
+    // Changes on the machine.
     await writeFile(join(sb.home1, '.claude/commands/foo.md'), 'CHANGED\n') // overwrite
     await writeFile(join(sb.home1, '.claude/commands/bar.md'), 'bar\n') // create
-    await rm(join(sb.p1, 'note.md')) // delete (existe en repo, no en origen)
+    await rm(join(sb.p1, 'note.md')) // delete (exists in repo, not in source)
 
     const plan = await buildGatherPlan(ctx1, META)
     const byLogical = new Map(plan.actions.map((a) => [a.logicalPath, a]))
@@ -162,23 +162,23 @@ describe('tipos de acción del Plan', () => {
     expect(byLogical.get('memories/user/commands/bar.md')?.type).toBe('create')
     expect(byLogical.get('memories/projects/proj/memory/note.md')?.type).toBe('delete')
     expect(byLogical.get('memories/user/CLAUDE.md')?.type).toBe('noop')
-    // La ranura 'extra' no tiene path para m1 → skip.
+    // The 'extra' slot has no path for m1 → skip.
     const extra = plan.actions.find((a) => a.slot === 'project:proj/extra')
     expect(extra?.type).toBe('skip')
   })
 })
 
-describe('revalidación TOCTOU', () => {
-  it('aborta con PlanDriftError si el origen cambió, salvo force', async () => {
+describe('TOCTOU revalidation', () => {
+  it('aborts with PlanDriftError if the source changed, unless force', async () => {
     const sb = await seed()
     const ctx1 = ctxFor(sb, sb.home1, 'm1', { local: 'x' })
 
     const plan = await buildGatherPlan(ctx1, META)
-    // Mutar un archivo con acción create pendiente.
+    // Mutate a file with a pending create action.
     await writeFile(join(sb.home1, '.claude/CLAUDE.md'), 'MUTATED\n')
 
     await expect(executeGather(plan, ctx1)).rejects.toBeInstanceOf(PlanDriftError)
-    // Con force, aplica igual.
+    // With force, it applies anyway.
     await expect(executeGather(plan, ctx1, { force: true })).resolves.toBeDefined()
   })
 })

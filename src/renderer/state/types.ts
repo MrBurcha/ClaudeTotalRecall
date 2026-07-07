@@ -8,7 +8,7 @@ import type {
   Verb,
 } from '../../core/types'
 
-/** Secciones navegables del steady-state (el wizard es un takeover aparte). */
+/** Navigable sections of the steady-state (the wizard is a separate takeover). */
 export type Route = 'home' | 'projects' | 'machines' | 'settings'
 export type Theme = 'dark' | 'light'
 export type ToastKind = 'ok' | 'err' | 'info'
@@ -20,9 +20,9 @@ export interface ToastItem {
 }
 
 /**
- * Descriptor de modal. Unión discriminada: cada overlay lleva sus datos.
- * El `resolve` del confirm vive solo en memoria (no se serializa) → habilita
- * un `confirm(): Promise<boolean>` imperativo que reemplaza window.confirm.
+ * Modal descriptor. Discriminated union: each overlay carries its own data.
+ * The confirm's `resolve` lives only in memory (not serialized) → enables an
+ * imperative `confirm(): Promise<boolean>` that replaces window.confirm.
  */
 export type ModalDescriptor =
   | {
@@ -40,7 +40,7 @@ export type ModalDescriptor =
   | { kind: 'folder-form'; project: string; slot?: string; path?: string }
   | { kind: 'about' }
 
-/** Operación de sync en curso; alimenta el estado animado de la constelación. */
+/** In-progress sync operation; feeds the constellation's animated state. */
 export interface ActiveOp {
   verb: Verb
   phase: 'building' | 'reviewing' | 'executing'
@@ -52,7 +52,7 @@ export interface PaletteState {
   index: number
 }
 
-/** Snapshot del backend (lo que trae un refresh). */
+/** Backend snapshot (what a refresh brings). */
 export interface Snapshot {
   config: Config | null
   status: RepoStatus | null
@@ -62,7 +62,7 @@ export interface Snapshot {
 }
 
 export interface AppState {
-  // snapshot backend
+  // backend snapshot
   config: Config | null
   status: RepoStatus | null
   machineId: string | null
@@ -71,14 +71,14 @@ export interface AppState {
   // UI
   route: Route
   theme: Theme
-  loading: boolean // antes del primer refresh → skeletons
-  busy: boolean // operación global en curso → deshabilita acciones
+  loading: boolean // before the first refresh → skeletons
+  busy: boolean // global operation in progress → disables actions
   activeOp: ActiveOp | null
   // overlays
   modals: ModalDescriptor[] // stack
-  toasts: ToastItem[] // cola
+  toasts: ToastItem[] // queue
   palette: PaletteState
-  wizardOpen: boolean // takeover del wizard forzado on-demand
-  // motor de auto-sync (lo empuja el main; null hasta el primer getState)
+  wizardOpen: boolean // wizard takeover forced on-demand
+  // auto-sync engine (pushed by main; null until the first getState)
   syncEngine: SyncEngineState | null
 }

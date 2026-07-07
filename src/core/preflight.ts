@@ -2,7 +2,7 @@ import { run, type ExecResult } from './exec'
 import { findExecutable } from './resolvePath'
 import type { PreflightCheck, PreflightResult } from './types'
 
-/** Deps inyectables para poder testear ausencia de git/gh y gh no autenticado. */
+/** Injectable deps so we can test missing git/gh and an unauthenticated gh. */
 export interface PreflightDeps {
   find: (name: string) => string | null
   exec: (bin: string, args: string[]) => Promise<ExecResult>
@@ -14,8 +14,11 @@ const realDeps: PreflightDeps = {
 }
 
 /**
- * Verifica que git y gh estén presentes y que gh esté autenticado.
- * Guía con `fix` accionable cuando algo falta, en vez de explotar.
+ * Checks that git and gh are present and that gh is authenticated. Guides with an
+ * actionable `fix` when something is missing instead of blowing up.
+ *
+ * `detail`/`fix` carry the English default; `detailKey`/`fixKey` let the renderer
+ * localize them. The resolved binary path and the raw gh stderr stay literal.
  */
 export async function runPreflight(deps: PreflightDeps = realDeps): Promise<PreflightResult> {
   const checks: PreflightCheck[] = []
@@ -24,7 +27,14 @@ export async function runPreflight(deps: PreflightDeps = realDeps): Promise<Pref
   checks.push(
     gitPath
       ? { name: 'git', ok: true, detail: gitPath }
-      : { name: 'git', ok: false, detail: 'git no encontrado en el PATH', fix: 'Instalá git' },
+      : {
+          name: 'git',
+          ok: false,
+          detail: 'git not found in PATH',
+          detailKey: 'git.missing',
+          fix: 'Install git',
+          fixKey: 'git.install',
+        },
   )
 
   const ghPath = deps.find('gh')
@@ -34,8 +44,10 @@ export async function runPreflight(deps: PreflightDeps = realDeps): Promise<Pref
       : {
           name: 'gh',
           ok: false,
-          detail: 'gh (GitHub CLI) no encontrado',
-          fix: 'Instalá gh desde https://cli.github.com',
+          detail: 'gh (GitHub CLI) not found',
+          detailKey: 'gh.missing',
+          fix: 'Install gh from https://cli.github.com',
+          fixKey: 'gh.install',
         },
   )
 
@@ -43,20 +55,23 @@ export async function runPreflight(deps: PreflightDeps = realDeps): Promise<Pref
     const r = await deps.exec('gh', ['auth', 'status'])
     checks.push(
       r.code === 0
-        ? { name: 'gh-auth', ok: true, detail: 'gh autenticado' }
+        ? { name: 'gh-auth', ok: true, detail: 'gh authenticated', detailKey: 'ghAuth.ok' }
         : {
             name: 'gh-auth',
             ok: false,
-            detail: (r.stderr || r.stdout).trim(),
-            fix: 'Ejecutá: gh auth login && gh auth setup-git',
+            detail: (r.stderr || r.stdout).trim(), // raw gh output, kept literal
+            fix: 'Run: gh auth login && gh auth setup-git',
+            fixKey: 'ghAuth.fix',
           },
     )
   } else {
     checks.push({
       name: 'gh-auth',
       ok: false,
-      detail: 'gh no está instalado, no se puede verificar la auth',
-      fix: 'Instalá gh primero',
+      detail: 'gh is not installed, cannot verify auth',
+      detailKey: 'ghAuth.noGh',
+      fix: 'Install gh first',
+      fixKey: 'ghAuth.installFirst',
     })
   }
 

@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
-import type { ClaudeTrApi } from '../main/preload'
+import type { ClaudeTotalRecallApi } from '../main/preload'
 
 declare global {
   interface Window {
-    claudetr: ClaudeTrApi
+    claudeTotalRecall: ClaudeTotalRecallApi
   }
 }
 

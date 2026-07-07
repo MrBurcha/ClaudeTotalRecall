@@ -100,6 +100,6 @@ const api = {
   platform: process.platform,
 }
 
-export type ClaudeTrApi = typeof api
+export type ClaudeTotalRecallApi = typeof api
 
-contextBridge.exposeInMainWorld('claudetr', api)
+contextBridge.exposeInMainWorld('claudeTotalRecall', api)

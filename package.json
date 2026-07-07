@@ -1,12 +1,12 @@
 {
-  "name": "claudetr",
-  "version": "0.1.4",
-  "description": "ClaudeTR (Claude Total Recall) — sync Claude Code memory across machines via a private GitHub repo",
+  "name": "claude-total-recall",
+  "version": "0.1.5",
+  "description": "Claude Total Recall — sync Claude Code memory across machines via a private GitHub repo",
   "author": "MrBurcha",
   "license": "MIT",
   "main": "./out/main/main.js",
   "bin": {
-    "claudetr": "./dist-cli/index.js"
+    "claude-total-recall": "./dist-cli/index.js"
   },
   "scripts": {
     "postinstall": "patch-package",
@@ -16,6 +16,7 @@
     "build:cli": "tsup",
     "cli:check": "npm run build:cli && node dist-cli/index.js check",
     "icon": "bash scripts/make-icon.sh",
+    "background": "bash scripts/make-background.sh",
     "build:mac": "npm run build:app && electron-builder --mac --config electron-builder.yml",
     "build:linux": "npm run build:app && electron-builder --linux --config electron-builder.yml",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -25,6 +26,8 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "i18next": "^26.3.4",
+    "react-i18next": "^17.0.8",
     "zod": "^3.23.8"
   },
   "devDependencies": {

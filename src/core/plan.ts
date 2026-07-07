@@ -10,19 +10,19 @@ export interface SyncContext {
   adapter: PlatformAdapter
   config: Config
   machineId: string
-  /** working copy del repo (clon local) */
+  /** working copy of the repo (local clone) */
   repoDir: string
-  /** contenido de settings.local.json (overrides locales) */
+  /** contents of settings.local.json (local overrides) */
   localOverrides: SettingsObject
 }
 
 const SETTINGS_LOGICAL = 'memories/user/settings.json'
 
-// ── Guard anti-secretos (defensa en profundidad, §4/§18) ─────────────────────
+// ── Anti-secret guard (defense in depth, §4/§18) ────────────────────────────
 /**
- * Nunca sincronizar credenciales, config durable con estado, ni transcripts,
- * AUNQUE un path esté mal configurado. El allowlist ya los excluye; esto es la
- * última red antes de que entren al Plan.
+ * Never sync credentials, durable stateful config, or transcripts, EVEN IF a
+ * path is misconfigured. The allowlist already excludes them; this is the last
+ * safety net before they enter the Plan.
  */
 export function isSecretExcluded(relPath: string): boolean {
   const base = posix.basename(relPath.split(/[\\/]/).join('/'))
@@ -32,7 +32,7 @@ export function isSecretExcluded(relPath: string): boolean {
   return false
 }
 
-// ── helpers de fs / hashing ──────────────────────────────────────────────────
+// ── fs / hashing helpers ────────────────────────────────────────────────────
 async function pathExists(p: string): Promise<boolean> {
   try {
     await stat(p)
@@ -52,7 +52,7 @@ async function hashFile(p: string): Promise<string> {
     .digest('hex')
 }
 
-/** Lista archivos (recursivo) relativos a `dir`, filtrando secretos. Vacío si no existe. */
+/** Lists files (recursively) relative to `dir`, filtering out secrets. Empty if it doesn't exist. */
 async function listFiles(dir: string): Promise<string[]> {
   const out: string[] = []
   async function walk(cur: string, rel: string): Promise<void> {
@@ -75,7 +75,7 @@ async function listFiles(dir: string): Promise<string[]> {
   return out.sort()
 }
 
-// ── settings.json (contenido computado) ──────────────────────────────────────
+// ── settings.json (computed content) ────────────────────────────────────────
 interface SettingsWrite {
   from: string
   to: string
@@ -83,8 +83,8 @@ interface SettingsWrite {
 }
 
 /**
- * Calcula el contenido de settings.json a escribir (o null si no hay nada que
- * hacer). Deterministic desde disco + overrides, así el executor puede recomputar.
+ * Computes the settings.json content to write (or null if there's nothing to
+ * do). Deterministic from disk + overrides, so the executor can recompute.
  */
 async function settingsWrite(ctx: SyncContext, verb: Verb): Promise<SettingsWrite | null> {
   const realPath = join(ctx.adapter.claudeHome(), 'settings.json')
@@ -112,7 +112,8 @@ async function settingsAction(ctx: SyncContext, verb: Verb): Promise<PlanAction>
       from: null,
       to: null,
       type: 'skip',
-      reason: verb === 'gather' ? 'no hay ~/.claude/settings.json local' : 'no hay settings.json en el repo',
+      reason: verb === 'gather' ? 'no local ~/.claude/settings.json' : 'no settings.json in the repo',
+      reasonCode: verb === 'gather' ? 'noLocalSettings' : 'noRepoSettings',
     }
   }
   const hashFrom = hashString(w.content)
@@ -130,7 +131,7 @@ async function settingsAction(ctx: SyncContext, verb: Verb): Promise<PlanAction>
   }
 }
 
-// ── sync de un directorio (mirror con delete) ────────────────────────────────
+// ── directory sync (mirror with delete) ─────────────────────────────────────
 async function planDirSync(
   slotBase: string,
   srcDir: string,
@@ -168,7 +169,8 @@ async function planDirSync(
         to,
         type: 'delete',
         hashTo: await hashFile(to),
-        reason: 'no existe en el origen',
+        reason: 'not present in source',
+        reasonCode: 'notInSource',
       })
     }
   }
@@ -184,7 +186,15 @@ async function planFileSync(
   const srcExists = await pathExists(srcFile)
   const destExists = await pathExists(destFile)
   if (!srcExists) {
-    return { slot, logicalPath, from: null, to: destFile, type: 'skip', reason: 'el origen no existe' }
+    return {
+      slot,
+      logicalPath,
+      from: null,
+      to: destFile,
+      type: 'skip',
+      reason: 'source does not exist',
+      reasonCode: 'sourceMissing',
+    }
   }
   const hashFrom = await hashFile(srcFile)
   if (!destExists) {
@@ -202,7 +212,7 @@ async function planFileSync(
   }
 }
 
-// ── construcción del Plan ────────────────────────────────────────────────────
+// ── Plan construction ───────────────────────────────────────────────────────
 export async function buildPlan(
   ctx: SyncContext,
   verb: Verb,
@@ -212,7 +222,7 @@ export async function buildPlan(
 
   // user-level: CLAUDE.md (file), commands/agents/skills (dir), settings.json (special)
   for (const item of userLevelItems(ctx.adapter)) {
-    if (item.slot === 'settings.json') continue // manejado aparte
+    if (item.slot === 'settings.json') continue // handled separately
     const repoPath = join(ctx.repoDir, item.logicalPath)
     const [src, dest] =
       verb === 'gather' ? [item.realPath, repoPath] : [repoPath, item.realPath]
@@ -223,10 +233,10 @@ export async function buildPlan(
     }
   }
 
-  // settings.json (compartido + overrides locales)
+  // settings.json (shared + local overrides)
   actions.push(await settingsAction(ctx, verb))
 
-  // proyectos: cada ranura, saltando las que no tienen path para esta máquina
+  // projects: each slot, skipping those with no path for this machine
   for (const projectName of Object.keys(ctx.config.projects)) {
     for (const slot of projectSlots(ctx.config, projectName)) {
       const machinePath = projectSlotPath(ctx.config, projectName, slot, ctx.machineId)
@@ -240,7 +250,9 @@ export async function buildPlan(
           from: null,
           to: null,
           type: 'skip',
-          reason: `sin path para la máquina "${ctx.machineId}"`,
+          reason: `no path for machine "${ctx.machineId}"`,
+          reasonCode: 'noPathForMachine',
+          reasonParams: { machine: ctx.machineId },
         })
         continue
       }
@@ -252,12 +264,12 @@ export async function buildPlan(
   return { id: meta.id, verb, createdAt: meta.createdAt, actions }
 }
 
-// ── ejecución del Plan (con revalidación TOCTOU) ─────────────────────────────
+// ── Plan execution (with TOCTOU revalidation) ───────────────────────────────
 export class PlanDriftError extends Error {
   constructor(readonly drifted: PlanAction[]) {
     super(
-      `El disco cambió desde que se armó el Plan (${drifted.length} acción/es con drift). ` +
-        `Reconstruí el Plan antes de ejecutar.`,
+      `The disk changed since the Plan was built (${drifted.length} drifted action(s)). ` +
+        `Rebuild the Plan before executing.`,
     )
     this.name = 'PlanDriftError'
   }
@@ -271,7 +283,7 @@ export interface ExecResult {
   skipped: number
 }
 
-/** Recalcula el hash del contenido que la acción escribiría, para revalidar. */
+/** Recomputes the hash of the content the action would write, for revalidation. */
 async function currentSourceHash(action: PlanAction, ctx: SyncContext): Promise<string | null> {
   if (action.transform) {
     const w = await settingsWrite(ctx, action.transform === 'settings-gather' ? 'gather' : 'scatter')
@@ -287,7 +299,7 @@ export async function executePlan(
   ctx: SyncContext,
   opts: { force?: boolean } = {},
 ): Promise<ExecResult> {
-  // 1) Revalidación TOCTOU: el origen no debe haber cambiado desde el build.
+  // 1) TOCTOU revalidation: the source must not have changed since the build.
   if (!opts.force) {
     const drifted: PlanAction[] = []
     for (const a of plan.actions) {
@@ -299,7 +311,7 @@ export async function executePlan(
     if (drifted.length > 0) throw new PlanDriftError(drifted)
   }
 
-  // 2) Aplicar.
+  // 2) Apply.
   const res: ExecResult = { applied: 0, created: 0, overwritten: 0, deleted: 0, skipped: 0 }
   for (const a of plan.actions) {
     if (a.type === 'noop' || a.type === 'skip') {

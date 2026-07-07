@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
+import { AppError } from './errors'
 import {
   LocalStateSchema,
   type AutoSyncPrefs,
@@ -9,7 +10,7 @@ import {
 } from './types'
 import type { PlatformAdapter } from '../platform'
 
-/** Default de auto-sync: activado, poll del remoto cada 2 min (ver plan). */
+/** Auto-sync default: enabled, poll the remote every 2 min (see plan). */
 export const DEFAULT_AUTOSYNC: AutoSyncPrefs = { enabled: true, intervalMs: 120_000 }
 
 export function localStatePath(adapter: PlatformAdapter): string {
@@ -47,13 +48,13 @@ export async function loadLocalState(adapter: PlatformAdapter): Promise<LocalSta
 }
 
 export async function saveLocalState(adapter: PlatformAdapter, state: LocalState): Promise<void> {
-  // Merge sobre lo existente: guardar la identidad no debe pisar otras claves
-  // locales (p.ej. autoSync) que se hayan seteado aparte.
+  // Merge onto what exists: saving the identity must not clobber other local
+  // keys (e.g. autoSync) that were set separately.
   const prev = (await readJson(localStatePath(adapter))) as Record<string, unknown> | null
   await writeJson(localStatePath(adapter), { ...(prev ?? {}), ...state })
 }
 
-/** Preferencias de auto-sync de esta máquina (default si no hay local.json aún). */
+/** This machine's auto-sync preferences (default if there's no local.json yet). */
 export async function loadAutoSyncPrefs(adapter: PlatformAdapter): Promise<AutoSyncPrefs> {
   const state = await loadLocalState(adapter)
   return state?.autoSync ?? DEFAULT_AUTOSYNC
@@ -64,7 +65,12 @@ export async function saveAutoSyncPrefs(
   prefs: AutoSyncPrefs,
 ): Promise<void> {
   const state = await loadLocalState(adapter)
-  if (!state) throw new Error('Máquina no registrada; no hay dónde guardar las preferencias.')
+  if (!state) {
+    throw new AppError(
+      'machine.notRegisteredPrefs',
+      'Machine not registered; nowhere to save preferences.',
+    )
+  }
   await saveLocalState(adapter, { ...state, autoSync: prefs })
 }
 
@@ -87,10 +93,10 @@ export async function ensureSettingsLocal(adapter: PlatformAdapter): Promise<voi
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Baseline del auto-sync (fuera del repo, por-máquina). Es el conjunto de
-// logicalPaths que quedaron sincronizados al cerrar el último ciclo: sirve para
-// distinguir un borrado local (estaba en el baseline) de un archivo nuevo del
-// remoto que todavía no bajamos (no estaba). Ver core/syncEngine.ts.
+// Auto-sync baseline (outside the repo, per-machine). It's the set of
+// logicalPaths that were synced when the last cycle closed: it distinguishes a
+// local deletion (it was in the baseline) from a new file from the remote we
+// haven't pulled yet (it wasn't). See core/syncEngine.ts.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const BaselineSchema = z.object({ paths: z.array(z.string()) })
@@ -101,8 +107,8 @@ export async function loadBaseline(adapter: PlatformAdapter): Promise<Set<string
     if (data === null) return new Set()
     return new Set(BaselineSchema.parse(data).paths)
   } catch {
-    // Baseline corrupto ⇒ tratarlo como vacío: ese ciclo no propaga borrados,
-    // pero nunca borra de más. Se repuebla al cerrar el ciclo.
+    // Corrupt baseline ⇒ treat it as empty: that cycle won't propagate deletions,
+    // but never over-deletes. It's repopulated when the cycle closes.
     return new Set()
   }
 }

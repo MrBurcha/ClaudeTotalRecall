@@ -1,9 +1,11 @@
 import type { Plan, PlanAction, PlanActionType } from '../../../core/types'
 
 /**
- * Agrupa las acciones de un Plan por origen (nivel usuario vs cada proyecto),
- * partiendo el prefijo del `slot` (que resolve.ts/plan.ts generan como
- * "user:…" o "project:<name>/<slot>/…"). Puro y testeable.
+ * Groups a Plan's actions by origin (user level vs each project) by splitting the
+ * `slot` prefix (which resolve.ts/plan.ts emit as "user:…" or
+ * "project:<name>/<slot>/…"). Pure and testable. Kept locale-agnostic: `title`
+ * holds the project name for projects and the marker "user" for the user group;
+ * the renderer localizes the user group via `kind` (see PlanReview).
  */
 
 export interface PlanGroup {
@@ -18,16 +20,16 @@ export type PlanCounts = Record<PlanActionType, number>
 export interface GroupedPlan {
   groups: PlanGroup[]
   counts: PlanCounts
-  /** Hay al menos una acción que muta disco (create/overwrite/delete). */
+  /** At least one action mutates disk (create/overwrite/delete). */
   mutating: boolean
 }
 
 function groupFor(slot: string): { key: string; title: string; kind: 'user' | 'project' } {
   if (slot.startsWith('project:')) {
-    const name = slot.slice('project:'.length).split('/')[0] || '(proyecto)'
+    const name = slot.slice('project:'.length).split('/')[0] || '(project)'
     return { key: `project:${name}`, title: name, kind: 'project' }
   }
-  return { key: 'user', title: 'Usuario', kind: 'user' }
+  return { key: 'user', title: 'user', kind: 'user' }
 }
 
 export function groupActions(plan: Plan): GroupedPlan {
@@ -45,7 +47,7 @@ export function groupActions(plan: Plan): GroupedPlan {
     group.actions.push(a)
   }
 
-  // Usuario primero, luego proyectos por orden alfabético.
+  // User first, then projects in alphabetical order.
   const groups = [...map.values()].sort((x, y) => {
     if (x.kind !== y.kind) return x.kind === 'user' ? -1 : 1
     return x.title.localeCompare(y.title)

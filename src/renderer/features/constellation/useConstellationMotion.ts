@@ -4,11 +4,11 @@ import type { ConstLink } from './layout'
 export type FlowDirection = 'up' | 'down'
 
 /**
- * Anima partículas a lo largo del link de la máquina actual con requestAnimationFrame,
- * escribiendo cx/cy directo en los <circle> del grupo (sin re-render por frame).
- * 'up' = nodo→vault (gather pendiente/en curso), 'down' = vault→nodo (scatter).
- * No arranca si !enabled (reduced-motion) o no hay dirección: el componente cae
- * a un fallback estático. Cleanup del rAF en cada cambio → seguro bajo StrictMode.
+ * Animates particles along the current machine's link with requestAnimationFrame,
+ * writing cx/cy directly into the group's <circle> elements (no re-render per frame).
+ * 'up' = node→vault (gather pending/in progress), 'down' = vault→node (scatter).
+ * Doesn't start if !enabled (reduced-motion) or there's no direction: the component
+ * falls back to a static state. rAF cleanup on every change → safe under StrictMode.
  */
 export function useConstellationMotion(
   groupRef: RefObject<SVGGElement>,
@@ -24,7 +24,7 @@ export function useConstellationMotion(
     const count = circles.length
     if (count === 0) return
 
-    const phases = circles.map((_, i) => i / count) // stagger inicial
+    const phases = circles.map((_, i) => i / count) // initial stagger
     let raf = 0
     let last = performance.now()
 
@@ -36,7 +36,7 @@ export function useConstellationMotion(
         const t = direction === 'up' ? phases[i] : 1 - phases[i]
         const x = link.x1 + (link.x2 - link.x1) * t
         const y = link.y1 + (link.y2 - link.y1) * t
-        const edge = Math.min(phases[i], 1 - phases[i]) * 2 // fade en las puntas
+        const edge = Math.min(phases[i], 1 - phases[i]) * 2 // fade at the ends
         const c = circles[i]
         c.setAttribute('cx', String(x))
         c.setAttribute('cy', String(y))

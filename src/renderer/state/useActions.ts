@@ -4,24 +4,25 @@ import type { Action } from './reducer'
 import { useAppState, useDispatch } from './store'
 import type { AppState, ModalDescriptor, Route, Theme } from './types'
 import type { Verb } from '../../core/types'
+import i18n from '../i18n'
 
-// Contador de ids para toasts/modales (el renderer sí puede usar estado mutable).
+// Id counter for toasts/modals (the renderer may use mutable state).
 let seq = 0
 const nextId = (): number => (seq += 1)
 
 function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme
   try {
-    localStorage.setItem('claudetr:theme', theme)
+    localStorage.setItem('claude-total-recall:theme', theme)
   } catch {
-    /* localStorage puede fallar en modos exóticos; el tema en memoria alcanza. */
+    /* localStorage may fail in exotic modes; the in-memory theme is enough. */
   }
 }
 
 /**
- * Toda la I/O async y los efectos viven acá (el reducer es puro). Las funciones
- * leen el estado más reciente vía stateRef para no capturar closures viejas.
- * Reemplaza el run()/refresh()/notify() que estaban sueltos en el App.tsx viejo.
+ * All async I/O and effects live here (the reducer is pure). The functions read
+ * the latest state via stateRef so they never capture stale closures. Replaces the
+ * run()/refresh()/notify() that used to be loose in the old App.tsx.
  */
 function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }) {
   const notify = (msg: string, kind: 'ok' | 'err' | 'info' = 'ok'): void =>
@@ -47,7 +48,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     dispatch({ t: 'hydrate', snap: { config, machineId, preflight, version, status } })
   }
 
-  /** Envuelve una acción mutante: busy on/off, refresh, y toast de éxito/error. */
+  /** Wraps a mutating action: busy on/off, refresh, and success/error toast. */
   const run = async (fn: () => Promise<string | void>): Promise<void> => {
     dispatch({ t: 'busy', busy: true })
     try {
@@ -61,7 +62,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     }
   }
 
-  /** Confirmación imperativa in-app (reemplaza window.confirm). */
+  /** Imperative in-app confirmation (replaces window.confirm). */
   const confirm = (opts: {
     title: string
     body: string
@@ -76,7 +77,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
           id: nextId(),
           title: opts.title,
           body: opts.body,
-          confirmLabel: opts.confirmLabel ?? 'Confirmar',
+          confirmLabel: opts.confirmLabel ?? i18n.t('common.confirm'),
           danger: opts.danger,
           resolve,
         },
@@ -113,8 +114,8 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
   const openWizard = (): void => dispatch({ t: 'wizard', open: true })
   const closeWizard = (): void => dispatch({ t: 'wizard', open: false })
 
-  // ── Sincronización ─────────────────────────────────────────────────────────
-  /** Arma el Plan (pull previo si es scatter) y abre el modal de review. */
+  // ── Synchronization ────────────────────────────────────────────────────────
+  /** Builds the Plan (pulling first if scatter) and opens the review modal. */
   const openPlan = async (verb: Verb): Promise<void> => {
     dispatch({ t: 'busy', busy: true })
     dispatch({ t: 'activeOp', op: { verb, phase: 'building' } })
@@ -124,7 +125,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
         if (!pulled.ok) {
           await refresh()
           throw new Error(
-            `Resolvé los conflictos antes de bajar (scatter): ${pulled.conflicts.join(', ')}`,
+            i18n.t('sync.resolveBeforeScatter', { conflicts: pulled.conflicts.join(', ') }),
           )
         }
       }
@@ -139,7 +140,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     }
   }
 
-  /** Ejecuta el Plan confirmado. Ante drift abre el diálogo de reconstruir/forzar. */
+  /** Runs the confirmed Plan. On drift it opens the rebuild/force dialog. */
   const executePlan = async (verb: Verb, planId: string, force = false): Promise<void> => {
     dispatch({ t: 'popModal' })
     dispatch({ t: 'busy', busy: true })
@@ -156,10 +157,10 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
       await refresh()
       const res = outcome.result
       if ('conflicts' in res && res.conflicts.length > 0) {
-        notify(`Conflictos al integrar: ${res.conflicts.join(', ')}. Resolvelos abajo.`, 'info')
+        notify(i18n.t('sync.integrateConflicts', { conflicts: res.conflicts.join(', ') }), 'info')
       } else {
         const label = verb === 'gather' ? 'Gather' : 'Scatter'
-        notify(`${label} aplicado: ${res.exec.applied} acción(es).`, 'ok')
+        notify(i18n.t('sync.applied', { count: res.exec.applied, verb: label }), 'ok')
       }
     } catch (e) {
       notify(normalizeError(e), 'err')
@@ -169,14 +170,14 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     }
   }
 
-  /** Desde el diálogo de drift: cierra y reconstruye el Plan desde cero. */
+  /** From the drift dialog: close and rebuild the Plan from scratch. */
   const rebuildPlan = async (verb: Verb): Promise<void> => {
     dispatch({ t: 'popModal' })
     await openPlan(verb)
   }
 
-  // ── Auto-sync (motor en el main) ─────────────────────────────────────────────
-  /** Disparo manual: corre un ciclo completo y refresca el telemetry del repo. */
+  // ── Auto-sync (engine in main) ───────────────────────────────────────────────
+  /** Manual trigger: runs a full cycle and refreshes the repo telemetry. */
   const syncNow = async (): Promise<void> => {
     try {
       dispatch({ t: 'syncState', state: await api.syncNow() })
@@ -186,7 +187,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     }
   }
 
-  /** Activa/desactiva el auto-sync conservando el intervalo actual. */
+  /** Toggles auto-sync on/off, keeping the current interval. */
   const setAutoSync = async (enabled: boolean): Promise<void> => {
     const intervalMs = stateRef.current.syncEngine?.intervalMs ?? 120_000
     try {
@@ -196,7 +197,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     }
   }
 
-  /** Cambia el intervalo de poll del remoto conservando el on/off. */
+  /** Changes the remote poll interval, keeping the on/off state. */
   const setSyncInterval = async (intervalMs: number): Promise<void> => {
     const enabled = stateRef.current.syncEngine?.auto ?? true
     try {

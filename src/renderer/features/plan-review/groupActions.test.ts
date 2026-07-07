@@ -11,7 +11,7 @@ function plan(actions: PlanAction[]): Plan {
 }
 
 describe('groupActions', () => {
-  it('agrupa por usuario y por proyecto', () => {
+  it('groups by user and by project', () => {
     const g = groupActions(
       plan([
         act('user:CLAUDE.md', 'overwrite'),
@@ -20,12 +20,12 @@ describe('groupActions', () => {
         act('project:otro/memory/b.md', 'skip'),
       ]),
     )
-    expect(g.groups.map((x) => x.title)).toEqual(['Usuario', 'demo', 'otro'])
+    expect(g.groups.map((x) => x.title)).toEqual(['user', 'demo', 'otro'])
     expect(g.groups[0].kind).toBe('user')
     expect(g.groups[1].kind).toBe('project')
   })
 
-  it('cuenta por tipo y detecta mutación', () => {
+  it('counts by type and detects mutation', () => {
     const g = groupActions(
       plan([act('user:CLAUDE.md', 'create'), act('user:x', 'noop'), act('project:d/m/y', 'delete')]),
     )
@@ -35,15 +35,15 @@ describe('groupActions', () => {
     expect(g.mutating).toBe(true)
   })
 
-  it('sin acciones mutantes → mutating false', () => {
+  it('with no mutating actions → mutating false', () => {
     const g = groupActions(plan([act('user:CLAUDE.md', 'noop'), act('project:d/m/y', 'skip')]))
     expect(g.mutating).toBe(false)
   })
 
-  it('ordena Usuario antes que los proyectos', () => {
+  it('orders the user group before projects', () => {
     const g = groupActions(
       plan([act('project:zeta/m/a', 'create'), act('user:CLAUDE.md', 'create')]),
     )
-    expect(g.groups[0].title).toBe('Usuario')
+    expect(g.groups[0].title).toBe('user')
   })
 })

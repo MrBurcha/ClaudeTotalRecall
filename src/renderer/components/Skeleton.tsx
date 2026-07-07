@@ -1,4 +1,4 @@
-/** Bloque de carga. width/height dinámicos van por style (sizing intrínseco). */
+/** Loading block. Dynamic width/height go through style (intrinsic sizing). */
 export function Skeleton({
   w = '100%',
   h = 16,

@@ -1,13 +1,15 @@
+import { useTranslation } from 'react-i18next'
 import { canSync } from '../../state/selectors'
 import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 
 /**
- * Switch de sincronización automática. Refleja `syncEngine.auto` y lo cambia por
- * IPC; el nuevo estado vuelve por el push del motor. Deshabilitado hasta que la
- * máquina esté lista para sincronizar.
+ * Automatic sync switch. Reflects `syncEngine.auto` and toggles it over IPC; the
+ * new state comes back via the engine push. Disabled until the machine is ready
+ * to sync.
  */
 export function AutoToggle(): JSX.Element {
+  const { t } = useTranslation()
   const state = useAppState()
   const actions = useActions()
   const eng = state.syncEngine
@@ -26,7 +28,7 @@ export function AutoToggle(): JSX.Element {
       <span className="switch__track" aria-hidden="true">
         <span className="switch__thumb" />
       </span>
-      <span className="switch__label">Automático</span>
+      <span className="switch__label">{t('sync.automatic')}</span>
     </label>
   )
 }

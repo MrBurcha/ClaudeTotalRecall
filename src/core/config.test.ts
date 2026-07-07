@@ -7,7 +7,7 @@ import { loadConfig, parseConfig, saveConfig } from './config'
 
 const validConfig: Config = {
   version: 1,
-  repo: { remote: 'https://github.com/acme/claudetr-repo.git' },
+  repo: { remote: 'https://github.com/acme/claude-total-recall-repo.git' },
   machines: {
     'mac-01': { os: 'macos', hostname: 'macbook', home: '/Users/acme' },
     'linux-01': { os: 'linux', hostname: 'workstation', home: '/home/acme' },
@@ -59,7 +59,7 @@ describe('loadConfig / saveConfig', () => {
   let dir: string
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'claudetr-config-'))
+    dir = await mkdtemp(join(tmpdir(), 'claude-total-recall-config-'))
   })
 
   afterEach(async () => {

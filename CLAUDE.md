@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-ClaudeTR (Claude Total Recall) — an Electron + TypeScript desktop app (with a headless CLI sharing the same core) that syncs Claude Code memory (`~/.claude/…`) across machines through a private GitHub repo, using `git`/`gh` as transport. macOS and Linux; Windows deliberately deferred.
+Claude Total Recall — an Electron + TypeScript desktop app (with a headless CLI sharing the same core) that syncs Claude Code memory (`~/.claude/…`) across machines through a private GitHub repo, using `git`/`gh` as transport. macOS and Linux; Windows deliberately deferred.
 
-Comments, commit messages, UI strings, and docs are written in Spanish (rioplatense). Follow that convention.
+Code identifiers, comments, commit messages, and docs are written in **English**. The UI is the only bilingual surface — English (the source language) and neutral Latin American Spanish (es-419) via react-i18next; user-facing strings live in `src/renderer/i18n/{en,es}.json`, never inline. (Releases through 0.1.4 were Spanish throughout; that convention changed with the i18n work — translate comments in files you touch.)
 
 ## Commands
 
@@ -14,11 +14,11 @@ Comments, commit messages, UI strings, and docs are written in Spanish (rioplate
 npm run dev            # Electron app in dev mode (electron-vite)
 npm test               # vitest run (all tests)
 npx vitest run src/core/plan.test.ts   # single test file
-npx vitest run -t "nombre del test"    # single test by name
+npx vitest run -t "test name"          # single test by name
 npm run typecheck      # tsc --noEmit
 npm run lint           # eslint . --ext .ts,.tsx
 npm run build:cli      # tsup → dist-cli/index.js (CLI, no Electron)
-npm run cli:check      # build CLI + run `claudetr check` (preflight: git/gh/gh-auth)
+npm run cli:check      # build CLI + run `claude-total-recall check` (preflight: git/gh/gh-auth)
 npm run build:mac      # unsigned .dmg (run on macOS)
 npm run build:linux    # AppImage + deb + pacman (run on Linux or CI, no cross-build)
 ```
@@ -29,11 +29,11 @@ Releases: pushing a `v*.*.*` tag triggers `.github/workflows/release.yml`, which
 
 Layering rule: `src/core/` is pure Node/TypeScript with **no Electron imports** — everything else is a thin shell around it.
 
-- `src/core/` — all logic: config, plan build/execute, gather/scatter, git wrapper, service orchestration, preflight, settings merge. Tests live next to sources (`*.test.ts`) and run directly under Node (vitest, aliases `@core`/`@platform`).
+- `src/core/` — all logic: config, plan build/execute, gather/scatter, git wrapper, service orchestration, preflight, settings merge, the auto-sync engine (`syncEngine.ts`), conflict resolution, and typed errors (`errors.ts`). Tests live next to sources (`*.test.ts`) and run directly under Node (vitest, aliases `@core`/`@platform`).
 - `src/platform/` — the ONLY OS-specific code. `PlatformAdapter` (linux/macos) resolves `home`, `~/.claude`, `~/.config/claudetr`, and expands `~`. Home dir is injectable for tests. Adding Windows = one more adapter + a branch in `index.ts`.
-- `src/cli/` — headless entrypoint (`claudetr check|connect|status|register|gather|scatter`), built with tsup to CJS.
-- `src/main/` — Electron bootstrap, IPC handlers (`ipc.ts`), preload. IPC handlers are thin wrappers over `core/service.ts`.
-- `src/renderer/` — React UI (single `App.tsx`), talks to main only through the preload bridge.
+- `src/cli/` — headless entrypoint (`claude-total-recall check|connect|status|register|gather|scatter`), built with tsup to CJS. English-only.
+- `src/main/` — Electron bootstrap, IPC handlers (`ipc.ts`), preload, the auto-sync scheduler (`syncScheduler.ts`), and the frameless window. IPC handlers are thin wrappers over `core/service.ts`.
+- `src/renderer/` — React UI (`AppShell` + `screens/` + `features/` + the i18n catalog under `i18n/`), talks to main only through the preload bridge.
 
 ### Core domain model
 
@@ -55,6 +55,14 @@ Key invariants (preserve these when changing core):
 
 `git.ts` shells out to the `git` binary via `exec.ts` — no libgit2/isomorphic-git. Tests use local `file://` remotes; the mechanics are identical to GitHub over HTTPS/SSH.
 
+### Internationalization (i18n)
+
+- **Renderer** uses react-i18next with both catalogs (`i18n/en.json`, `i18n/es.json`) bundled and imported statically (`resolveJsonModule`). Init is synchronous (`initAsync: false`) so `t()` works before the first render — no flash of the wrong language. The default locale comes from `navigator.languages`; the choice persists in `localStorage['claude-total-recall:locale']`. i18next (`i18n.resolvedLanguage`) is the source of truth, not the reducer.
+- **Backend errors are code + English default.** `core/errors.ts: AppError` carries a stable `code` + params + an English message. The CLI prints the message verbatim; the renderer localizes by code. Since Electron only serializes `Error.message` over `ipcMain.handle`, main re-throws AppError encoded behind a sentinel (`encodeAppError`), and the renderer decodes + localizes in `state/api.ts: normalizeError` (`t('errors.<code>', { ...params, defaultValue })`). Preflight checks carry `detailKey`/`fixKey` for the same reason.
+- **Non-component modules** receive `t` as a parameter (`buildCommands(state, actions, t)`, `validateName(kind, value, t)`) or use the `i18n` singleton (`state/api.ts`, `state/useActions.ts`). Search keywords in the command palette stay bilingual literal arrays so search works in either language.
+
 ## Testing note
 
 The memories destination is a **separate private repo**, never this code repo. `TESTING.md` documents the manual dogfooding flow end-to-end.
+
+**vitest gotcha**: the suite runs under the `node` environment and only includes `src/**/*.test.ts` (no `.tsx` render tests). So pure modules that need translation take `t` as a parameter (tested with an identity stub), never via the DOM. `i18n/parity.test.ts` and `i18n/keysExist.test.ts` guard en/es key parity and that every static `t()` key exists in the catalog; `state/api.test.ts` guards the sentinel → localized-error pipeline.

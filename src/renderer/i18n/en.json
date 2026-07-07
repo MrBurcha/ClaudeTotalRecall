@@ -1,0 +1,398 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "create": "Create",
+    "connect": "Connect",
+    "add": "Add",
+    "edit": "Edit",
+    "remove": "Remove",
+    "retry": "Re-check",
+    "confirm": "Confirm"
+  },
+  "titlebar": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close"
+  },
+  "nav": {
+    "home": "Sync",
+    "projects": "Projects",
+    "machines": "Machines",
+    "settings": "Settings"
+  },
+  "sidebar": {
+    "searchAction": "Search action",
+    "unregistered": "not registered",
+    "toggleTheme": "Toggle theme"
+  },
+  "interval": {
+    "30s": "30s",
+    "1m": "1 min",
+    "2m": "2 min",
+    "5m": "5 min"
+  },
+  "settings": {
+    "eyebrow": "Configuration",
+    "title": "Settings",
+    "sub": "System requirements, repo, and local settings overrides.",
+    "requirements": "Requirements",
+    "recheck": "Re-check",
+    "repo": "Repo",
+    "remotePlaceholder": "git@github.com:user/claude-memories.git",
+    "repoConnected": "Repo connected.",
+    "repoConnectedCreated": "Repo connected (structure created).",
+    "autoSync": "Automatic sync",
+    "autoSyncSub": "Pushes instantly when files change and pulls from the repo periodically. Runs while the app is open.",
+    "remoteCheck": "Remote check",
+    "remoteCheckFreq": "Remote check frequency",
+    "localTitle": "settings.local.json",
+    "localSub": "Keys here stay on this machine and don't travel to the repo.",
+    "invalidJson": "Invalid JSON.",
+    "localSaved": "Local overrides saved.",
+    "about": "About",
+    "aboutText": "Claude Total Recall v{{version}} — syncs Claude Code memory across your machines via a private GitHub repo.",
+    "language": "Language",
+    "languageAria": "Interface language"
+  },
+  "home": {
+    "eyebrow": "Sync station",
+    "title": "Your memory, synced on its own",
+    "sub": "Claude Total Recall keeps Claude Code's memory up to date across your machines: it pushes the moment you edit and pulls from the repo every few minutes. Nothing to press.",
+    "status": {
+      "conflict": "Conflict",
+      "loading": "Loading…",
+      "syncing": "Syncing…",
+      "offline": "Offline",
+      "upToDate": "Up to date"
+    },
+    "meta": {
+      "toResolve_one": "{{count}} file to resolve",
+      "toResolve_other": "{{count}} files to resolve",
+      "syncing": "putting everything in order…",
+      "offline": "offline, retrying on its own",
+      "lastSynced": "last synced {{time}}",
+      "autoOn": "automatic on",
+      "autoOff": "automatic off"
+    },
+    "conflictCard_one": "Sync is paused by {{count}} conflict. Resolve it so it keeps going on its own.",
+    "conflictCard_other": "Sync is paused by {{count}} conflicts. Resolve them so it keeps going on its own.",
+    "resolveConflict": "Resolve conflict",
+    "firstProject": "Add your first project to sync specific folders?",
+    "createProject": "Create project"
+  },
+  "relativeTime": {
+    "now": "just now",
+    "seconds_one": "{{count}}s ago",
+    "seconds_other": "{{count}}s ago",
+    "minutes_one": "{{count}} min ago",
+    "minutes_other": "{{count}} min ago",
+    "hours_one": "{{count}}h ago",
+    "hours_other": "{{count}}h ago",
+    "days_one": "{{count}}d ago",
+    "days_other": "{{count}}d ago"
+  },
+  "about": {
+    "title": "About Claude Total Recall",
+    "body": "Syncs Claude Code memory across your machines via a private GitHub repo.",
+    "secrets": "Secrets never travel: .credentials.json, .claude.json, or transcripts (*.jsonl)."
+  },
+  "sync": {
+    "resolveBeforeScatter": "Resolve the conflicts before pulling (scatter): {{conflicts}}",
+    "integrateConflicts": "Conflicts while integrating: {{conflicts}}. Resolve them below.",
+    "applied_one": "{{verb}} applied: {{count}} action.",
+    "applied_other": "{{verb}} applied: {{count}} actions.",
+    "advanced": "Advanced",
+    "advancedSub": "force changes, manual round-trip, conflicts",
+    "branch": "Branch",
+    "toPush": "To push",
+    "toPull": "To pull",
+    "state": "State",
+    "dirty": "with changes",
+    "clean": "clean",
+    "secrets": "Secrets",
+    "excluded": "excluded",
+    "hintGather": "machine → repo",
+    "hintGatherCount": "machine → repo · {{count}} to push",
+    "hintScatter": "repo → machine",
+    "hintScatterCount": "repo → machine · {{count}} to pull",
+    "automatic": "Automatic",
+    "syncing": "Syncing…",
+    "syncNow": "Sync now"
+  },
+  "palette": {
+    "ariaLabel": "Command palette",
+    "searchPlaceholder": "Search an action…",
+    "noResults": "No results",
+    "navigate": "navigate",
+    "execute": "run",
+    "group": {
+      "sync": "Sync",
+      "navigate": "Navigate",
+      "create": "Create",
+      "appearance": "Appearance",
+      "help": "Help"
+    },
+    "syncNow": {
+      "title": "Sync now",
+      "subtitle": "full cycle (push and pull)"
+    },
+    "autoToggle": {
+      "enable": "Enable automatic sync",
+      "disable": "Disable automatic sync"
+    },
+    "gather": {
+      "title": "Push changes (gather)",
+      "subtitle": "advanced · machine → repo"
+    },
+    "scatter": {
+      "title": "Pull changes (scatter)",
+      "subtitle": "advanced · repo → machine"
+    },
+    "refresh": {
+      "title": "Refresh status"
+    },
+    "goHome": "Go to Sync",
+    "goProjects": "Go to Projects",
+    "goMachines": "Go to Machines",
+    "goSettings": "Go to Settings",
+    "newProject": "New project",
+    "theme": {
+      "toLight": "Switch to light theme",
+      "toDark": "Switch to dark theme"
+    },
+    "about": "About Claude Total Recall"
+  },
+  "planReview": {
+    "title": "Review changes",
+    "dirGather": "machine → repo",
+    "dirScatter": "repo → machine",
+    "push": "Push changes",
+    "apply": "Apply changes",
+    "nothing": "Nothing to do: everything is in sync.",
+    "summary": "Will {{list}} file(s) in {{dest}}.",
+    "partCreate": "create {{count}}",
+    "partOverwrite": "overwrite {{count}}",
+    "partDelete": "delete {{count}}",
+    "and": "and",
+    "destRepo": "the repo",
+    "destMachine": "your machine",
+    "filterByType": "Filter by type",
+    "filterAll": "All",
+    "filterCreate": "Create",
+    "filterOverwrite": "Overwrite",
+    "filterDelete": "Delete",
+    "showUnchanged": "Show unchanged",
+    "userGroup": "User",
+    "projectGroup": "Project · {{name}}",
+    "from": "from",
+    "to": "to",
+    "computed": "computed content"
+  },
+  "tag": {
+    "create": "create",
+    "overwrite": "overwrite",
+    "delete": "delete",
+    "noop": "same",
+    "skip": "skip"
+  },
+  "errors": {
+    "machine": {
+      "invalidName": "Invalid machine name.",
+      "notRegistered": "Machine not registered.",
+      "notRegisteredAddProject": "Machine not registered; register before adding projects.",
+      "notRegisteredLocal": "Machine not registered (local.json missing). Run `claude-total-recall register`.",
+      "notRegisteredPrefs": "Machine not registered; nowhere to save preferences."
+    },
+    "push": {
+      "rejectedRegister": "Push failed while registering: {{stderr}}",
+      "retriesExhaustedRegister": "Could not register after several retries (push rejected).",
+      "failed": "Push failed: {{stderr}}",
+      "retriesExhausted": "Could not save after several retries."
+    },
+    "project": {
+      "invalidName": "Invalid project name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore."
+    },
+    "slot": {
+      "invalidName": "Invalid slot name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore."
+    },
+    "path": {
+      "empty": "The path cannot be empty."
+    },
+    "platform": {
+      "unsupported": "Unsupported platform: {{platform}}. Claude Total Recall supports macOS and Linux (Windows later)."
+    },
+    "plan": {
+      "expired": "Plan expired; rebuild it (the preview is no longer valid)."
+    }
+  },
+  "preflight": {
+    "git": {
+      "missing": "git not found in PATH",
+      "install": "Install git"
+    },
+    "gh": {
+      "missing": "gh (GitHub CLI) not found",
+      "install": "Install gh from https://cli.github.com"
+    },
+    "ghAuth": {
+      "ok": "gh authenticated",
+      "fix": "Run: gh auth login && gh auth setup-git",
+      "noGh": "gh is not installed, cannot verify auth",
+      "installFirst": "Install gh first"
+    }
+  },
+  "planReason": {
+    "noLocalSettings": "no local ~/.claude/settings.json",
+    "noRepoSettings": "no settings.json in the repo",
+    "sourceMissing": "source does not exist",
+    "notInSource": "not present in source",
+    "noPathForMachine": "no path for machine \"{{machine}}\""
+  },
+  "machines": {
+    "eyebrow": "Identity",
+    "title": "Machines",
+    "sub": "Every computer that syncs has a logical id and its own home.",
+    "registered": "Machine \"{{machineId}}\" registered.",
+    "connectRepoTitle": "Connect a repo first",
+    "connectRepoBody": "Configure the repo in Settings or from the wizard.",
+    "registerThisMachine": "Register this machine",
+    "logicalNameLabel": "Logical name (optional)",
+    "logicalNameHint": "If you leave it empty, we use the hostname.",
+    "register": "Register",
+    "registeredAs": "This machine is registered as <b>{{machineId}}</b>.",
+    "knownMachines_one": "Known machine ({{count}})",
+    "knownMachines_other": "Known machines ({{count}})",
+    "noneYetTitle": "None yet",
+    "noneYetBody": "Register this machine to get started.",
+    "thisMachine": "this"
+  },
+  "constellation": {
+    "syncingUp": "Syncing: pushing to the repo.",
+    "syncingDown": "Syncing: pulling from the repo.",
+    "overview": "Constellation of machines around the repo.",
+    "connected": "Machine {{machineId}} connected to the repo.",
+    "toUpload_one": "{{count}} to push",
+    "toUpload_other": "{{count}} to push",
+    "toDownload_one": "{{count}} to pull",
+    "toDownload_other": "{{count}} to pull",
+    "upToDate": "Machine {{machineId}}: up to date with the repo.",
+    "machineStatus": "Machine {{machineId}}: {{parts}}."
+  },
+  "planDrift": {
+    "title": "The disk changed",
+    "forceAnyway": "Force anyway",
+    "rebuild": "Rebuild",
+    "body_one": "Since you built the preview, {{count}} file changed on disk. The plan you confirmed no longer matches what's there now.",
+    "body_other": "Since you built the preview, {{count}} files changed on disk. The plan you confirmed no longer matches what's there now.",
+    "help": "<b>Rebuild</b> builds a fresh preview (recommended). <b>Force</b> applies the old plan anyway."
+  },
+  "projects": {
+    "eyebrow": "Configuration",
+    "title": "Projects",
+    "sub": "A project groups memory folders; each folder's path is stored literally per machine.",
+    "newProject": "New project",
+    "registerMachineFirst": "Register this machine first",
+    "registerMachineHint": "You need to register this computer before assigning folders.",
+    "noProjectsYet": "No projects yet",
+    "noProjectsHint": "Create one to sync specific memory folders.",
+    "folder": "Folder",
+    "delete": "Delete",
+    "deleted": "Project \"{{name}}\" deleted.",
+    "deleteProject": {
+      "title": "Delete project",
+      "body": "Delete \"{{name}}\" for all machines? It doesn't remove your local folders, only the sync configuration."
+    },
+    "noFoldersYet": "No folders yet",
+    "noFoldersHint": "Add a folder so this project syncs on this machine.",
+    "removeFolder": {
+      "title": "Remove folder",
+      "body": "Remove the slot \"{{slot}}\" from this machine? It doesn't delete the folder, it just stops syncing it here."
+    },
+    "folderRemoved": "Removed {{project}}/{{slot}} from this machine.",
+    "noPathOnMachine": "no path on this machine",
+    "editFolder": "Edit folder",
+    "removeFromMachine": "Remove from this machine",
+    "alsoOn": "also on: {{machines}}",
+    "alreadyExists": "A project with that name already exists. Assign it a path on its card.",
+    "created": "Project \"{{name}}\" created.",
+    "logicalName": "Logical name",
+    "projectNamePlaceholder": "my-project",
+    "projectNameHint": "Links the project across your machines (letters, numbers, . _ -).",
+    "pickOrPasteFolder": "Pick or paste a folder.",
+    "folderSaved": "Folder \"{{slot}}\" saved in {{project}}.",
+    "editFolderTitle": "Edit folder · {{project}}",
+    "addFolderTitle": "Add folder · {{project}}",
+    "slotLabel": "Slot",
+    "slotHintEditing": "The slot isn't renamed; remove it and create another if you want to change it.",
+    "slotHint": "Logical name of the folder (default: memory).",
+    "folderOnMachine": "Folder on this machine",
+    "folderPathPlaceholder": "/path/to/folder",
+    "choose": "Choose…",
+    "pathLiteralHint": "The path is stored literally for this machine; on others it may differ.",
+    "project": {
+      "nameEmpty": "The project name can't be empty.",
+      "nameInvalid": "Invalid project name. Use only letters, numbers, dot, hyphen and underscore."
+    },
+    "slot": {
+      "nameEmpty": "The slot name can't be empty.",
+      "nameInvalid": "Invalid slot name. Use only letters, numbers, dot, hyphen and underscore."
+    }
+  },
+  "conflicts": {
+    "title_one": "Resolve {{count}} conflict",
+    "title_other": "Resolve {{count}} conflicts",
+    "explainer": "For each file, choose which version to keep. <b>Local</b> = what's on this machine; <b>Remote</b> = what's in the repo.",
+    "resolutionFor": "Resolution for {{name}}",
+    "local": "Local",
+    "remote": "Remote",
+    "readyToFinalize": "Ready to finalize.",
+    "chooseEach": "Choose a version for each file.",
+    "finalizeMerge": "Finalize merge",
+    "resolved": "Conflicts resolved.",
+    "resolvedPushed": "Conflicts resolved and pushed."
+  },
+  "wizard": {
+    "brandTag": "sync station",
+    "closeAria": "Close wizard",
+    "step": {
+      "preflight": "Requirements",
+      "connect": "Repo",
+      "register": "Machine",
+      "firstProject": "Project"
+    },
+    "preflight": {
+      "title": "System requirements",
+      "sub": "Claude Total Recall uses git and gh to sync. Let's make sure they're ready."
+    },
+    "connect": {
+      "title": "Connect your memory repo",
+      "sub": "A private GitHub repo where your memories live. Paste its URL (HTTPS or SSH).",
+      "urlLabel": "Repo URL",
+      "urlPlaceholder": "git@github.com:user/claude-memories.git",
+      "privacyNote": "Secrets and transcripts never travel.",
+      "connected": "Repo connected.",
+      "connectedCreated": "Repo connected and initial structure created."
+    },
+    "register": {
+      "title": "Register this machine",
+      "sub": "A logical id for this computer. If you leave it empty, we use the hostname.",
+      "nameLabel": "Logical name (optional)",
+      "submit": "Register this machine",
+      "registered": "Machine \"{{machineId}}\" registered."
+    },
+    "firstProject": {
+      "title": "Add a project?",
+      "sub": "Optional. A project syncs specific memory folders, on top of your user config.",
+      "createProject": "Create project",
+      "later": "I'll do it later"
+    },
+    "done": {
+      "title": "All set",
+      "sub": "Your memory is ready to sync across machines.",
+      "goToSync": "Go to Sync"
+    }
+  }
+}

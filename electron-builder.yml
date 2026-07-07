@@ -1,5 +1,5 @@
-appId: com.mrburcha.claudetr
-productName: ClaudeTR
+appId: com.mrburcha.claudetotalrecall
+productName: Claude Total Recall
 directories:
   output: release
   buildResources: build
@@ -26,7 +26,7 @@ afterPack: scripts/afterPack.cjs
 dmg:
   # Nombre de volumen versionado (default de electron-builder): cada versión monta
   # con un nombre distinto, así Finder lee el .DS_Store fresco sin arrastrar estado.
-  title: ClaudeTR ${version}
+  title: Claude Total Recall ${version}
   # Fondo con las instrucciones de instalación/apertura (build/background.png +
   # background@2x.png para retina). Coords en px desde arriba-izquierda, al centro
   # del ícono: la app a la izquierda, el alias a Aplicaciones a la derecha.
@@ -54,12 +54,12 @@ linux:
     - pacman
   category: Development
   maintainer: MrBurcha
-  # GNOME/mutter asocia la ventana a su .desktop por WM_CLASS, case-sensitive.
-  # Electron reporta WM_CLASS "claudetr" (el name de package.json), pero el default
-  # de electron-builder es StartupWMClass=productName ("ClaudeTR") → no matchea y el
-  # DE muestra un ícono genérico. Lo forzamos al WM_CLASS real.
+  # GNOME/mutter binds the window to its .desktop entry via WM_CLASS (case-sensitive).
+  # Electron reports WM_CLASS "claude-total-recall" (the package.json name), but
+  # electron-builder defaults StartupWMClass to productName ("Claude Total Recall") →
+  # it won't match and the DE shows a generic icon. Force it to the real WM_CLASS.
   desktop:
-    StartupWMClass: claudetr
+    StartupWMClass: claude-total-recall
 # Deps con nombres de Arch: el default de electron-builder usa nomenclatura
 # Debian (p.ej. http-parser), que no existe en los repos de Arch. El .deb
 # conserva sus defaults; solo el pacman necesita este override.

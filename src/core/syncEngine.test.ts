@@ -19,7 +19,7 @@ async function exists(p: string): Promise<boolean> {
 }
 
 async function newBase(): Promise<string> {
-  const base = await mkdtemp(join(tmpdir(), 'claudetr-eng-'))
+  const base = await mkdtemp(join(tmpdir(), 'claude-total-recall-eng-'))
   bases.push(base)
   return base
 }
@@ -34,7 +34,7 @@ function adapterFor(home: string) {
   return createPlatformAdapter(process.platform, home)
 }
 
-/** Conecta + registra una máquina cuyo ~/.claude ya fue sembrado. */
+/** Connects + registers a machine whose ~/.claude has already been seeded. */
 async function joinMachine(base: string, name: string, home: string) {
   const remote = join(base, 'remote.git')
   const a = adapterFor(home)
@@ -50,11 +50,11 @@ afterEach(async () => {
 const COMMANDS = 'memories/user/commands'
 
 describe('runSyncCycle', () => {
-  it('sube cambios locales, otra máquina los baja, y el bootstrap no vuela el repo', async () => {
+  it('pushes local changes, another machine pulls them, and the bootstrap does not blow away the repo', async () => {
     const base = await newBase()
     await bareRemote(base)
 
-    // m1 siembra ~/.claude y sincroniza (sube).
+    // m1 seeds ~/.claude and syncs (pushes).
     const home1 = join(base, 'home1')
     await mkdir(join(home1, '.claude', 'commands'), { recursive: true })
     await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'memoria de m1\n')
@@ -66,7 +66,7 @@ describe('runSyncCycle', () => {
     expect(out1.kind).toBe('synced')
     if (out1.kind === 'synced') expect(out1.pushed).toBe(true)
 
-    // m2: home vacío. El primer ciclo es el bootstrap: baja todo, sin borrar el repo.
+    // m2: empty home. The first cycle is the bootstrap: pulls everything, without deleting the repo.
     const home2 = join(base, 'home2')
     const a2 = await joinMachine(base, 'm2', home2)
     const out2 = await runSyncCycle(a2)
@@ -75,13 +75,13 @@ describe('runSyncCycle', () => {
     expect(await readFile(join(home2, '.claude', 'CLAUDE.md'), 'utf8')).toBe('memoria de m1\n')
     expect(await readFile(join(home2, '.claude', 'commands', 'deploy.md'), 'utf8')).toBe('deploy cmd\n')
 
-    // El repo NO se vació: un clon fresco del remoto todavía tiene las memorias.
+    // The repo was NOT emptied: a fresh clone of the remote still has the memories.
     const a3 = adapterFor(join(base, 'home3'))
     await connectRepo(join(base, 'remote.git'), a3)
     expect(await exists(join(workingCopyDir(a3), `${COMMANDS}/deploy.md`))).toBe(true)
   })
 
-  it('propaga un borrado de directorio y no lo resucita', async () => {
+  it('propagates a directory deletion and does not resurrect it', async () => {
     const base = await newBase()
     await bareRemote(base)
 
@@ -94,27 +94,27 @@ describe('runSyncCycle', () => {
 
     const home2 = join(base, 'home2')
     const a2 = await joinMachine(base, 'm2', home2)
-    await runSyncCycle(a2) // bootstrap: baja a.md y b.md
+    await runSyncCycle(a2) // bootstrap: pulls a.md and b.md
     expect(await exists(join(home2, '.claude', 'commands', 'a.md'))).toBe(true)
 
-    // m1 borra a.md localmente y sincroniza ⇒ la baja se propaga al repo.
+    // m1 deletes a.md locally and syncs ⇒ the deletion propagates to the repo.
     await rm(join(home1, '.claude', 'commands', 'a.md'))
     const outDel = await runSyncCycle(a1)
     expect(outDel.kind).toBe('synced')
     expect(await exists(join(workingCopyDir(a1), `${COMMANDS}/a.md`))).toBe(false)
 
-    // Sin resurrección en m1: otro ciclo no la recrea en la máquina.
+    // No resurrection on m1: another cycle does not recreate it on the machine.
     await runSyncCycle(a1)
     expect(await exists(join(home1, '.claude', 'commands', 'a.md'))).toBe(false)
 
-    // m2 baja la baja: a.md desaparece de la máquina; b.md sobrevive.
+    // m2 pulls the deletion: a.md disappears from the machine; b.md survives.
     const out2 = await runSyncCycle(a2)
     expect(out2.kind).toBe('synced')
     expect(await exists(join(home2, '.claude', 'commands', 'a.md'))).toBe(false)
     expect(await exists(join(home2, '.claude', 'commands', 'b.md'))).toBe(true)
   })
 
-  it('pushea un commit local que quedó sin pushear (else-branch, sin cambios de máquina)', async () => {
+  it('pushes a local commit that was left unpushed (else-branch, no machine changes)', async () => {
     const base = await newBase()
     await bareRemote(base)
 
@@ -122,24 +122,24 @@ describe('runSyncCycle', () => {
     await mkdir(join(home1, '.claude', 'commands'), { recursive: true })
     await writeFile(join(home1, '.claude', 'commands', 'a.md'), 'A\n')
     const a1 = await joinMachine(base, 'm1', home1)
-    await runSyncCycle(a1) // sincroniza; working copy == remoto
+    await runSyncCycle(a1) // syncs; working copy == remote
 
-    // Simular un commit local sin pushear (p.ej. un push que falló antes).
+    // Simulate a local commit that was not pushed (e.g. a push that failed earlier).
     const wc = workingCopyDir(a1)
     await writeFile(join(wc, `${COMMANDS}/extra.md`), 'extra\n')
     await run('git', ['-C', wc, 'add', '-A'])
     await run('git', ['-C', wc, '-c', 'user.email=x@y', '-c', 'user.name=x', 'commit', '-m', 'sin pushear'])
 
-    const out = await runSyncCycle(a1) // sin cambios de máquina ⇒ else-branch
+    const out = await runSyncCycle(a1) // no machine changes ⇒ else-branch
     expect(out.kind).toBe('synced')
 
-    // El remoto recibió el commit que había quedado local.
+    // The remote received the commit that had been left local.
     const a3 = adapterFor(join(base, 'home3'))
     await connectRepo(join(base, 'remote.git'), a3)
     expect(await exists(join(workingCopyDir(a3), `${COMMANDS}/extra.md`))).toBe(true)
   })
 
-  it('detecta conflicto cuando dos máquinas editan el mismo archivo', async () => {
+  it('detects a conflict when two machines edit the same file', async () => {
     const base = await newBase()
     await bareRemote(base)
 
@@ -151,14 +151,14 @@ describe('runSyncCycle', () => {
 
     const home2 = join(base, 'home2')
     const a2 = await joinMachine(base, 'm2', home2)
-    await runSyncCycle(a2) // baja 'base'
+    await runSyncCycle(a2) // pulls 'base'
 
-    // Ambas editan CLAUDE.md distinto, sin sincronizar en el medio.
+    // Both edit CLAUDE.md differently, without syncing in between.
     await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'cambio de m1\n')
-    await runSyncCycle(a1) // m1 sube su versión
+    await runSyncCycle(a1) // m1 pushes its version
 
     await writeFile(join(home2, '.claude', 'CLAUDE.md'), 'cambio de m2\n')
-    const out = await runSyncCycle(a2) // choca al pullear el remoto
+    const out = await runSyncCycle(a2) // collides when pulling the remote
     expect(out.kind).toBe('conflict')
     if (out.kind === 'conflict') {
       expect(out.files).toContain('memories/user/CLAUDE.md')
