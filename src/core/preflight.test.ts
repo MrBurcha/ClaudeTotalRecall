@@ -6,7 +6,7 @@ const ok = (stdout = ''): ExecResult => ({ code: 0, stdout, stderr: '' })
 const fail = (stderr = 'error'): ExecResult => ({ code: 1, stdout: '', stderr })
 
 describe('runPreflight', () => {
-  it('todo OK cuando git, gh y gh-auth están presentes', async () => {
+  it('all OK when git, gh and gh-auth are present', async () => {
     const deps: PreflightDeps = {
       find: (n) => (n === 'git' ? '/usr/bin/git' : '/opt/homebrew/bin/gh'),
       exec: async () => ok('Logged in'),
@@ -17,7 +17,7 @@ describe('runPreflight', () => {
     expect(res.checks.every((c) => c.ok)).toBe(true)
   })
 
-  it('falla y guía cuando git no está', async () => {
+  it('fails and guides when git is missing', async () => {
     const deps: PreflightDeps = {
       find: (n) => (n === 'git' ? null : '/opt/homebrew/bin/gh'),
       exec: async () => ok(),
@@ -29,7 +29,7 @@ describe('runPreflight', () => {
     expect(git.fix).toBeTruthy()
   })
 
-  it('falla cuando gh no está autenticado', async () => {
+  it('fails when gh is not authenticated', async () => {
     const deps: PreflightDeps = {
       find: () => '/opt/homebrew/bin/gh',
       exec: async () => fail('not logged in'),
@@ -41,7 +41,7 @@ describe('runPreflight', () => {
     expect(auth.fix).toContain('gh auth login')
   })
 
-  it('no intenta verificar auth si gh no está instalado', async () => {
+  it('does not try to verify auth if gh is not installed', async () => {
     let execCalled = false
     const deps: PreflightDeps = {
       find: () => null,

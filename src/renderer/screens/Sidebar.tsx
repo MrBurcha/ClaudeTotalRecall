@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { StatusDot } from '../components/Badge'
 import { Icon, type IconName } from '../components/Icon'
 import { IconButton } from '../components/IconButton'
@@ -7,14 +8,15 @@ import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 import type { Route } from '../state/types'
 
-const NAV: { route: Route; label: string; icon: IconName }[] = [
-  { route: 'home', label: 'Sincronización', icon: 'orbit' },
-  { route: 'projects', label: 'Proyectos', icon: 'folder' },
-  { route: 'machines', label: 'Máquinas', icon: 'monitor' },
-  { route: 'settings', label: 'Ajustes', icon: 'sliders' },
+const NAV: { route: Route; labelKey: string; icon: IconName }[] = [
+  { route: 'home', labelKey: 'nav.home', icon: 'orbit' },
+  { route: 'projects', labelKey: 'nav.projects', icon: 'folder' },
+  { route: 'machines', labelKey: 'nav.machines', icon: 'monitor' },
+  { route: 'settings', labelKey: 'nav.settings', icon: 'sliders' },
 ]
 
 export function Sidebar(): JSX.Element {
+  const { t } = useTranslation()
   const state = useAppState()
   const actions = useActions()
   const nConflicts = conflictFiles(state).length
@@ -24,8 +26,7 @@ export function Sidebar(): JSX.Element {
       <div className="brand">
         <Icon name="orbit" size={22} className="brand__mark" />
         <div>
-          <div className="brand__name">ClaudeTR</div>
-          <span className="brand__tag">total recall</span>
+          <div className="brand__name">Claude Total Recall</div>
         </div>
       </div>
 
@@ -38,7 +39,7 @@ export function Sidebar(): JSX.Element {
             onClick={() => actions.navigate(n.route)}
           >
             <Icon name={n.icon} size={18} />
-            <span className="grow">{n.label}</span>
+            <span className="grow">{t(n.labelKey)}</span>
             {n.route === 'home' && nConflicts > 0 && (
               <span className="badge nav-item__badge">{nConflicts}</span>
             )}
@@ -50,7 +51,7 @@ export function Sidebar(): JSX.Element {
 
       <button className="palette-hint" onClick={actions.openPalette}>
         <Icon name="search" size={15} />
-        <span className="grow">Buscar acción</span>
+        <span className="grow">{t('sidebar.searchAction')}</span>
         <Kbd>⌘K</Kbd>
       </button>
 
@@ -58,16 +59,16 @@ export function Sidebar(): JSX.Element {
         <div className="row between row-nowrap">
           <span className="pill truncate">
             <StatusDot tone={state.machineId ? 'ok' : 'warn'} />
-            {state.machineId ?? 'sin registrar'}
+            {state.machineId ?? t('sidebar.unregistered')}
           </span>
           <IconButton
             icon={state.theme === 'dark' ? 'sun' : 'moon'}
-            label="Cambiar tema"
+            label={t('sidebar.toggleTheme')}
             onClick={actions.toggleTheme}
           />
         </div>
         <button className="sidebar__version" onClick={() => actions.openModal({ kind: 'about' })}>
-          ClaudeTR v{state.version ?? '—'}
+          Claude Total Recall v{state.version ?? '—'}
         </button>
       </div>
     </nav>

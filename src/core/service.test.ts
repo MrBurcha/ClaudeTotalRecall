@@ -34,7 +34,7 @@ async function exists(p: string): Promise<boolean> {
 }
 
 async function newBase(): Promise<string> {
-  const base = await mkdtemp(join(tmpdir(), 'claudetr-svc-'))
+  const base = await mkdtemp(join(tmpdir(), 'claude-total-recall-svc-'))
   bases.push(base)
   return base
 }
@@ -54,7 +54,7 @@ afterEach(async () => {
 })
 
 describe('connectRepo', () => {
-  it('inicializa la estructura en un repo vacío y no re-inicializa uno con contenido', async () => {
+  it('initializes the structure in an empty repo and does not re-initialize one with content', async () => {
     const base = await newBase()
     const remote = await bareRemote(base)
 
@@ -64,7 +64,7 @@ describe('connectRepo', () => {
     expect(await exists(configPath(a1))).toBe(true)
     expect(await exists(join(workingCopyDir(a1), 'memories/user/commands/.gitkeep'))).toBe(true)
 
-    // Otra máquina clona el repo ya inicializado.
+    // Another machine clones the already-initialized repo.
     const a2 = adapterFor(join(base, 'home2'))
     const r2 = await connectRepo(remote, a2)
     expect(r2.initialized).toBe(false)
@@ -73,7 +73,7 @@ describe('connectRepo', () => {
 })
 
 describe('registerMachine', () => {
-  it('es idempotente y no pierde registros de máquinas distintas', async () => {
+  it('is idempotent and does not lose records of different machines', async () => {
     const base = await newBase()
     const remote = await bareRemote(base)
 
@@ -86,33 +86,33 @@ describe('registerMachine', () => {
     expect(reg1.machineId).toBe('machine-one')
     expect(reg1.alreadyRegistered).toBe(false)
 
-    // Re-registrar la misma es idempotente.
+    // Re-registering the same one is idempotent.
     const reg1b = await registerMachine(a1, 'machine-one')
     expect(reg1b.alreadyRegistered).toBe(true)
 
-    // a2 registra otra máquina; el fetch+reset+reapply no pisa a machine-one.
+    // a2 registers another machine; the fetch+reset+reapply does not clobber machine-one.
     const reg2 = await registerMachine(a2, 'machine-two')
     expect(reg2.machineId).toBe('machine-two')
 
-    // El remoto tiene ambas.
+    // The remote has both.
     const g1 = new Git(workingCopyDir(a1))
     await g1.fetch()
     await g1.resetHard('origin/main')
     const config = await loadConfig(configPath(a1))
     expect(Object.keys(config.machines).sort()).toEqual(['machine-one', 'machine-two'])
 
-    // Se escribió el local.json con la identidad.
+    // The local.json was written with the identity.
     expect(await exists(join(a1.configHome(), 'local.json'))).toBe(true)
     expect(await exists(join(a1.configHome(), 'settings.local.json'))).toBe(true)
   })
 })
 
-describe('gather → scatter vía servicio (dos máquinas, un remoto)', () => {
-  it('propaga memoria user-level y settings de m1 a m2', async () => {
+describe('gather → scatter via the service (two machines, one remote)', () => {
+  it('propagates user-level memory and settings from m1 to m2', async () => {
     const base = await newBase()
     const remote = await bareRemote(base)
 
-    // Máquina 1: sembrar ~/.claude, conectar, registrar, gather.
+    // Machine 1: seed ~/.claude, connect, register, gather.
     const home1 = join(base, 'home1')
     await mkdir(join(home1, '.claude', 'commands'), { recursive: true })
     await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'memoria de m1\n')
@@ -127,7 +127,7 @@ describe('gather → scatter vía servicio (dos máquinas, un remoto)', () => {
     expect(gres.pushed).toBe(true)
     expect(gres.conflicts).toEqual([])
 
-    // Máquina 2: home vacío, conectar (clona memorias), registrar, scatter.
+    // Machine 2: empty home, connect (clones memories), register, scatter.
     const home2 = join(base, 'home2')
     const a2 = adapterFor(home2)
     await connectRepo(remote, a2)
@@ -145,13 +145,13 @@ describe('gather → scatter vía servicio (dos máquinas, un remoto)', () => {
       theme: 'dark',
     })
 
-    // status de m2 tras el pull: limpio y al día.
+    // m2 status after the pull: clean and up to date.
     const st = await repoStatus(a2)
     expect(st.conflicted).toEqual([])
   })
 })
 
-describe('operaciones de proyecto (CRUD)', () => {
+describe('project operations (CRUD)', () => {
   async function setup() {
     const base = await newBase()
     const remote = await bareRemote(base)
@@ -162,12 +162,12 @@ describe('operaciones de proyecto (CRUD)', () => {
   }
   const cfg = (a: ReturnType<typeof adapterFor>) => loadConfig(configPath(a))
 
-  it('crea proyecto vacío; sobre uno existente es no-op y lo informa; rechaza nombres inválidos', async () => {
+  it('creates an empty project; on an existing one it is a no-op and reports it; rejects invalid names', async () => {
     const a = await setup()
     expect(await createProject(a, 'demo-core')).toEqual({ alreadyExists: false })
     expect((await cfg(a)).projects['demo-core']).toEqual({ folders: {} })
 
-    // Re-crear no pisa el proyecto: sus carpetas quedan intactas.
+    // Re-creating does not clobber the project: its folders stay intact.
     await setProjectFolder(a, 'demo-core', 'memory', '/tmp/x')
     expect(await createProject(a, 'demo-core')).toEqual({ alreadyExists: true })
     expect((await cfg(a)).projects['demo-core'].folders.memory.m1).toBe('/tmp/x')
@@ -176,7 +176,7 @@ describe('operaciones de proyecto (CRUD)', () => {
     await expect(createProject(a, '..')).rejects.toThrow()
   })
 
-  it('setProjectFolder hace upsert del path de esta máquina y expande ~', async () => {
+  it("setProjectFolder upserts this machine's path and expands ~", async () => {
     const a = await setup()
     await setProjectFolder(a, 'proj', 'memory', '/tmp/x')
     expect((await cfg(a)).projects.proj.folders.memory.m1).toBe('/tmp/x')
@@ -184,23 +184,23 @@ describe('operaciones de proyecto (CRUD)', () => {
     await setProjectFolder(a, 'proj', 'memory', '/tmp/y') // upsert
     expect((await cfg(a)).projects.proj.folders.memory.m1).toBe('/tmp/y')
 
-    await setProjectFolder(a, 'proj', 'docs', '~/docs') // expande ~
+    await setProjectFolder(a, 'proj', 'docs', '~/docs') // expands ~
     expect((await cfg(a)).projects.proj.folders.docs.m1).toBe(join(a.home(), 'docs'))
   })
 
-  it('removeProjectFolder quita solo esta máquina y limpia la ranura vacía', async () => {
+  it('removeProjectFolder removes only this machine and cleans up the empty slot', async () => {
     const a = await setup()
     await setProjectFolder(a, 'proj', 'memory', '/tmp/x') // m1
-    await setProjectFolder(a, 'proj', 'memory', '/other', 'm2') // otra máquina en la misma ranura
+    await setProjectFolder(a, 'proj', 'memory', '/other', 'm2') // another machine in the same slot
 
-    await removeProjectFolder(a, 'proj', 'memory') // quita m1
-    expect((await cfg(a)).projects.proj.folders.memory).toEqual({ m2: '/other' }) // sobrevive por m2
+    await removeProjectFolder(a, 'proj', 'memory') // removes m1
+    expect((await cfg(a)).projects.proj.folders.memory).toEqual({ m2: '/other' }) // survives because of m2
 
-    await removeProjectFolder(a, 'proj', 'memory', 'm2') // quita m2 → ranura vacía
+    await removeProjectFolder(a, 'proj', 'memory', 'm2') // removes m2 → empty slot
     expect((await cfg(a)).projects.proj.folders.memory).toBeUndefined()
   })
 
-  it('deleteProject elimina el proyecto entero', async () => {
+  it('deleteProject removes the whole project', async () => {
     const a = await setup()
     await setProjectFolder(a, 'proj', 'memory', '/tmp/x')
     await deleteProject(a, 'proj')

@@ -3,12 +3,13 @@ import { hostname } from 'node:os'
 import { join } from 'node:path'
 import type { PlatformAdapter } from '../platform'
 import { loadConfig, saveConfig } from './config'
+import { AppError } from './errors'
 import { Git } from './git'
 import { ensureSettingsLocal, loadLocalState, loadSettingsLocal, saveLocalState } from './localState'
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
 import { emptyConfig, type Config, type Machine, type Plan, type RepoStatus, type Verb } from './types'
 
-// ── ubicaciones locales (working copy = clon del repo bajo configHome) ───────
+// ── local locations (working copy = clone of the repo under configHome) ─────
 export function workingCopyDir(adapter: PlatformAdapter): string {
   return join(adapter.configHome(), 'repo')
 }
@@ -29,16 +30,16 @@ export function loadRepoConfig(adapter: PlatformAdapter): Promise<Config> {
   return loadConfig(configPath(adapter))
 }
 
-/** Asegura una identidad de commit local si el usuario no tiene una global. */
+/** Ensures a local commit identity if the user has no global one. */
 async function ensureIdentity(git: Git): Promise<void> {
   const email = await git.raw(['config', 'user.email'])
   if (email.code !== 0 || !email.stdout.trim()) {
-    await git.config('user.email', 'claudetr@localhost')
-    await git.config('user.name', 'ClaudeTR')
+    await git.config('user.email', 'claude-total-recall@localhost')
+    await git.config('user.name', 'Claude Total Recall')
   }
 }
 
-// ── onboarding: conectar al repo (clona; inicializa estructura si está vacío) ─
+// ── onboarding: connect to the repo (clone; init structure if empty) ────────
 export interface ConnectResult {
   initialized: boolean
 }
@@ -55,7 +56,7 @@ async function initStructure(dir: string, remote: string): Promise<void> {
     await mkdir(join(dir, d), { recursive: true })
     await writeFile(join(dir, d, '.gitkeep'), '')
   }
-  // Defensa en profundidad: aunque el guard del Plan ya excluye secretos.
+  // Defense in depth, even though the Plan guard already excludes secrets.
   await writeFile(join(dir, '.gitignore'), '.DS_Store\n.credentials.json\n*.jsonl\n.claude.json\n')
 }
 
@@ -78,14 +79,14 @@ export async function connectRepo(
   if (!(await pathExists(configPath(adapter)))) {
     await initStructure(dir, remote)
     await git.add()
-    await git.commit('ClaudeTR: estructura inicial')
+    await git.commit('Claude Total Recall: initial structure')
     await git.push(['-u', 'origin', 'HEAD'])
     return { initialized: true }
   }
   return { initialized: false }
 }
 
-// ── registro de máquina (fetch+reset+reapply: sin conflictos de merge en JSON) ─
+// ── machine registration (fetch+reset+reapply: no JSON merge conflicts) ─────
 function slug(s: string): string {
   return s
     .toLowerCase()
@@ -107,7 +108,7 @@ export async function registerMachine(
   const git = new Git(dir)
   await ensureIdentity(git)
   const machineId = slug(name ?? hostname())
-  if (!machineId) throw new Error('Nombre de máquina inválido')
+  if (!machineId) throw new AppError('machine.invalidName', 'Invalid machine name.')
   const machine: Machine = { os: adapter.os(), hostname: hostname(), home: adapter.home() }
 
   let alreadyRegistered = false
@@ -115,8 +116,8 @@ export async function registerMachine(
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await git.fetch()
     const branch = await git.currentBranch()
-    // Re-aplico siempre sobre el estado remoto más reciente ⇒ el mapa de máquinas
-    // nunca entra en conflicto textual aunque otra máquina registre en paralelo.
+    // Always reapply on top of the latest remote state ⇒ the machine map never
+    // conflicts textually even if another machine registers in parallel.
     await git.resetHard(`origin/${branch}`)
 
     const config = await loadRepoConfig(adapter)
@@ -128,12 +129,19 @@ export async function registerMachine(
     config.machines[machineId] = machine
     await saveConfig(configPath(adapter), config)
     await git.add()
-    await git.commit(`ClaudeTR: registrar máquina ${machineId}`)
+    await git.commit(`Claude Total Recall: register machine ${machineId}`)
     const push = await git.push()
     if (push.ok) break
-    if (!push.rejected) throw new Error(`push falló al registrar: ${push.stderr}`)
+    if (!push.rejected) {
+      throw new AppError('push.rejectedRegister', `Push failed while registering: ${push.stderr}`, {
+        stderr: push.stderr,
+      })
+    }
     if (attempt === maxAttempts - 1) {
-      throw new Error('No se pudo registrar tras varios reintentos (push rechazado)')
+      throw new AppError(
+        'push.retriesExhaustedRegister',
+        'Could not register after several retries (push rejected).',
+      )
     }
   }
 
@@ -142,7 +150,7 @@ export async function registerMachine(
   return { machineId, machine, alreadyRegistered }
 }
 
-// ── alta de proyecto / ranura (edita config en el repo, con retry) ───────────
+// ── add project / slot (edits config in the repo, with retry) ───────────────
 async function commitConfigChange(
   adapter: PlatformAdapter,
   message: string,
@@ -163,8 +171,12 @@ async function commitConfigChange(
     if (!c.committed) return
     const push = await git.push()
     if (push.ok) return
-    if (!push.rejected) throw new Error(`push falló: ${push.stderr}`)
-    if (attempt === maxAttempts - 1) throw new Error('No se pudo guardar tras varios reintentos')
+    if (!push.rejected) {
+      throw new AppError('push.failed', `Push failed: ${push.stderr}`, { stderr: push.stderr })
+    }
+    if (attempt === maxAttempts - 1) {
+      throw new AppError('push.retriesExhausted', 'Could not save after several retries.')
+    }
   }
 }
 
@@ -173,14 +185,18 @@ export async function currentMachineId(adapter: PlatformAdapter): Promise<string
   return local?.machineId ?? null
 }
 
-// Los nombres de proyecto y ranura son claves de path en el repo
-// (memories/projects/<name>/<slot>): validamos el charset y evitamos traversal.
+// Project and slot names are path segments in the repo
+// (memories/projects/<name>/<slot>): validate the charset and prevent traversal.
+// The gendered kind is gone: each kind maps to its own error code + full message
+// (project.invalidName / slot.invalidName) so the renderer can localize cleanly.
 const SAFE_NAME = /^[A-Za-z0-9._-]+$/
-function assertSafeName(kind: 'proyecto' | 'ranura', value: string): string {
+function assertSafeName(kind: 'project' | 'slot', value: string): string {
   const v = value.trim()
   if (!SAFE_NAME.test(v) || /^\.+$/.test(v)) {
-    throw new Error(
-      `Nombre de ${kind} inválido: "${value}". Usá solo letras, números, punto, guion y guion bajo.`,
+    throw new AppError(
+      `${kind}.invalidName`,
+      `Invalid ${kind} name: "${value}". Use only letters, numbers, dot, hyphen and underscore.`,
+      { value },
     )
   }
   return v
@@ -190,14 +206,14 @@ export interface CreateProjectResult {
   alreadyExists: boolean
 }
 
-/** Crea un proyecto vacío (sin carpetas). Si ya existe, no toca nada y lo informa. */
+/** Creates an empty project (no folders). If it already exists, touches nothing and reports it. */
 export async function createProject(
   adapter: PlatformAdapter,
   name: string,
 ): Promise<CreateProjectResult> {
-  const proj = assertSafeName('proyecto', name)
+  const proj = assertSafeName('project', name)
   let alreadyExists = false
-  await commitConfigChange(adapter, `ClaudeTR: nuevo proyecto ${proj}`, (config) => {
+  await commitConfigChange(adapter, `Claude Total Recall: new project ${proj}`, (config) => {
     if (config.projects[proj]) {
       alreadyExists = true
       return
@@ -208,8 +224,8 @@ export async function createProject(
 }
 
 /**
- * Upsert del path literal de una ranura para ESTA máquina (crea proyecto/ranura
- * si faltan). Expande `~` y hace trim.
+ * Upserts the literal path of a slot for THIS machine (creates the project/slot
+ * if missing). Expands `~` and trims.
  */
 export async function setProjectFolder(
   adapter: PlatformAdapter,
@@ -219,12 +235,17 @@ export async function setProjectFolder(
   machineId?: string,
 ): Promise<void> {
   const id = machineId ?? (await currentMachineId(adapter))
-  if (!id) throw new Error('Máquina no registrada; registrate antes de sumar proyectos.')
-  const proj = assertSafeName('proyecto', projectName)
-  const sl = assertSafeName('ranura', slot)
+  if (!id) {
+    throw new AppError(
+      'machine.notRegisteredAddProject',
+      'Machine not registered; register before adding projects.',
+    )
+  }
+  const proj = assertSafeName('project', projectName)
+  const sl = assertSafeName('slot', slot)
   const path = adapter.expandHome(absolutePath.trim())
-  if (!path) throw new Error('El path no puede estar vacío.')
-  await commitConfigChange(adapter, `ClaudeTR: ${proj}/${sl} en ${id}`, (config) => {
+  if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
+  await commitConfigChange(adapter, `Claude Total Recall: ${proj}/${sl} on ${id}`, (config) => {
     const project = config.projects[proj] ?? { folders: {} }
     const folder = project.folders[sl] ?? {}
     folder[id] = path
@@ -233,7 +254,7 @@ export async function setProjectFolder(
   })
 }
 
-/** Quita el path de ESTA máquina; si la ranura queda sin máquinas, la elimina. */
+/** Removes THIS machine's path; if the slot ends up with no machines, deletes it. */
 export async function removeProjectFolder(
   adapter: PlatformAdapter,
   projectName: string,
@@ -241,10 +262,10 @@ export async function removeProjectFolder(
   machineId?: string,
 ): Promise<void> {
   const id = machineId ?? (await currentMachineId(adapter))
-  if (!id) throw new Error('Máquina no registrada.')
+  if (!id) throw new AppError('machine.notRegistered', 'Machine not registered.')
   await commitConfigChange(
     adapter,
-    `ClaudeTR: quitar ${projectName}/${slot} en ${id}`,
+    `Claude Total Recall: remove ${projectName}/${slot} on ${id}`,
     (config) => {
       const project = config.projects[projectName]
       const folder = project?.folders[slot]
@@ -255,14 +276,14 @@ export async function removeProjectFolder(
   )
 }
 
-/** Elimina un proyecto entero (todas las máquinas). */
+/** Deletes an entire project (all machines). */
 export async function deleteProject(adapter: PlatformAdapter, projectName: string): Promise<void> {
-  await commitConfigChange(adapter, `ClaudeTR: eliminar proyecto ${projectName}`, (config) => {
+  await commitConfigChange(adapter, `Claude Total Recall: delete project ${projectName}`, (config) => {
     delete config.projects[projectName]
   })
 }
 
-// ── conflictos ───────────────────────────────────────────────────────────────
+// ── conflicts ───────────────────────────────────────────────────────────────
 export async function listConflicts(adapter: PlatformAdapter): Promise<string[]> {
   return new Git(workingCopyDir(adapter)).listConflicts()
 }
@@ -277,17 +298,17 @@ export async function resolveConflict(
   else await git.checkoutTheirs(file)
 }
 
-/** Cierra el merge y, si puede, pushea. */
+/** Completes the merge and pushes if it can. */
 export async function completeConflictMerge(
   adapter: PlatformAdapter,
 ): Promise<{ pushed: boolean }> {
   const git = new Git(workingCopyDir(adapter))
-  await git.completeMerge('ClaudeTR: resolución de conflictos')
+  await git.completeMerge('Claude Total Recall: resolve conflicts')
   const push = await git.push()
   return { pushed: push.ok }
 }
 
-// ── status ────────────────────────────────────────────────────────────────
+// ── status ──────────────────────────────────────────────────────────────────
 export function repoStatus(adapter: PlatformAdapter): Promise<RepoStatus> {
   return new Git(workingCopyDir(adapter)).status()
 }
@@ -299,12 +320,15 @@ export async function pullRepo(
   return { ok: r.ok, conflicts: r.conflicted }
 }
 
-// ── contexto de sync (config + identidad + overrides locales) ────────────────
+// ── sync context (config + identity + local overrides) ──────────────────────
 async function buildContext(adapter: PlatformAdapter): Promise<SyncContext> {
   const config = await loadRepoConfig(adapter)
   const local = await loadLocalState(adapter)
   if (!local) {
-    throw new Error('Máquina no registrada (falta local.json). Corré `claudetr register`.')
+    throw new AppError(
+      'machine.notRegisteredLocal',
+      'Machine not registered (local.json missing). Run `claude-total-recall register`.',
+    )
   }
   const localOverrides = await loadSettingsLocal(adapter)
   return {
@@ -324,7 +348,7 @@ export async function buildVerbPlan(
   return buildPlan(await buildContext(adapter), verb, meta)
 }
 
-// ── ejecución con git ────────────────────────────────────────────────────────
+// ── git-backed execution ────────────────────────────────────────────────────
 export interface GatherResult {
   exec: ExecResult
   conflicts: string[]
@@ -332,7 +356,7 @@ export interface GatherResult {
   committed: boolean
 }
 
-/** Ejecuta gather (máquina → working copy) y sincroniza con el remoto. */
+/** Runs gather (machine → working copy) and syncs with the remote. */
 export async function syncGather(
   adapter: PlatformAdapter,
   plan: Plan,
@@ -343,7 +367,7 @@ export async function syncGather(
   const exec = await executePlan(plan, ctx, opts)
 
   await git.add()
-  const c = await git.commit('ClaudeTR: gather')
+  const c = await git.commit('Claude Total Recall: gather')
   if (!c.committed) return { exec, conflicts: [], pushed: false, committed: false }
 
   const pull = await git.pull()
@@ -362,7 +386,7 @@ export interface ScatterResult {
   exec: ExecResult
 }
 
-/** Ejecuta scatter (working copy → máquina). No modifica el repo. */
+/** Runs scatter (working copy → machine). Does not modify the repo. */
 export async function syncScatter(
   adapter: PlatformAdapter,
   plan: Plan,

@@ -10,44 +10,44 @@ function cfg(projects: Config['projects'] = {}): Config {
 }
 
 describe('onboardingStep', () => {
-  it('pide preflight cuando falta git/gh/auth', () => {
+  it('requires preflight when git/gh/auth is missing', () => {
     expect(onboardingStep({ preflight: badPreflight, config: null, machineId: null })).toBe(
       'preflight',
     )
   })
 
-  it('pide connect con preflight ok pero sin config', () => {
+  it('requires connect with preflight ok but no config', () => {
     expect(onboardingStep({ preflight: okPreflight, config: null, machineId: null })).toBe(
       'connect',
     )
   })
 
-  it('pide register con config pero sin máquina', () => {
+  it('requires register with config but no machine', () => {
     expect(onboardingStep({ preflight: okPreflight, config: cfg(), machineId: null })).toBe(
       'register',
     )
   })
 
-  it('sugiere primer proyecto cuando no hay proyectos', () => {
+  it('suggests the first project when there are no projects', () => {
     expect(onboardingStep({ preflight: okPreflight, config: cfg(), machineId: 'm1' })).toBe(
       'first-project',
     )
   })
 
-  it('está listo con proyectos', () => {
+  it('is ready when there are projects', () => {
     const c = cfg({ demo: { folders: {} } })
     expect(onboardingStep({ preflight: okPreflight, config: c, machineId: 'm1' })).toBe('done')
   })
 })
 
 describe('needsOnboarding', () => {
-  it('bloquea en preflight/connect/register', () => {
+  it('blocks on preflight/connect/register', () => {
     expect(needsOnboarding({ preflight: badPreflight, config: null, machineId: null })).toBe(true)
     expect(needsOnboarding({ preflight: okPreflight, config: null, machineId: null })).toBe(true)
     expect(needsOnboarding({ preflight: okPreflight, config: cfg(), machineId: null })).toBe(true)
   })
 
-  it('NO bloquea por falta de proyectos ni cuando está listo', () => {
+  it('does NOT block for missing projects nor when ready', () => {
     expect(needsOnboarding({ preflight: okPreflight, config: cfg(), machineId: 'm1' })).toBe(false)
     const c = cfg({ demo: { folders: {} } })
     expect(needsOnboarding({ preflight: okPreflight, config: c, machineId: 'm1' })).toBe(false)
@@ -55,7 +55,7 @@ describe('needsOnboarding', () => {
 })
 
 describe('canSync', () => {
-  it('requiere config + máquina + preflight ok', () => {
+  it('requires config + machine + preflight ok', () => {
     expect(canSync({ config: cfg(), machineId: 'm1', preflight: okPreflight })).toBe(true)
     expect(canSync({ config: null, machineId: 'm1', preflight: okPreflight })).toBe(false)
     expect(canSync({ config: cfg(), machineId: null, preflight: okPreflight })).toBe(false)
@@ -64,7 +64,7 @@ describe('canSync', () => {
 })
 
 describe('conflicts', () => {
-  it('deriva de status.conflicted', () => {
+  it('derives from status.conflicted', () => {
     const status: RepoStatus = {
       branch: 'main',
       ahead: 0,

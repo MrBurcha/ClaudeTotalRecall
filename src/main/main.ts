@@ -27,7 +27,7 @@ function createWindow(): void {
     width: 1100,
     height: 740,
     show: false,
-    title: 'ClaudeTR',
+    title: 'Claude Total Recall',
     // Chrome propio: en Linux/Windows sacamos el marco nativo (la barra de título
     // la dibuja el renderer); en macOS ocultamos la barra pero conservamos los
     // semáforos nativos (titleBarStyle 'hidden').
@@ -49,13 +49,13 @@ function createWindow(): void {
   win.on('unmaximize', () => win.webContents.send('window:state', false))
 
   // Smoke test de arranque: cargar el renderer y salir (CI/headless).
-  if (process.env.CLAUDETR_SMOKE) {
+  if (process.env.CLAUDE_TOTAL_RECALL_SMOKE) {
     win.webContents.on('did-finish-load', () => {
-      console.log('[claudetr] renderer cargó OK')
+      console.log('[claude-total-recall] renderer loaded OK')
       setTimeout(() => app.quit(), 300)
     })
     win.webContents.on('render-process-gone', (_e, d) => {
-      console.error('[claudetr] render-process-gone', d)
+      console.error('[claude-total-recall] render-process-gone', d)
       process.exit(1)
     })
   }
@@ -92,7 +92,7 @@ app.whenReady().then(() => {
     }
   })
   registerIpc(scheduler)
-  if (!process.env.CLAUDETR_SMOKE) void scheduler.start()
+  if (!process.env.CLAUDE_TOTAL_RECALL_SMOKE) void scheduler.start()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

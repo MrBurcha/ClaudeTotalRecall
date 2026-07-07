@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Devuelve un nodo compartido (#overlay-root) montado en <body> para portales
- * de overlays. Se crea una sola vez y no se elimina (varios overlays lo comparten).
- * Devuelve null en el primer render; el overlay se monta cuando está listo.
+ * Returns a shared node (#overlay-root) mounted on <body> for overlay portals.
+ * It's created once and never removed (several overlays share it).
+ * Returns null on the first render; the overlay mounts once it's ready.
  */
 export function usePortalNode(): HTMLElement | null {
   const [node, setNode] = useState<HTMLElement | null>(null)

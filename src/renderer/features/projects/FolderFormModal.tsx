@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/Button'
 import { TextField } from '../../components/Field'
 import { Modal } from '../../components/Modal'
@@ -12,6 +13,7 @@ export function FolderFormModal({
 }: {
   modal: Extract<ModalDescriptor, { kind: 'folder-form' }>
 }): JSX.Element {
+  const { t } = useTranslation()
   const actions = useActions()
   const editing = !!modal.slot
   const [slot, setSlot] = useState(modal.slot ?? 'memory')
@@ -30,14 +32,14 @@ export function FolderFormModal({
   const submit = async (): Promise<void> => {
     const s = slot.trim()
     if (!editing) {
-      const err = validateName('ranura', s)
+      const err = validateName('slot', s, t)
       if (err) {
         setError(err)
         return
       }
     }
     if (!path.trim()) {
-      setError('Elegí o pegá una carpeta.')
+      setError(t('projects.pickOrPasteFolder'))
       return
     }
     setSubmitting(true)
@@ -45,7 +47,7 @@ export function FolderFormModal({
     try {
       await api.projectSetFolder(modal.project, s, path.trim())
       await actions.refresh()
-      actions.notify(`Carpeta "${s}" guardada en ${modal.project}.`, 'ok')
+      actions.notify(t('projects.folderSaved', { slot: s, project: modal.project }), 'ok')
       actions.closeModal()
     } catch (e) {
       setError(normalizeError(e))
@@ -55,21 +57,23 @@ export function FolderFormModal({
 
   return (
     <Modal
-      title={`${editing ? 'Editar' : 'Agregar'} carpeta · ${modal.project}`}
+      title={t(editing ? 'projects.editFolderTitle' : 'projects.addFolderTitle', {
+        project: modal.project,
+      })}
       onClose={actions.closeModal}
       footer={
         <>
           <Button variant="ghost" onClick={actions.closeModal}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button variant="primary" icon="check" disabled={submitting || !path.trim()} onClick={submit}>
-            {editing ? 'Guardar' : 'Agregar'}
+            {t(editing ? 'common.save' : 'common.add')}
           </Button>
         </>
       }
     >
       <TextField
-        label="Ranura"
+        label={t('projects.slotLabel')}
         value={slot}
         disabled={editing}
         mono
@@ -77,18 +81,14 @@ export function FolderFormModal({
           setSlot(e.target.value)
           setError(null)
         }}
-        hint={
-          editing
-            ? 'La ranura no se renombra; quitala y creá otra si querés cambiarla.'
-            : 'Nombre lógico de la carpeta (default: memory).'
-        }
+        hint={editing ? t('projects.slotHintEditing') : t('projects.slotHint')}
       />
       <div className="field">
-        <span className="field__label">Carpeta en esta máquina</span>
+        <span className="field__label">{t('projects.folderOnMachine')}</span>
         <div className="row row-nowrap">
           <input
             className="input input--mono grow"
-            placeholder="/path/a/la/carpeta"
+            placeholder={t('projects.folderPathPlaceholder')}
             value={path}
             onChange={(e) => {
               setPath(e.target.value)
@@ -96,12 +96,12 @@ export function FolderFormModal({
             }}
           />
           <Button icon="folder-open" onClick={pick}>
-            Elegir…
+            {t('projects.choose')}
           </Button>
         </div>
         {error && <span className="field__error">{error}</span>}
       </div>
-      <p className="field__hint">El path se guarda literal para esta máquina; en otras puede ser distinto.</p>
+      <p className="field__hint">{t('projects.pathLiteralHint')}</p>
     </Modal>
   )
 }

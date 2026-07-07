@@ -1,0 +1,398 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "create": "Crear",
+    "connect": "Conectar",
+    "add": "Agregar",
+    "edit": "Editar",
+    "remove": "Quitar",
+    "retry": "Volver a revisar",
+    "confirm": "Confirmar"
+  },
+  "titlebar": {
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "restore": "Restaurar",
+    "close": "Cerrar"
+  },
+  "nav": {
+    "home": "Sincronización",
+    "projects": "Proyectos",
+    "machines": "Máquinas",
+    "settings": "Ajustes"
+  },
+  "sidebar": {
+    "searchAction": "Buscar acción",
+    "unregistered": "sin registrar",
+    "toggleTheme": "Cambiar tema"
+  },
+  "interval": {
+    "30s": "30 s",
+    "1m": "1 min",
+    "2m": "2 min",
+    "5m": "5 min"
+  },
+  "settings": {
+    "eyebrow": "Configuración",
+    "title": "Ajustes",
+    "sub": "Requisitos del sistema, repo y ajustes locales.",
+    "requirements": "Requisitos",
+    "recheck": "Volver a revisar",
+    "repo": "Repo",
+    "remotePlaceholder": "git@github.com:usuario/claude-memories.git",
+    "repoConnected": "Repo conectado.",
+    "repoConnectedCreated": "Repo conectado (estructura creada).",
+    "autoSync": "Sincronización automática",
+    "autoSyncSub": "Sube al instante cuando cambian los archivos y baja del repo cada tanto. Funciona mientras la app está abierta.",
+    "remoteCheck": "Consulta al remoto",
+    "remoteCheckFreq": "Frecuencia de consulta al remoto",
+    "localTitle": "settings.local.json",
+    "localSub": "Las claves aquí se quedan en esta máquina y no viajan al repo.",
+    "invalidJson": "JSON inválido.",
+    "localSaved": "Se guardaron los ajustes locales.",
+    "about": "Acerca de",
+    "aboutText": "Claude Total Recall v{{version}} — sincroniza la memoria de Claude Code entre tus máquinas mediante un repositorio privado de GitHub.",
+    "language": "Idioma",
+    "languageAria": "Idioma de la interfaz"
+  },
+  "home": {
+    "eyebrow": "Estación de sincronización",
+    "title": "Tu memoria, sincronizada sola",
+    "sub": "Claude Total Recall mantiene la memoria de Claude Code al día entre tus máquinas: sube al instante cuando editas y baja del repo cada pocos minutos. Sin apretar nada.",
+    "status": {
+      "conflict": "Conflicto",
+      "loading": "Cargando…",
+      "syncing": "Sincronizando…",
+      "offline": "Sin conexión",
+      "upToDate": "Al día"
+    },
+    "meta": {
+      "toResolve_one": "{{count}} archivo por resolver",
+      "toResolve_other": "{{count}} archivos por resolver",
+      "syncing": "poniendo todo en orden…",
+      "offline": "sin conexión, reintenta solo",
+      "lastSynced": "última vez {{time}}",
+      "autoOn": "automático activado",
+      "autoOff": "automático desactivado"
+    },
+    "conflictCard_one": "La sincronización está frenada por {{count}} conflicto. Resuélvelo para que siga sola.",
+    "conflictCard_other": "La sincronización está frenada por {{count}} conflictos. Resuélvelos para que siga sola.",
+    "resolveConflict": "Resolver conflicto",
+    "firstProject": "¿Agregas tu primer proyecto para sincronizar carpetas específicas?",
+    "createProject": "Crear proyecto"
+  },
+  "relativeTime": {
+    "now": "recién",
+    "seconds_one": "hace {{count}} s",
+    "seconds_other": "hace {{count}} s",
+    "minutes_one": "hace {{count}} min",
+    "minutes_other": "hace {{count}} min",
+    "hours_one": "hace {{count}} h",
+    "hours_other": "hace {{count}} h",
+    "days_one": "hace {{count}} d",
+    "days_other": "hace {{count}} d"
+  },
+  "about": {
+    "title": "Acerca de Claude Total Recall",
+    "body": "Sincroniza la memoria de Claude Code entre tus máquinas mediante un repositorio privado de GitHub.",
+    "secrets": "Los secretos nunca viajan: .credentials.json, .claude.json ni transcripts (*.jsonl)."
+  },
+  "sync": {
+    "resolveBeforeScatter": "Resuelve los conflictos antes de bajar (scatter): {{conflicts}}",
+    "integrateConflicts": "Conflictos al integrar: {{conflicts}}. Resuélvelos abajo.",
+    "applied_one": "{{verb}} aplicado: {{count}} acción.",
+    "applied_other": "{{verb}} aplicado: {{count}} acciones.",
+    "advanced": "Avanzado",
+    "advancedSub": "forzar cambios, ida y vuelta manual, conflictos",
+    "branch": "Rama",
+    "toPush": "Para subir",
+    "toPull": "Por bajar",
+    "state": "Estado",
+    "dirty": "con cambios",
+    "clean": "limpio",
+    "secrets": "Secretos",
+    "excluded": "excluidos",
+    "hintGather": "máquina → repo",
+    "hintGatherCount": "máquina → repo · {{count}} para subir",
+    "hintScatter": "repo → máquina",
+    "hintScatterCount": "repo → máquina · {{count}} por bajar",
+    "automatic": "Automático",
+    "syncing": "Sincronizando…",
+    "syncNow": "Sincronizar ahora"
+  },
+  "palette": {
+    "ariaLabel": "Paleta de comandos",
+    "searchPlaceholder": "Buscar una acción…",
+    "noResults": "Sin resultados",
+    "navigate": "navegar",
+    "execute": "ejecutar",
+    "group": {
+      "sync": "Sincronizar",
+      "navigate": "Navegar",
+      "create": "Crear",
+      "appearance": "Apariencia",
+      "help": "Ayuda"
+    },
+    "syncNow": {
+      "title": "Sincronizar ahora",
+      "subtitle": "ciclo completo (sube y baja)"
+    },
+    "autoToggle": {
+      "enable": "Activar sincronización automática",
+      "disable": "Desactivar sincronización automática"
+    },
+    "gather": {
+      "title": "Subir cambios (gather)",
+      "subtitle": "avanzado · máquina → repo"
+    },
+    "scatter": {
+      "title": "Traer cambios (scatter)",
+      "subtitle": "avanzado · repo → máquina"
+    },
+    "refresh": {
+      "title": "Actualizar estado"
+    },
+    "goHome": "Ir a Sincronización",
+    "goProjects": "Ir a Proyectos",
+    "goMachines": "Ir a Máquinas",
+    "goSettings": "Ir a Ajustes",
+    "newProject": "Nuevo proyecto",
+    "theme": {
+      "toLight": "Cambiar a tema claro",
+      "toDark": "Cambiar a tema oscuro"
+    },
+    "about": "Acerca de Claude Total Recall"
+  },
+  "planReview": {
+    "title": "Revisar cambios",
+    "dirGather": "máquina → repo",
+    "dirScatter": "repo → máquina",
+    "push": "Subir cambios",
+    "apply": "Aplicar cambios",
+    "nothing": "Nada para hacer: todo está sincronizado.",
+    "summary": "Se van a {{list}} archivo(s) en {{dest}}.",
+    "partCreate": "crear {{count}}",
+    "partOverwrite": "sobrescribir {{count}}",
+    "partDelete": "borrar {{count}}",
+    "and": "y",
+    "destRepo": "el repo",
+    "destMachine": "tu máquina",
+    "filterByType": "Filtrar por tipo",
+    "filterAll": "Todos",
+    "filterCreate": "Crea",
+    "filterOverwrite": "Sobrescribe",
+    "filterDelete": "Borra",
+    "showUnchanged": "Mostrar sin cambios",
+    "userGroup": "Usuario",
+    "projectGroup": "Proyecto · {{name}}",
+    "from": "desde",
+    "to": "hacia",
+    "computed": "contenido computado"
+  },
+  "tag": {
+    "create": "crea",
+    "overwrite": "sobrescribe",
+    "delete": "borra",
+    "noop": "igual",
+    "skip": "omite"
+  },
+  "errors": {
+    "machine": {
+      "invalidName": "Nombre de máquina inválido.",
+      "notRegistered": "La máquina no está registrada.",
+      "notRegisteredAddProject": "La máquina no está registrada; regístrala antes de agregar proyectos.",
+      "notRegisteredLocal": "La máquina no está registrada (falta local.json). Ejecuta `claude-total-recall register`.",
+      "notRegisteredPrefs": "La máquina no está registrada; no hay dónde guardar las preferencias."
+    },
+    "push": {
+      "rejectedRegister": "Falló el push al registrar: {{stderr}}",
+      "retriesExhaustedRegister": "No se pudo registrar tras varios reintentos (push rechazado).",
+      "failed": "Falló el push: {{stderr}}",
+      "retriesExhausted": "No se pudo guardar tras varios reintentos."
+    },
+    "project": {
+      "invalidName": "Nombre de proyecto inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo."
+    },
+    "slot": {
+      "invalidName": "Nombre de ranura inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo."
+    },
+    "path": {
+      "empty": "La ruta no puede estar vacía."
+    },
+    "platform": {
+      "unsupported": "Plataforma no soportada: {{platform}}. Claude Total Recall soporta macOS y Linux (Windows más adelante)."
+    },
+    "plan": {
+      "expired": "El plan expiró; vuelve a generarlo (la vista previa ya no es válida)."
+    }
+  },
+  "preflight": {
+    "git": {
+      "missing": "git no se encontró en el PATH",
+      "install": "Instala git"
+    },
+    "gh": {
+      "missing": "gh (GitHub CLI) no se encontró",
+      "install": "Instala gh desde https://cli.github.com"
+    },
+    "ghAuth": {
+      "ok": "gh autenticado",
+      "fix": "Ejecuta: gh auth login && gh auth setup-git",
+      "noGh": "gh no está instalado, no se puede verificar la autenticación",
+      "installFirst": "Instala gh primero"
+    }
+  },
+  "planReason": {
+    "noLocalSettings": "no hay ~/.claude/settings.json local",
+    "noRepoSettings": "no hay settings.json en el repo",
+    "sourceMissing": "el origen no existe",
+    "notInSource": "no existe en el origen",
+    "noPathForMachine": "sin ruta para la máquina \"{{machine}}\""
+  },
+  "machines": {
+    "eyebrow": "Identidad",
+    "title": "Máquinas",
+    "sub": "Cada computadora que sincroniza tiene un id lógico y su propio home.",
+    "registered": "Máquina \"{{machineId}}\" registrada.",
+    "connectRepoTitle": "Conecta un repo primero",
+    "connectRepoBody": "Configura el repo en Ajustes o desde el asistente.",
+    "registerThisMachine": "Registrar esta máquina",
+    "logicalNameLabel": "Nombre lógico (opcional)",
+    "logicalNameHint": "Si lo dejas vacío, usamos el hostname.",
+    "register": "Registrar",
+    "registeredAs": "Esta máquina está registrada como <b>{{machineId}}</b>.",
+    "knownMachines_one": "Máquina conocida ({{count}})",
+    "knownMachines_other": "Máquinas conocidas ({{count}})",
+    "noneYetTitle": "Ninguna todavía",
+    "noneYetBody": "Registra esta máquina para empezar.",
+    "thisMachine": "esta"
+  },
+  "constellation": {
+    "syncingUp": "Sincronizando: subiendo al repo.",
+    "syncingDown": "Sincronizando: bajando del repo.",
+    "overview": "Constelación de máquinas alrededor del repo.",
+    "connected": "Máquina {{machineId}} conectada al repo.",
+    "toUpload_one": "{{count}} para subir",
+    "toUpload_other": "{{count}} para subir",
+    "toDownload_one": "{{count}} para bajar",
+    "toDownload_other": "{{count}} para bajar",
+    "upToDate": "Máquina {{machineId}}: al día con el repo.",
+    "machineStatus": "Máquina {{machineId}}: {{parts}}."
+  },
+  "planDrift": {
+    "title": "El disco cambió",
+    "forceAnyway": "Forzar igual",
+    "rebuild": "Reconstruir",
+    "body_one": "Desde que armaste la vista previa, {{count}} archivo cambió en disco. El plan que confirmaste ya no coincide con lo que hay ahora.",
+    "body_other": "Desde que armaste la vista previa, {{count}} archivos cambiaron en disco. El plan que confirmaste ya no coincide con lo que hay ahora.",
+    "help": "<b>Reconstruir</b> arma una vista previa nueva (recomendado). <b>Forzar</b> aplica el plan viejo de todas formas."
+  },
+  "projects": {
+    "eyebrow": "Configuración",
+    "title": "Proyectos",
+    "sub": "Un proyecto agrupa carpetas de memoria; la ruta de cada carpeta se guarda literal por máquina.",
+    "newProject": "Nuevo proyecto",
+    "registerMachineFirst": "Registra esta máquina primero",
+    "registerMachineHint": "Necesitas registrar esta computadora antes de asignar carpetas.",
+    "noProjectsYet": "Ningún proyecto todavía",
+    "noProjectsHint": "Crea uno para sincronizar carpetas de memoria específicas.",
+    "folder": "Carpeta",
+    "delete": "Eliminar",
+    "deleted": "Proyecto \"{{name}}\" eliminado.",
+    "deleteProject": {
+      "title": "Eliminar proyecto",
+      "body": "¿Eliminar \"{{name}}\" para todas las máquinas? No borra tus carpetas locales, solo la configuración de sincronización."
+    },
+    "noFoldersYet": "Sin carpetas todavía",
+    "noFoldersHint": "Agrega una carpeta para que este proyecto se sincronice en esta máquina.",
+    "removeFolder": {
+      "title": "Quitar carpeta",
+      "body": "¿Quitar la ranura \"{{slot}}\" de esta máquina? No borra la carpeta, solo deja de sincronizarla aquí."
+    },
+    "folderRemoved": "Se quitó {{project}}/{{slot}} de esta máquina.",
+    "noPathOnMachine": "sin ruta en esta máquina",
+    "editFolder": "Editar carpeta",
+    "removeFromMachine": "Quitar de esta máquina",
+    "alsoOn": "también en: {{machines}}",
+    "alreadyExists": "Ya existe un proyecto con ese nombre. Asígnale una ruta en su tarjeta.",
+    "created": "Proyecto \"{{name}}\" creado.",
+    "logicalName": "Nombre lógico",
+    "projectNamePlaceholder": "mi-proyecto",
+    "projectNameHint": "Une el proyecto entre tus máquinas (letras, números, . _ -).",
+    "pickOrPasteFolder": "Elige o pega una carpeta.",
+    "folderSaved": "Carpeta \"{{slot}}\" guardada en {{project}}.",
+    "editFolderTitle": "Editar carpeta · {{project}}",
+    "addFolderTitle": "Agregar carpeta · {{project}}",
+    "slotLabel": "Ranura",
+    "slotHintEditing": "La ranura no se renombra; quítala y crea otra si quieres cambiarla.",
+    "slotHint": "Nombre lógico de la carpeta (predeterminado: memory).",
+    "folderOnMachine": "Carpeta en esta máquina",
+    "folderPathPlaceholder": "/ruta/a/la/carpeta",
+    "choose": "Elegir…",
+    "pathLiteralHint": "La ruta se guarda literal para esta máquina; en otras puede ser distinta.",
+    "project": {
+      "nameEmpty": "El nombre de proyecto no puede estar vacío.",
+      "nameInvalid": "Nombre de proyecto inválido. Usa solo letras, números, punto, guion y guion bajo."
+    },
+    "slot": {
+      "nameEmpty": "El nombre de ranura no puede estar vacío.",
+      "nameInvalid": "Nombre de ranura inválido. Usa solo letras, números, punto, guion y guion bajo."
+    }
+  },
+  "conflicts": {
+    "title_one": "Resuelve {{count}} conflicto",
+    "title_other": "Resuelve {{count}} conflictos",
+    "explainer": "Por cada archivo, elige con qué versión quedarte. <b>Local</b> = lo de esta máquina; <b>Remoto</b> = lo del repo.",
+    "resolutionFor": "Resolución de {{name}}",
+    "local": "Local",
+    "remote": "Remoto",
+    "readyToFinalize": "Listo para finalizar.",
+    "chooseEach": "Elige una versión para cada archivo.",
+    "finalizeMerge": "Finalizar merge",
+    "resolved": "Conflictos resueltos.",
+    "resolvedPushed": "Conflictos resueltos y subidos."
+  },
+  "wizard": {
+    "brandTag": "estación de sincronización",
+    "closeAria": "Cerrar asistente",
+    "step": {
+      "preflight": "Requisitos",
+      "connect": "Repo",
+      "register": "Máquina",
+      "firstProject": "Proyecto"
+    },
+    "preflight": {
+      "title": "Requisitos del sistema",
+      "sub": "Claude Total Recall usa git y gh para sincronizar. Revisemos que estén listos."
+    },
+    "connect": {
+      "title": "Conecta tu repo de memoria",
+      "sub": "Un repo privado de GitHub donde viven tus memorias. Pega su URL (HTTPS o SSH).",
+      "urlLabel": "URL del repo",
+      "urlPlaceholder": "git@github.com:usuario/claude-memories.git",
+      "privacyNote": "Nunca viajan secretos ni transcripts.",
+      "connected": "Repo conectado.",
+      "connectedCreated": "Repo conectado y estructura inicial creada."
+    },
+    "register": {
+      "title": "Registra esta máquina",
+      "sub": "Un id lógico para esta computadora. Si lo dejas vacío, usamos el hostname.",
+      "nameLabel": "Nombre lógico (opcional)",
+      "submit": "Registrar esta máquina",
+      "registered": "Máquina \"{{machineId}}\" registrada."
+    },
+    "firstProject": {
+      "title": "¿Agregas un proyecto?",
+      "sub": "Opcional. Un proyecto sincroniza carpetas de memoria específicas, además de tu configuración de usuario.",
+      "createProject": "Crear proyecto",
+      "later": "Después lo hago"
+    },
+    "done": {
+      "title": "Todo listo",
+      "sub": "Tu memoria está lista para sincronizar entre máquinas.",
+      "goToSync": "Ir a Sincronización"
+    }
+  }
+}

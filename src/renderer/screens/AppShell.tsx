@@ -18,12 +18,12 @@ export function AppShell(): JSX.Element {
   const actions = useActions()
   const showWizard = !state.loading && (needsOnboarding(state) || state.wizardOpen)
 
-  // Boot: primer refresh al montar (actions es estable vía useMemo).
+  // Boot: first refresh on mount (actions is stable via useMemo).
   useEffect(() => {
     void actions.refresh()
   }, [actions])
 
-  // Atajos globales: ⌘K paleta, ⌘G gather, ⌘S scatter.
+  // Global shortcuts: ⌘K palette, ⌘G gather, ⌘S scatter.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const mod = e.metaKey || e.ctrlKey

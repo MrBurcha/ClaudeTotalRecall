@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { PlanActionType } from '../../core/types'
 
 export function Pill({
@@ -25,15 +26,8 @@ export function StatusDot({ tone = 'muted' }: { tone?: 'ok' | 'warn' | 'danger' 
   return <span className={tone === 'muted' ? 'status-dot' : `status-dot status-dot--${tone}`} />
 }
 
-/** Etiqueta humana de cada tipo de acción del Plan (reusa colores .tag--*). */
-const TAG_LABEL: Record<PlanActionType, string> = {
-  create: 'crea',
-  overwrite: 'sobrescribe',
-  delete: 'borra',
-  noop: 'igual',
-  skip: 'omite',
-}
-
+/** Human label for each Plan action type (reuses the .tag--* colors). */
 export function Tag({ type }: { type: PlanActionType }): JSX.Element {
-  return <span className={`tag tag--${type}`}>{TAG_LABEL[type]}</span>
+  const { t } = useTranslation()
+  return <span className={`tag tag--${type}`}>{t(`tag.${type}`)}</span>
 }

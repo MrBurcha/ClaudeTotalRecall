@@ -1,10 +1,10 @@
 import type { Machine } from '../../../core/types'
 
 /**
- * Geometría pura de la constelación (testeable sin DOM). El vault va al centro
- * y las máquinas orbitan en un anillo; la máquina actual va primero (arriba) y
- * con radio mayor. Los links van del borde del nodo al borde del vault, para que
- * las partículas/dashes viajen entre rims, no entre centros.
+ * Pure constellation geometry (testable without a DOM). The vault sits at the
+ * center and the machines orbit in a ring; the current machine goes first (top)
+ * and with a larger radius. Links run from the node's edge to the vault's edge,
+ * so the particles/dashes travel between rims, not between centers.
  */
 
 export interface ConstNode {
@@ -52,13 +52,13 @@ export function computeConstellation(
   const cy = size.h * 0.44
   const vault: ConstVault = { x: cx, y: cy, r: VAULT_R }
 
-  // La máquina actual primero → queda arriba (ángulo -90°).
+  // The current machine first → ends up at the top (angle -90°).
   const ids = Object.keys(machines).sort(
     (a, b) => (a === currentId ? -1 : 0) - (b === currentId ? -1 : 0),
   )
   const n = ids.length
-  // Anillo elíptico: más ancho que alto para aprovechar el espacio y que el
-  // nodo de arriba (con su label) entre en el viewBox.
+  // Elliptical ring: wider than tall to make use of the space and so the top
+  // node (with its label) fits inside the viewBox.
   const rx = size.w * 0.3
   const ry = Math.min(size.h * 0.3, 120)
 

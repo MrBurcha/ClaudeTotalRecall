@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../components/IconButton'
 import { api } from '../../state/api'
 import { useAppState } from '../../state/store'
@@ -14,6 +15,7 @@ export function ProjectFolderRow({
   byMachine: Record<string, string>
   machineId: string | null
 }): JSX.Element {
+  const { t } = useTranslation()
   const { busy } = useAppState()
   const actions = useActions()
   const current = machineId ? byMachine[machineId] : undefined
@@ -23,15 +25,15 @@ export function ProjectFolderRow({
 
   const remove = async (): Promise<void> => {
     const ok = await actions.confirm({
-      title: 'Quitar carpeta',
-      body: `¿Quitar la ranura "${slot}" de esta máquina? No borra la carpeta, solo deja de sincronizarla acá.`,
-      confirmLabel: 'Quitar',
+      title: t('projects.removeFolder.title'),
+      body: t('projects.removeFolder.body', { slot }),
+      confirmLabel: t('common.remove'),
       danger: true,
     })
     if (!ok) return
     void actions.run(async () => {
       await api.projectRemoveFolder(project, slot)
-      return `Quitado ${project}/${slot} de esta máquina.`
+      return t('projects.folderRemoved', { project, slot })
     })
   }
 
@@ -42,15 +44,22 @@ export function ProjectFolderRow({
         {current ? (
           <span className="mono grow truncate">{current}</span>
         ) : (
-          <span className="muted grow">sin path en esta máquina</span>
+          <span className="muted grow">{t('projects.noPathOnMachine')}</span>
         )}
-        <IconButton icon="pencil" label="Editar carpeta" disabled={busy} onClick={edit} />
+        <IconButton icon="pencil" label={t('projects.editFolder')} disabled={busy} onClick={edit} />
         {current && (
-          <IconButton icon="trash" label="Quitar de esta máquina" disabled={busy} onClick={remove} />
+          <IconButton
+            icon="trash"
+            label={t('projects.removeFromMachine')}
+            disabled={busy}
+            onClick={remove}
+          />
         )}
       </div>
       {others.length > 0 && (
-        <div className="muted mono folder-row__others">también en: {others.join(', ')}</div>
+        <div className="muted mono folder-row__others">
+          {t('projects.alsoOn', { machines: others.join(', ') })}
+        </div>
       )}
     </li>
   )

@@ -1,14 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from './Button'
 import { Modal } from './Modal'
 import type { ModalDescriptor } from '../state/types'
 import { useActions } from '../state/useActions'
 
-/** Confirmación in-app; reemplaza window.confirm. Resuelve la promesa del confirm(). */
+/** In-app confirmation; replaces window.confirm. Resolves the confirm() promise. */
 export function ConfirmDialog({
   modal,
 }: {
   modal: Extract<ModalDescriptor, { kind: 'confirm' }>
 }): JSX.Element {
+  const { t } = useTranslation()
   const actions = useActions()
   const settle = (ok: boolean): void => actions.settleConfirm(modal, ok)
 
@@ -20,7 +22,7 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="ghost" onClick={() => settle(false)}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button variant={modal.danger ? 'danger' : 'primary'} onClick={() => settle(true)}>
             {modal.confirmLabel}

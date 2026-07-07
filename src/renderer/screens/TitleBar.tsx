@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../components/Icon'
 import { api } from '../state/api'
 
 /**
- * Barra de título propia: la ventana es frameless. En Linux/Windows dibuja los
- * controles minimizar/maximizar/cerrar; en macOS cede a los semáforos nativos y
- * sólo aporta la franja de arrastre. Toda la barra arrastra la ventana
- * (`-webkit-app-region: drag` en el CSS); los botones se marcan `no-drag`.
+ * Custom title bar: the window is frameless. On Linux/Windows it draws the
+ * minimize/maximize/close controls; on macOS it defers to the native traffic
+ * lights and only provides the drag strip. The whole bar drags the window
+ * (`-webkit-app-region: drag` in CSS); the buttons are marked `no-drag`.
  */
 export function TitleBar(): JSX.Element {
+  const { t } = useTranslation()
   const isMac = api.platform === 'darwin'
   const [maximized, setMaximized] = useState(false)
 
-  // Estado de maximizado: lo pedimos al montar y escuchamos el push del main
-  // (mismo patrón de suscripción + cleanup que el motor de sync en store.tsx).
+  // Maximized state: request it on mount and listen for the push from main
+  // (same subscription + cleanup pattern as the sync engine in store.tsx).
   useEffect(() => {
     if (isMac) return
     let alive = true
@@ -29,14 +31,16 @@ export function TitleBar(): JSX.Element {
 
   if (isMac) return <div className="titlebar titlebar--mac" />
 
+  const maxLabel = maximized ? t('titlebar.restore') : t('titlebar.maximize')
+
   return (
     <div className="titlebar">
       <div className="titlebar__btns">
         <button
           type="button"
           className="titlebar__btn"
-          aria-label="Minimizar"
-          title="Minimizar"
+          aria-label={t('titlebar.minimize')}
+          title={t('titlebar.minimize')}
           onClick={() => void api.windowMinimize()}
         >
           <Icon name="minimize" size={16} />
@@ -44,8 +48,8 @@ export function TitleBar(): JSX.Element {
         <button
           type="button"
           className="titlebar__btn"
-          aria-label={maximized ? 'Restaurar' : 'Maximizar'}
-          title={maximized ? 'Restaurar' : 'Maximizar'}
+          aria-label={maxLabel}
+          title={maxLabel}
           onClick={() => void api.windowMaximize().then(setMaximized)}
         >
           <Icon name={maximized ? 'restore' : 'maximize'} size={15} />
@@ -53,8 +57,8 @@ export function TitleBar(): JSX.Element {
         <button
           type="button"
           className="titlebar__btn titlebar__btn--close"
-          aria-label="Cerrar"
-          title="Cerrar"
+          aria-label={t('titlebar.close')}
+          title={t('titlebar.close')}
           onClick={() => void api.windowClose()}
         >
           <Icon name="x" size={16} />

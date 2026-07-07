@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/Button'
 import { TextField } from '../../components/Field'
 import { Modal } from '../../components/Modal'
@@ -7,6 +8,7 @@ import { useActions } from '../../state/useActions'
 import { validateName } from './names'
 
 export function ProjectFormModal(): JSX.Element {
+  const { t } = useTranslation()
   const actions = useActions()
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -14,7 +16,7 @@ export function ProjectFormModal(): JSX.Element {
 
   const submit = async (): Promise<void> => {
     const n = name.trim()
-    const err = validateName('proyecto', n)
+    const err = validateName('project', n, t)
     if (err) {
       setError(err)
       return
@@ -25,11 +27,11 @@ export function ProjectFormModal(): JSX.Element {
       const { alreadyExists } = await api.projectCreate(n)
       await actions.refresh()
       if (alreadyExists) {
-        setError('Ya existe un proyecto con ese nombre. Asignale un path en su tarjeta.')
+        setError(t('projects.alreadyExists'))
         setSubmitting(false)
         return
       }
-      actions.notify(`Proyecto "${n}" creado.`, 'ok')
+      actions.notify(t('projects.created', { name: n }), 'ok')
       actions.closeModal()
     } catch (e) {
       setError(normalizeError(e))
@@ -39,16 +41,16 @@ export function ProjectFormModal(): JSX.Element {
 
   return (
     <Modal
-      title="Nuevo proyecto"
+      title={t('projects.newProject')}
       size="sm"
       onClose={actions.closeModal}
       footer={
         <>
           <Button variant="ghost" onClick={actions.closeModal}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button variant="primary" icon="plus" disabled={submitting || !name.trim()} onClick={submit}>
-            Crear
+            {t('common.create')}
           </Button>
         </>
       }
@@ -60,15 +62,15 @@ export function ProjectFormModal(): JSX.Element {
         }}
       >
         <TextField
-          label="Nombre lógico"
-          placeholder="mi-proyecto"
+          label={t('projects.logicalName')}
+          placeholder={t('projects.projectNamePlaceholder')}
           autoFocus
           value={name}
           onChange={(e) => {
             setName(e.target.value)
             setError(null)
           }}
-          hint="Une el proyecto entre tus máquinas (letras, números, . _ -)."
+          hint={t('projects.projectNameHint')}
           error={error ?? undefined}
         />
       </form>

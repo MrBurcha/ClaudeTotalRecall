@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StatusDot } from '../components/Badge'
 import { Button } from '../components/Button'
 import { TextArea } from '../components/Field'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { AutoToggle } from '../features/sync/AutoToggle'
+import type { Locale } from '../i18n'
 import { api } from '../state/api'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 import { ViewHeader } from './ViewHeader'
 
 export function Settings(): JSX.Element {
+  const { t, i18n } = useTranslation()
   const { config, preflight, busy, version, syncEngine } = useAppState()
   const actions = useActions()
   const intervalValue = String(syncEngine?.intervalMs ?? 120_000)
@@ -23,7 +26,7 @@ export function Settings(): JSX.Element {
   const connect = (): Promise<void> =>
     actions.run(async () => {
       const r = await api.repoConnect(remote.trim())
-      return r.initialized ? 'Repo conectado (estructura creada).' : 'Repo conectado.'
+      return r.initialized ? t('settings.repoConnectedCreated') : t('settings.repoConnected')
     })
 
   const saveLocal = (): Promise<void> =>
@@ -32,23 +35,36 @@ export function Settings(): JSX.Element {
       try {
         parsed = JSON.parse(localJson)
       } catch {
-        throw new Error('JSON inválido.')
+        throw new Error(t('settings.invalidJson'))
       }
       await api.settingsLocalSave(parsed)
-      return 'Overrides locales guardados.'
+      return t('settings.localSaved')
     })
 
   return (
     <div className="view">
-      <ViewHeader
-        eyebrow="Configuración"
-        title="Ajustes"
-        sub="Requisitos del sistema, repo y overrides locales de settings."
-      />
+      <ViewHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} sub={t('settings.sub')} />
 
       <div className="card">
         <div className="card__head">
-          <span className="card__title">Requisitos</span>
+          <span className="card__title">{t('settings.language')}</span>
+        </div>
+        <div className="row">
+          <SegmentedControl<Locale>
+            ariaLabel={t('settings.languageAria')}
+            value={(i18n.resolvedLanguage as Locale) ?? 'en'}
+            onChange={(lng) => void i18n.changeLanguage(lng)}
+            options={[
+              { value: 'en', label: 'English' },
+              { value: 'es', label: 'Español' },
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card__head">
+          <span className="card__title">{t('settings.requirements')}</span>
         </div>
         <ul className="check-list">
           {(preflight?.checks ?? []).map((c) => (
@@ -57,23 +73,31 @@ export function Settings(): JSX.Element {
               <div className="grow">
                 <div className="cluster">
                   <b className="mono">{c.name}</b>
-                  {c.detail && <span className="muted">{c.detail}</span>}
+                  {c.detail && (
+                    <span className="muted">
+                      {c.detailKey ? t(`preflight.${c.detailKey}`, { ...c.params, defaultValue: c.detail }) : c.detail}
+                    </span>
+                  )}
                 </div>
-                {!c.ok && c.fix && <div className="muted mono check-fix">→ {c.fix}</div>}
+                {!c.ok && c.fix && (
+                  <div className="muted mono check-fix">
+                    → {c.fixKey ? t(`preflight.${c.fixKey}`, { ...c.params, defaultValue: c.fix }) : c.fix}
+                  </div>
+                )}
               </div>
             </li>
           ))}
         </ul>
         <div className="row">
           <Button icon="sync" disabled={busy} onClick={() => void actions.refresh()}>
-            Volver a chequear
+            {t('settings.recheck')}
           </Button>
         </div>
       </div>
 
       <div className="card">
         <div className="card__head">
-          <span className="card__title">Repo</span>
+          <span className="card__title">{t('settings.repo')}</span>
         </div>
         {config ? (
           <p className="mono muted truncate">{config.repo.remote}</p>
@@ -81,12 +105,12 @@ export function Settings(): JSX.Element {
           <div className="row row-nowrap">
             <input
               className="input input--mono grow"
-              placeholder="git@github.com:usuario/claude-memories.git"
+              placeholder={t('settings.remotePlaceholder')}
               value={remote}
               onChange={(e) => setRemote(e.target.value)}
             />
             <Button variant="primary" icon="git-branch" disabled={busy || !remote.trim()} onClick={connect}>
-              Conectar
+              {t('common.connect')}
             </Button>
           </div>
         )}
@@ -94,25 +118,22 @@ export function Settings(): JSX.Element {
 
       <div className="card">
         <div className="card__head">
-          <span className="card__title">Sincronización automática</span>
+          <span className="card__title">{t('settings.autoSync')}</span>
         </div>
-        <p className="muted">
-          Sube al instante cuando cambian los archivos y baja del repo cada tanto. Corre mientras la
-          app está abierta.
-        </p>
+        <p className="muted">{t('settings.autoSyncSub')}</p>
         <div className="row between">
           <AutoToggle />
           <div className="stack stack-1">
-            <span className="label">Chequeo del remoto</span>
+            <span className="label">{t('settings.remoteCheck')}</span>
             <SegmentedControl<string>
-              ariaLabel="Frecuencia de chequeo del remoto"
+              ariaLabel={t('settings.remoteCheckFreq')}
               value={intervalValue}
               onChange={(ms) => void actions.setSyncInterval(Number(ms))}
               options={[
-                { value: '30000', label: '30 s' },
-                { value: '60000', label: '1 min' },
-                { value: '120000', label: '2 min' },
-                { value: '300000', label: '5 min' },
+                { value: '30000', label: t('interval.30s') },
+                { value: '60000', label: t('interval.1m') },
+                { value: '120000', label: t('interval.2m') },
+                { value: '300000', label: t('interval.5m') },
               ]}
             />
           </div>
@@ -121,25 +142,22 @@ export function Settings(): JSX.Element {
 
       <div className="card">
         <div className="card__head">
-          <span className="card__title">settings.local.json</span>
+          <span className="card__title">{t('settings.localTitle')}</span>
         </div>
-        <p className="muted">Las claves acá se quedan en esta máquina y no viajan al repo.</p>
+        <p className="muted">{t('settings.localSub')}</p>
         <TextArea value={localJson} onChange={(e) => setLocalJson(e.target.value)} spellCheck={false} />
         <div className="row">
           <Button variant="primary" icon="check" disabled={busy} onClick={saveLocal}>
-            Guardar
+            {t('common.save')}
           </Button>
         </div>
       </div>
 
       <div className="card">
         <div className="card__head">
-          <span className="card__title">Acerca de</span>
+          <span className="card__title">{t('settings.about')}</span>
         </div>
-        <p className="muted">
-          ClaudeTR v{version ?? '—'} — sincroniza la memoria de Claude Code entre tus máquinas vía un
-          repo privado de GitHub.
-        </p>
+        <p className="muted">{t('settings.aboutText', { version: version ?? '—' })}</p>
       </div>
     </div>
   )

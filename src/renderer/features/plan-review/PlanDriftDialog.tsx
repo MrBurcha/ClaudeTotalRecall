@@ -1,3 +1,5 @@
+import { Trans, useTranslation } from 'react-i18next'
+
 import { Button } from '../../components/Button'
 import { Icon } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
@@ -5,8 +7,8 @@ import type { ModalDescriptor } from '../../state/types'
 import { useActions } from '../../state/useActions'
 
 /**
- * Aparece cuando executePlan devuelve drift (el disco cambió entre el preview y
- * la ejecución). Ofrece reconstruir (seguro) o forzar (aplica el plan viejo).
+ * Shown when executePlan reports drift (the disk changed between the preview and
+ * execution). Offers to rebuild (safe) or force (applies the old plan).
  */
 export function PlanDriftDialog({
   modal,
@@ -15,34 +17,32 @@ export function PlanDriftDialog({
 }): JSX.Element {
   const { verb, planId, drifted } = modal
   const actions = useActions()
+  const { t } = useTranslation()
 
   return (
     <Modal
       title={
         <span className="cluster">
           <Icon name="alert" size={18} />
-          El disco cambió
+          {t('planDrift.title')}
         </span>
       }
       onClose={actions.closeModal}
       footer={
         <>
           <Button variant="ghost" onClick={actions.closeModal}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button variant="danger" onClick={() => actions.executePlan(verb, planId, true)}>
-            Forzar igual
+            {t('planDrift.forceAnyway')}
           </Button>
           <Button variant="primary" icon="sync" onClick={() => actions.rebuildPlan(verb)}>
-            Reconstruir
+            {t('planDrift.rebuild')}
           </Button>
         </>
       }
     >
-      <p className="dim">
-        Desde que armaste el preview, {drifted.length} archivo(s) cambiaron en disco. El plan que
-        confirmaste ya no coincide con lo que hay ahora.
-      </p>
+      <p className="dim">{t('planDrift.body', { count: drifted.length })}</p>
       <ul className="plan-list">
         {drifted.map((a) => (
           <li key={a.slot} className="plan-row">
@@ -53,8 +53,7 @@ export function PlanDriftDialog({
         ))}
       </ul>
       <p className="muted">
-        <b>Reconstruir</b> arma un preview fresco (recomendado). <b>Forzar</b> aplica el plan viejo
-        de todos modos.
+        <Trans i18nKey="planDrift.help" components={{ b: <b /> }} />
       </p>
     </Modal>
   )

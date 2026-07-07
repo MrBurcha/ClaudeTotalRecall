@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/Button'
 import { StatusDot } from '../../components/Badge'
 import { TextField } from '../../components/Field'
@@ -40,15 +41,12 @@ function Rail(): JSX.Element {
 }
 
 function PreflightPanel(): JSX.Element {
+  const { t } = useTranslation()
   const { preflight, busy } = useAppState()
   const actions = useActions()
   return (
     <div className="stack">
-      <StepHeader
-        icon="check"
-        title="Requisitos del sistema"
-        sub="ClaudeTR usa git y gh para sincronizar. Revisemos que estén listos."
-      />
+      <StepHeader icon="check" title={t('wizard.preflight.title')} sub={t('wizard.preflight.sub')} />
       <ul className="check-list">
         {(preflight?.checks ?? []).map((c) => (
           <li key={c.name} className="check-row">
@@ -56,16 +54,24 @@ function PreflightPanel(): JSX.Element {
             <div className="grow">
               <div className="cluster">
                 <b className="mono">{c.name}</b>
-                {c.detail && <span className="muted">{c.detail}</span>}
+                {c.detail && (
+                  <span className="muted">
+                    {c.detailKey ? t(`preflight.${c.detailKey}`, { ...c.params, defaultValue: c.detail }) : c.detail}
+                  </span>
+                )}
               </div>
-              {!c.ok && c.fix && <div className="muted mono check-fix">→ {c.fix}</div>}
+              {!c.ok && c.fix && (
+                <div className="muted mono check-fix">
+                  → {c.fixKey ? t(`preflight.${c.fixKey}`, { ...c.params, defaultValue: c.fix }) : c.fix}
+                </div>
+              )}
             </div>
           </li>
         ))}
       </ul>
       <div className="row">
         <Button icon="sync" disabled={busy} onClick={() => void actions.refresh()}>
-          Volver a chequear
+          {t('common.retry')}
         </Button>
       </div>
     </div>
@@ -73,21 +79,18 @@ function PreflightPanel(): JSX.Element {
 }
 
 function ConnectPanel(): JSX.Element {
+  const { t } = useTranslation()
   const { busy } = useAppState()
   const actions = useActions()
   const [remote, setRemote] = useState('')
   const connect = (): Promise<void> =>
     actions.run(async () => {
       const r = await api.repoConnect(remote.trim())
-      return r.initialized ? 'Repo conectado y estructura inicial creada.' : 'Repo conectado.'
+      return r.initialized ? t('wizard.connect.connectedCreated') : t('wizard.connect.connected')
     })
   return (
     <div className="stack">
-      <StepHeader
-        icon="git-branch"
-        title="Conectá tu repo de memoria"
-        sub="Un repo privado de GitHub donde viven tus memorias. Pegá su URL (HTTPS o SSH)."
-      />
+      <StepHeader icon="git-branch" title={t('wizard.connect.title')} sub={t('wizard.connect.sub')} />
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -95,8 +98,8 @@ function ConnectPanel(): JSX.Element {
         }}
       >
         <TextField
-          label="URL del repo"
-          placeholder="git@github.com:usuario/claude-memories.git"
+          label={t('wizard.connect.urlLabel')}
+          placeholder={t('wizard.connect.urlPlaceholder')}
           value={remote}
           onChange={(e) => setRemote(e.target.value)}
           autoFocus
@@ -104,10 +107,10 @@ function ConnectPanel(): JSX.Element {
       </form>
       <div className="row between">
         <span className="muted cluster">
-          <Icon name="lock" size={15} /> Nunca viajan secretos ni transcripts.
+          <Icon name="lock" size={15} /> {t('wizard.connect.privacyNote')}
         </span>
         <Button variant="primary" icon="git-branch" disabled={busy || !remote.trim()} onClick={connect}>
-          Conectar
+          {t('common.connect')}
         </Button>
       </div>
     </div>
@@ -115,21 +118,18 @@ function ConnectPanel(): JSX.Element {
 }
 
 function RegisterPanel(): JSX.Element {
+  const { t } = useTranslation()
   const { busy } = useAppState()
   const actions = useActions()
   const [name, setName] = useState('')
   const register = (): Promise<void> =>
     actions.run(async () => {
       const r = await api.machineRegister(name.trim() || undefined)
-      return `Máquina "${r.machineId}" registrada.`
+      return t('wizard.register.registered', { machineId: r.machineId })
     })
   return (
     <div className="stack">
-      <StepHeader
-        icon="monitor"
-        title="Registrá esta máquina"
-        sub="Un id lógico para esta computadora. Si lo dejás vacío, usamos el hostname."
-      />
+      <StepHeader icon="monitor" title={t('wizard.register.title')} sub={t('wizard.register.sub')} />
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -137,7 +137,7 @@ function RegisterPanel(): JSX.Element {
         }}
       >
         <TextField
-          label="Nombre lógico (opcional)"
+          label={t('wizard.register.nameLabel')}
           placeholder="thinkpad-t480"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -146,7 +146,7 @@ function RegisterPanel(): JSX.Element {
       </form>
       <div className="row">
         <Button variant="primary" icon="monitor" disabled={busy} onClick={register}>
-          Registrar esta máquina
+          {t('wizard.register.submit')}
         </Button>
       </div>
     </div>
@@ -154,17 +154,14 @@ function RegisterPanel(): JSX.Element {
 }
 
 function FirstProjectPanel(): JSX.Element {
+  const { t } = useTranslation()
   const actions = useActions()
   return (
     <div className="stack">
-      <StepHeader
-        icon="folder"
-        title="¿Sumás un proyecto?"
-        sub="Opcional. Un proyecto sincroniza carpetas de memoria específicas, además de tu config de usuario."
-      />
+      <StepHeader icon="folder" title={t('wizard.firstProject.title')} sub={t('wizard.firstProject.sub')} />
       <div className="row">
         <Button variant="primary" icon="plus" onClick={() => actions.openModal({ kind: 'project-create' })}>
-          Crear proyecto
+          {t('wizard.firstProject.createProject')}
         </Button>
         <Button
           variant="ghost"
@@ -173,7 +170,7 @@ function FirstProjectPanel(): JSX.Element {
             actions.navigate('home')
           }}
         >
-          Después lo hago
+          {t('wizard.firstProject.later')}
         </Button>
       </div>
     </div>
@@ -181,14 +178,15 @@ function FirstProjectPanel(): JSX.Element {
 }
 
 function DonePanel(): JSX.Element {
+  const { t } = useTranslation()
   const actions = useActions()
   return (
     <div className="stack center wizard__done">
       <div className="wizard__done-icon">
         <Icon name="check" size={34} />
       </div>
-      <h2 className="wizard__title">Todo listo</h2>
-      <p className="muted">Tu memoria está lista para sincronizar entre máquinas.</p>
+      <h2 className="wizard__title">{t('wizard.done.title')}</h2>
+      <p className="muted">{t('wizard.done.sub')}</p>
       <Button
         variant="primary"
         icon="orbit"
@@ -197,18 +195,19 @@ function DonePanel(): JSX.Element {
           actions.navigate('home')
         }}
       >
-        Ir a Sincronización
+        {t('wizard.done.goToSync')}
       </Button>
     </div>
   )
 }
 
 /**
- * Takeover de onboarding. AppShell lo monta cuando needsOnboarding || wizardOpen.
- * El paso se deriva del estado (useWizard) → auto-avanza tras cada acción. Solo
- * se puede cerrar cuando ya no hay pasos duros pendientes (dismissable).
+ * Onboarding takeover. AppShell mounts it when needsOnboarding || wizardOpen.
+ * The step is derived from state (useWizard) → it auto-advances after each action.
+ * It can only be closed once there are no hard steps left pending (dismissable).
  */
 export function OnboardingWizard(): JSX.Element {
+  const { t } = useTranslation()
   const state = useAppState()
   const actions = useActions()
   const { step } = useWizard()
@@ -220,11 +219,11 @@ export function OnboardingWizard(): JSX.Element {
         <div className="wizard__brand">
           <Icon name="orbit" size={22} className="brand__mark" />
           <div>
-            <div className="brand__name">ClaudeTR</div>
-            <span className="brand__tag">estación de sincronización</span>
+            <div className="brand__name">Claude Total Recall</div>
+            <span className="brand__tag">{t('wizard.brandTag')}</span>
           </div>
           <span className="spacer" />
-          {dismissable && <IconButton icon="x" label="Cerrar asistente" onClick={actions.closeWizard} />}
+          {dismissable && <IconButton icon="x" label={t('wizard.closeAria')} onClick={actions.closeWizard} />}
         </div>
         <Rail />
         <div className="wizard__body">

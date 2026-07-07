@@ -1,91 +1,105 @@
-# Probar ClaudeTR dogfoodeando (sincronizar la memoria de este mismo proyecto)
+# Testing Claude Total Recall by dogfooding (syncing this very project's memory)
 
-> `ClaudeTotalRecall` es el **código** de la app. El **destino de las memorias** es un repo
-> **separado, privado y vacío**. No sincronices memorias dentro del repo de código.
+> `ClaudeTotalRecall` is the app's **code**. The **memories destination** is a **separate,
+> private, empty** repo. Never sync memories into the code repo.
 
-## 0. Requisitos
+## 0. Requirements
 
-`git`, `gh` autenticado (`gh auth status`), `npm install` corrido. Verificá con:
+`git`, `gh` authenticated (`gh auth status`), `npm install` done. Verify with:
 
 ```bash
 npm run cli:check      # git ✓ / gh ✓ / gh-auth ✓
 ```
 
-## 1. Crear el repo de memorias (vacío, privado)
+## 1. Create the memories repo (empty, private)
 
 ```bash
 gh repo create MrBurcha/claude-memories --private
 ```
 
-No hace falta inicializarlo con nada: ClaudeTR crea la estructura en el primer connect.
+No need to initialize it with anything: Claude Total Recall creates the structure on the first connect.
 
-## 2. Levantar la app
+## 2. Launch the app
 
-En WebStorm: run configuration **dev**. O por terminal:
+In WebStorm: the **dev** run configuration. Or from a terminal:
 
 ```bash
 npm run dev
 ```
 
-## 3. Conectar el repo (Ajustes)
+On first launch an **onboarding wizard** guides you through the steps below (connect → register →
+first project); you can also do them from the individual screens as described here.
 
-Pantalla **Ajustes → Repo** → pegar `https://github.com/MrBurcha/claude-memories.git` →
-**Conectar**. La app clona, crea `claudetr.json` + `memories/…` y hace el primer push.
+## 3. Connect the repo (Settings)
 
-## 4. Registrar esta máquina (Máquinas)
+**Settings → Repo** → paste `https://github.com/MrBurcha/claude-memories.git` → **Connect**.
+The app clones, creates `claudetr.json` + `memories/…`, and makes the first push.
 
-**Máquinas → Registrar esta máquina** → nombre lógico, p.ej. `mac-studio`.
+## 4. Register this machine (Machines)
 
-## 5. Sumar el proyecto ClaudeTR (Proyectos)
+**Machines → Register this machine** → a logical name, e.g. `mac-studio`.
 
-**Proyectos → Sumar proyecto/ranura**:
-- Nombre lógico: `claudetr`
-- Ranura: `memory`
-- **Elegir carpeta…** → navegá a:
-  `~/.claude/projects/-Users-tu-usuario-Projects-ClaudeTR/memory`
+## 5. Add the Claude Total Recall project (Projects)
 
-Se guarda el path **literal** de esta máquina.
+**Projects → Add project/slot**:
+- Logical name: `claude-total-recall`
+- Slot: `memory`
+- **Choose folder…** → navigate to:
+  `~/.claude/projects/-Users-your-user-Projects-ClaudeTotalRecall/memory`
 
-## 6. Gather (Dashboard)
+The **literal** path for this machine is stored.
 
-**Dashboard → Gather** → revisá el **preview del Plan** (create/overwrite/noop/skip) →
-**Confirmar**. Sube:
-- memoria user-level: `~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, `settings.json` (saneado)
-- memoria del proyecto `claudetr`
+## 6. Gather (Sync → Advanced sync)
 
-El **guard** excluye siempre `.credentials.json`, `*.jsonl` y `.claude.json`.
+**Sync → Advanced sync → Gather** → review the **Plan preview** (create/overwrite/noop/skip) →
+**Confirm**. It uploads:
+- user-level memory: `~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, `settings.json` (sanitized)
+- the `claude-total-recall` project memory
 
-## 7. Verificar en GitHub
+The **guard** always excludes `.credentials.json`, `*.jsonl`, and `.claude.json`.
 
-Abrí `github.com/MrBurcha/claude-memories` y confirmá:
-- `claudetr.json` con tu máquina y el proyecto `claudetr`
-- `memories/user/…` y `memories/projects/claudetr/memory/…`
-- **no** hay credenciales ni transcripts
+Note: with **auto-sync** enabled (the default), the app pushes on file changes and pulls on a
+periodic poll on its own — the manual gather/scatter above is the **Advanced sync** escape hatch.
 
-## 8. Round-trip (opcional, con otra máquina)
+## 7. Verify on GitHub
 
-En la otra máquina: **Ajustes → Conectar** el mismo repo → **Máquinas → Registrar** (otro nombre)
-→ **Proyectos → Sumar** `claudetr/memory` con **su** path local → **Dashboard → Scatter** →
-la memoria baja a esa máquina. Si editaste la misma memoria de los dos lados, la app lista los
-conflictos y los resolvés por-archivo (local / remoto → Finalizar merge).
+Open `github.com/MrBurcha/claude-memories` and confirm:
+- `claudetr.json` with your machine and the `claude-total-recall` project
+- `memories/user/…` and `memories/projects/claude-total-recall/memory/…`
+- **no** credentials or transcripts
 
-## Settings por máquina
+## 8. Round-trip (optional, with a second machine)
 
-Si tenés claves en `~/.claude/settings.json` que son propias de esta máquina, ponelas en
-**Ajustes → settings.local.json** (solo las claves). No viajan al repo, y al hacer scatter se
-enciman sobre la base compartida.
+On the other machine: **Settings → Connect** the same repo → **Machines → Register** (another name)
+→ **Projects → Add** `claude-total-recall/memory` with **its** local path → **Sync → Advanced sync → Scatter**
+→ the memory lands on that machine. If you edited the same memory on both sides, the app lists the
+conflicts and you resolve them per file (local / remote → Finalize merge).
+
+## Per-machine settings
+
+If you have keys in `~/.claude/settings.json` that are specific to this machine, put them in
+**Settings → settings.local.json** (just the keys). They don't travel to the repo, and on scatter
+they're layered over the shared base.
+
+## Language
+
+The UI ships in English and neutral Latin American Spanish. It defaults to the host locale; switch
+it in **Settings → Language**. When testing UI changes, **verify both locales** — the toggle is live
+(no restart), and the `<html lang>` attribute follows the selection.
 
 ---
 
-## Binario descargable (CI)
+## Downloadable binary (CI)
 
-Al pushear un tag `vX.Y.Z`, GitHub Actions (`.github/workflows/release.yml`) buildea el `.dmg`
-(macOS) y `.AppImage` + `.deb` + `.pacman` (Linux) **sin firmar** y los publica en el Release del
-repo de código:
+Pushing a `vX.Y.Z` tag triggers GitHub Actions (`.github/workflows/release.yml`), which builds the
+`.dmg` (macOS) and `.AppImage` + `.deb` + `.pacman` (Linux) **unsigned** and publishes them to the
+code repo's Release:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
-En macOS, al ser sin firmar, la primera vez se abre con **click derecho → Abrir**.
+On macOS, since builds are unsigned/ad-hoc, the first open goes through **System Settings → Privacy
+& Security → "Open Anyway"** (on macOS 15+, the old right-click → Open was removed), or clear the
+quarantine with `xattr -cr "/Applications/Claude Total Recall.app"`. See the README for the full flow.

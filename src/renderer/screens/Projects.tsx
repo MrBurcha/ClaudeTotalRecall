@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { ProjectCard } from '../features/projects/ProjectCard'
@@ -6,6 +7,7 @@ import { useActions } from '../state/useActions'
 import { ViewHeader } from './ViewHeader'
 
 export function Projects(): JSX.Element {
+  const { t } = useTranslation()
   const { config, machineId } = useAppState()
   const actions = useActions()
   const projects = config ? Object.entries(config.projects) : []
@@ -13,9 +15,9 @@ export function Projects(): JSX.Element {
   return (
     <div className="view">
       <ViewHeader
-        eyebrow="Configuración"
-        title="Proyectos"
-        sub="Un proyecto agrupa carpetas de memoria; el path de cada carpeta se guarda literal por máquina."
+        eyebrow={t('projects.eyebrow')}
+        title={t('projects.title')}
+        sub={t('projects.sub')}
         action={
           <Button
             variant="primary"
@@ -23,23 +25,23 @@ export function Projects(): JSX.Element {
             disabled={!machineId}
             onClick={() => actions.openModal({ kind: 'project-create' })}
           >
-            Nuevo proyecto
+            {t('projects.newProject')}
           </Button>
         }
       />
 
       {!machineId && (
         <div className="card">
-          <EmptyState icon="monitor" title="Registrá esta máquina primero">
-            Necesitás registrar esta computadora antes de asignar carpetas.
+          <EmptyState icon="monitor" title={t('projects.registerMachineFirst')}>
+            {t('projects.registerMachineHint')}
           </EmptyState>
         </div>
       )}
 
       {machineId && projects.length === 0 && (
         <div className="card">
-          <EmptyState icon="folder" title="Ningún proyecto todavía">
-            Creá uno para sincronizar carpetas de memoria específicas.
+          <EmptyState icon="folder" title={t('projects.noProjectsYet')}>
+            {t('projects.noProjectsHint')}
           </EmptyState>
         </div>
       )}

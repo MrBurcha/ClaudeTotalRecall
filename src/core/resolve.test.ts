@@ -8,7 +8,7 @@ import {
   userLevelItems,
 } from './resolve'
 
-const HOME = '/tmp/claudetr-home'
+const HOME = '/tmp/claude-total-recall-home'
 
 function adapter() {
   return createPlatformAdapter('linux', HOME)

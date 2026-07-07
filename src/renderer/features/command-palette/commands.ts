@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import type { IconName } from '../../components/Icon'
 import { canSync, hasConflict } from '../../state/selectors'
 import type { AppState } from '../../state/types'
@@ -15,10 +16,12 @@ export interface Command {
 }
 
 /**
- * Se computa desde el estado en cada apertura (sin registry mutable global) para
- * que disabled/labels reflejen el contexto y no queden closures viejas.
+ * Computed from state on every open (no global mutable registry) so disabled/labels
+ * reflect the current context and don't keep stale closures. Titles/subtitles/groups
+ * are localized via `t`; the `keywords` stay bilingual literals so search works in
+ * either language regardless of the active locale.
  */
-export function buildCommands(state: AppState, actions: Actions): Command[] {
+export function buildCommands(state: AppState, actions: Actions, t: TFunction): Command[] {
   const sync = canSync(state)
   const blocked = !sync || hasConflict(state)
   const registered = !!state.machineId
@@ -27,77 +30,77 @@ export function buildCommands(state: AppState, actions: Actions): Command[] {
   return [
     {
       id: 'sync-now',
-      title: 'Sincronizar ahora',
-      subtitle: 'ciclo completo (sube y baja)',
+      title: t('palette.syncNow.title'),
+      subtitle: t('palette.syncNow.subtitle'),
       icon: 'sync',
-      group: 'Sincronizar',
+      group: t('palette.group.sync'),
       keywords: ['sync', 'sincronizar', 'ahora', 'now'],
       disabled: blocked,
       run: () => void actions.syncNow(),
     },
     {
       id: 'auto-toggle',
-      title: auto ? 'Desactivar sincronización automática' : 'Activar sincronización automática',
+      title: auto ? t('palette.autoToggle.disable') : t('palette.autoToggle.enable'),
       icon: 'orbit',
-      group: 'Sincronizar',
+      group: t('palette.group.sync'),
       keywords: ['auto', 'automatico', 'automático', 'toggle'],
       disabled: !registered,
       run: () => void actions.setAutoSync(!auto),
     },
     {
       id: 'gather',
-      title: 'Subir cambios (gather)',
-      subtitle: 'avanzado · máquina → repo',
+      title: t('palette.gather.title'),
+      subtitle: t('palette.gather.subtitle'),
       icon: 'arrow-up',
-      group: 'Sincronizar',
-      keywords: ['gather', 'subir', 'push', 'avanzado'],
+      group: t('palette.group.sync'),
+      keywords: ['gather', 'subir', 'push', 'avanzado', 'advanced'],
       disabled: blocked,
       run: () => void actions.openPlan('gather'),
     },
     {
       id: 'scatter',
-      title: 'Traer cambios (scatter)',
-      subtitle: 'avanzado · repo → máquina',
+      title: t('palette.scatter.title'),
+      subtitle: t('palette.scatter.subtitle'),
       icon: 'arrow-down',
-      group: 'Sincronizar',
-      keywords: ['scatter', 'bajar', 'pull', 'avanzado'],
+      group: t('palette.group.sync'),
+      keywords: ['scatter', 'bajar', 'traer', 'pull', 'avanzado', 'advanced'],
       disabled: blocked,
       run: () => void actions.openPlan('scatter'),
     },
     {
       id: 'refresh',
-      title: 'Actualizar estado',
+      title: t('palette.refresh.title'),
       icon: 'sync',
-      group: 'Sincronizar',
-      keywords: ['refresh', 'status', 'recargar'],
+      group: t('palette.group.sync'),
+      keywords: ['refresh', 'status', 'recargar', 'actualizar'],
       run: () => void actions.refresh(),
     },
-    { id: 'go-home', title: 'Ir a Sincronización', icon: 'orbit', group: 'Navegar', run: () => actions.navigate('home') },
-    { id: 'go-projects', title: 'Ir a Proyectos', icon: 'folder', group: 'Navegar', run: () => actions.navigate('projects') },
-    { id: 'go-machines', title: 'Ir a Máquinas', icon: 'monitor', group: 'Navegar', run: () => actions.navigate('machines') },
-    { id: 'go-settings', title: 'Ir a Ajustes', icon: 'sliders', group: 'Navegar', run: () => actions.navigate('settings') },
+    { id: 'go-home', title: t('palette.goHome'), icon: 'orbit', group: t('palette.group.navigate'), keywords: ['home', 'sync', 'inicio', 'sincronizacion'], run: () => actions.navigate('home') },
+    { id: 'go-projects', title: t('palette.goProjects'), icon: 'folder', group: t('palette.group.navigate'), keywords: ['projects', 'proyectos'], run: () => actions.navigate('projects') },
+    { id: 'go-machines', title: t('palette.goMachines'), icon: 'monitor', group: t('palette.group.navigate'), keywords: ['machines', 'maquinas'], run: () => actions.navigate('machines') },
+    { id: 'go-settings', title: t('palette.goSettings'), icon: 'sliders', group: t('palette.group.navigate'), keywords: ['settings', 'ajustes', 'config'], run: () => actions.navigate('settings') },
     {
       id: 'new-project',
-      title: 'Nuevo proyecto',
+      title: t('palette.newProject'),
       icon: 'plus',
-      group: 'Crear',
-      keywords: ['proyecto', 'project'],
+      group: t('palette.group.create'),
+      keywords: ['proyecto', 'project', 'nuevo', 'new'],
       disabled: !registered,
       run: () => actions.openModal({ kind: 'project-create' }),
     },
     {
       id: 'theme',
-      title: state.theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro',
+      title: state.theme === 'dark' ? t('palette.theme.toLight') : t('palette.theme.toDark'),
       icon: state.theme === 'dark' ? 'sun' : 'moon',
-      group: 'Apariencia',
+      group: t('palette.group.appearance'),
       keywords: ['tema', 'theme', 'dark', 'light', 'claro', 'oscuro'],
       run: () => actions.toggleTheme(),
     },
     {
       id: 'about',
-      title: 'Acerca de ClaudeTR',
+      title: t('palette.about'),
       icon: 'info',
-      group: 'Ayuda',
+      group: t('palette.group.help'),
       keywords: ['version', 'acerca', 'about'],
       run: () => actions.openModal({ kind: 'about' }),
     },

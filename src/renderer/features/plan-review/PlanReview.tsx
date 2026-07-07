@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { PlanAction, PlanActionType } from '../../../core/types'
 import { Button } from '../../components/Button'
 import { Icon } from '../../components/Icon'
@@ -33,8 +34,14 @@ function CountChip({ type, n }: { type: PlanActionType; n: number }): JSX.Elemen
 }
 
 function ActionRow({ action }: { action: PlanAction }): JSX.Element {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const hasDetails = !!(action.from || action.to || action.hashFrom || action.hashTo)
+  // The core ships an English default `reason` plus a stable `reasonCode`; localize
+  // by code when present, falling back to the English default.
+  const reason = action.reasonCode
+    ? t(`planReason.${action.reasonCode}`, { ...action.reasonParams, defaultValue: action.reason })
+    : action.reason
   return (
     <li className="plan-row">
       <button
@@ -45,19 +52,19 @@ function ActionRow({ action }: { action: PlanAction }): JSX.Element {
       >
         <Tag type={action.type} />
         <span className="mono grow truncate">{action.logicalPath}</span>
-        {action.reason && <span className="muted plan-row__reason">{action.reason}</span>}
+        {reason && <span className="muted plan-row__reason">{reason}</span>}
         {hasDetails && <Icon name={open ? 'chevron-down' : 'chevron-right'} size={15} />}
       </button>
       {open && hasDetails && (
         <div className="plan-row__details mono">
-          {action.from && <div>desde: {action.from}</div>}
-          {action.to && <div>hacia: {action.to}</div>}
+          {action.from && <div>{t('planReview.from')}: {action.from}</div>}
+          {action.to && <div>{t('planReview.to')}: {action.to}</div>}
           {(action.hashFrom || action.hashTo) && (
             <div>
               hash: {short(action.hashFrom)} → {short(action.hashTo)}
             </div>
           )}
-          {action.transform && <div>contenido computado ({action.transform})</div>}
+          {action.transform && <div>{t('planReview.computed')} ({action.transform})</div>}
         </div>
       )}
     </li>
@@ -73,12 +80,15 @@ function Group({
   filter: Filter
   showUnchanged: boolean
 }): JSX.Element | null {
+  const { t } = useTranslation()
   const rows = visible(group.actions, filter, showUnchanged)
   if (rows.length === 0) return null
   return (
     <section className="stack-2">
       <div className="label">
-        {group.kind === 'user' ? 'Usuario' : `Proyecto · ${group.title}`}
+        {group.kind === 'user'
+          ? t('planReview.userGroup')
+          : t('planReview.projectGroup', { name: group.title })}
       </div>
       <ul className="plan-list">
         {rows.map((a) => (
@@ -94,24 +104,29 @@ export function PlanReview({
 }: {
   modal: Extract<ModalDescriptor, { kind: 'plan-review' }>
 }): JSX.Element {
+  const { t } = useTranslation()
   const { verb, plan } = modal
   const actions = useActions()
   const { groups, counts, mutating } = useMemo(() => groupActions(plan), [plan])
   const [filter, setFilter] = useState<Filter>('all')
   const [showUnchanged, setShowUnchanged] = useState(false)
 
-  const dest = verb === 'gather' ? 'el repo' : 'tu máquina'
-  const summaryParts: string[] = []
-  if (counts.create) summaryParts.push(`crear ${counts.create}`)
-  if (counts.overwrite) summaryParts.push(`sobrescribir ${counts.overwrite}`)
-  if (counts.delete) summaryParts.push(`borrar ${counts.delete}`)
+  const dest = verb === 'gather' ? t('planReview.destRepo') : t('planReview.destMachine')
+  const parts: string[] = []
+  if (counts.create) parts.push(t('planReview.partCreate', { count: counts.create }))
+  if (counts.overwrite) parts.push(t('planReview.partOverwrite', { count: counts.overwrite }))
+  if (counts.delete) parts.push(t('planReview.partDelete', { count: counts.delete }))
+  const list =
+    parts.length > 1
+      ? `${parts.slice(0, -1).join(', ')} ${t('planReview.and')} ${parts[parts.length - 1]}`
+      : (parts[0] ?? '')
 
   const title = (
     <span className="cluster">
-      Revisar cambios
+      {t('planReview.title')}
       <span className="pill">
         <Icon name={verb === 'gather' ? 'arrow-up' : 'arrow-down'} size={14} />
-        {verb === 'gather' ? 'máquina → repo' : 'repo → máquina'}
+        {verb === 'gather' ? t('planReview.dirGather') : t('planReview.dirScatter')}
       </span>
     </span>
   )
@@ -123,7 +138,7 @@ export function PlanReview({
       footer={
         <>
           <Button variant="ghost" onClick={actions.closeModal}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button
             variant="primary"
@@ -131,17 +146,15 @@ export function PlanReview({
             disabled={!mutating}
             onClick={() => actions.executePlan(verb, plan.id)}
           >
-            {verb === 'gather' ? 'Subir cambios' : 'Aplicar cambios'}
+            {verb === 'gather' ? t('planReview.push') : t('planReview.apply')}
           </Button>
         </>
       }
     >
       {mutating ? (
-        <p className="dim">
-          Se van a {summaryParts.join(', ').replace(/, ([^,]*)$/, ' y $1')} archivo(s) en {dest}.
-        </p>
+        <p className="dim">{t('planReview.summary', { list, dest })}</p>
       ) : (
-        <p className="muted">Nada para hacer: todo está sincronizado.</p>
+        <p className="muted">{t('planReview.nothing')}</p>
       )}
 
       <div className="cluster">
@@ -153,14 +166,14 @@ export function PlanReview({
       {mutating && (
         <div className="row between">
           <SegmentedControl<Filter>
-            ariaLabel="Filtrar por tipo"
+            ariaLabel={t('planReview.filterByType')}
             value={filter}
             onChange={setFilter}
             options={[
-              { value: 'all', label: 'Todos' },
-              { value: 'create', label: 'Crea' },
-              { value: 'overwrite', label: 'Sobrescribe' },
-              { value: 'delete', label: 'Borra' },
+              { value: 'all', label: t('planReview.filterAll') },
+              { value: 'create', label: t('planReview.filterCreate') },
+              { value: 'overwrite', label: t('planReview.filterOverwrite') },
+              { value: 'delete', label: t('planReview.filterDelete') },
             ]}
           />
           <label className="cluster muted plan-toggle">
@@ -169,7 +182,7 @@ export function PlanReview({
               checked={showUnchanged}
               onChange={(e) => setShowUnchanged(e.target.checked)}
             />
-            Mostrar sin cambios
+            {t('planReview.showUnchanged')}
           </label>
         </div>
       )}

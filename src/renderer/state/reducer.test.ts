@@ -6,7 +6,7 @@ const projectCreate: ModalDescriptor = { kind: 'project-create' }
 const about: ModalDescriptor = { kind: 'about' }
 
 describe('reducer', () => {
-  it('hydrate vuelca el snapshot y apaga loading', () => {
+  it('hydrate dumps the snapshot and turns off loading', () => {
     const snap: Snapshot = {
       config: null,
       machineId: 'm1',
@@ -20,11 +20,11 @@ describe('reducer', () => {
     expect(s.version).toBe('1.2.3')
   })
 
-  it('busy alterna el flag', () => {
+  it('busy toggles the flag', () => {
     expect(reducer(initialState, { t: 'busy', busy: true }).busy).toBe(true)
   })
 
-  it('los modales funcionan como stack (push/replace/pop)', () => {
+  it('modals work as a stack (push/replace/pop)', () => {
     let s = reducer(initialState, { t: 'pushModal', modal: projectCreate })
     expect(s.modals).toHaveLength(1)
     s = reducer(s, { t: 'pushModal', modal: about })
@@ -35,7 +35,7 @@ describe('reducer', () => {
     expect(s.modals).toHaveLength(1)
   })
 
-  it('los toasts son una cola con dismiss por id', () => {
+  it('toasts are a queue with dismiss by id', () => {
     const a: ToastItem = { id: 1, kind: 'ok', msg: 'a' }
     const b: ToastItem = { id: 2, kind: 'err', msg: 'b' }
     let s = reducer(initialState, { t: 'pushToast', toast: a })
@@ -45,14 +45,14 @@ describe('reducer', () => {
     expect(s.toasts.map((t) => t.id)).toEqual([2])
   })
 
-  it('palette hace merge parcial del patch', () => {
+  it('palette does a partial merge of the patch', () => {
     let s = reducer(initialState, { t: 'palette', patch: { open: true, query: 'gath' } })
     expect(s.palette).toEqual({ open: true, query: 'gath', index: 0 })
     s = reducer(s, { t: 'palette', patch: { index: 2 } })
     expect(s.palette).toEqual({ open: true, query: 'gath', index: 2 })
   })
 
-  it('navigate, theme, wizard y activeOp actualizan su slice', () => {
+  it('navigate, theme, wizard and activeOp update their slice', () => {
     expect(reducer(initialState, { t: 'navigate', route: 'projects' }).route).toBe('projects')
     expect(reducer(initialState, { t: 'theme', theme: 'light' }).theme).toBe('light')
     expect(reducer(initialState, { t: 'wizard', open: true }).wizardOpen).toBe(true)

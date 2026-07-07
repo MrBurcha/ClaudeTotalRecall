@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-/** Suscribe a una media query y devuelve si matchea (reactivo). */
+/** Subscribes to a media query and returns whether it matches (reactive). */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
   useEffect(() => {
@@ -13,7 +13,7 @@ export function useMediaQuery(query: string): boolean {
   return matches
 }
 
-/** True si el usuario pidió menos movimiento; apaga la animación de la constelación. */
+/** True if the user requested less motion; turns off the constellation animation. */
 export function usePrefersReducedMotion(): boolean {
   return useMediaQuery('(prefers-reduced-motion: reduce)')
 }

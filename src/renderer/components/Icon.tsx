@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 
 /**
- * Set de íconos propio en SVG inline (la CSP prohíbe librerías/CDN externos).
- * Todos usan stroke=currentColor y viewBox 24, así heredan color y tamaño del
- * contexto. Reemplaza los glifos unicode (↑ ↓ ⓘ ·) de la UI vieja.
+ * Custom icon set as inline SVG (the CSP forbids external libraries/CDNs).
+ * They all use stroke=currentColor and viewBox 24, so they inherit color and
+ * size from the context. Replaces the unicode glyphs (↑ ↓ ⓘ ·) of the old UI.
  */
 export type IconName =
   | 'orbit'
@@ -168,7 +168,7 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M14 3v5h5M9.5 14.5h5" />
     </>
   ),
-  // Controles de la barra de título custom.
+  // Controls for the custom title bar.
   minimize: <path d="M6 12h12" />,
   maximize: <rect x="6" y="6" width="12" height="12" rx="1.5" />,
   restore: (
