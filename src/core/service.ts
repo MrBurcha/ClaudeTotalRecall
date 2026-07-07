@@ -7,6 +7,7 @@ import { AppError } from './errors'
 import { Git } from './git'
 import { ensureSettingsLocal, loadLocalState, loadSettingsLocal, saveLocalState } from './localState'
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
+import { machineSyncedPaths, pathsCollide } from './resolve'
 import { emptyConfig, type Config, type Machine, type Plan, type RepoStatus, type Verb } from './types'
 
 // ── local locations (working copy = clone of the repo under configHome) ─────
@@ -246,6 +247,20 @@ export async function setProjectFolder(
   const path = adapter.expandHome(absolutePath.trim())
   if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
   await commitConfigChange(adapter, `Claude Total Recall: ${proj}/${sl} on ${id}`, (config) => {
+    // Recursion guard (#20): reject a folder that overlaps another path already
+    // synced on THIS machine — gather/scatter and the watcher work recursively, so
+    // a nested folder would sync the same files twice. Runs against the freshly
+    // pulled config; the (proj, sl) being edited is excluded so re-assigning a slot
+    // doesn't collide with its own old value.
+    for (const other of machineSyncedPaths(config, adapter, id, { project: proj, slot: sl })) {
+      if (pathsCollide(path, other.path)) {
+        throw new AppError(
+          'project.folderNested',
+          `This folder overlaps "${other.path}" (${other.where}), already synced on this machine. Nesting would sync the same files twice.`,
+          { conflict: other.path, where: other.where },
+        )
+      }
+    }
     const project = config.projects[proj] ?? { folders: {} }
     const folder = project.folders[sl] ?? {}
     folder[id] = path

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createPlatformAdapter } from '../platform'
 import type { Config } from './types'
 import {
+  machineSyncedPaths,
+  pathsCollide,
   projectSlotLogicalPath,
   projectSlotPath,
   projectSlots,
@@ -113,5 +115,51 @@ describe('projectSlotLogicalPath', () => {
     expect(projectSlotLogicalPath('demo', 'docs')).toBe(
       'memories/projects/demo/docs',
     )
+  })
+})
+
+describe('pathsCollide', () => {
+  it('is true for equal, ancestor or descendant paths; false for siblings', () => {
+    expect(pathsCollide('/tmp/a', '/tmp/a')).toBe(true)
+    expect(pathsCollide('/tmp/a', '/tmp/a/sub')).toBe(true)
+    expect(pathsCollide('/tmp/a/sub', '/tmp/a')).toBe(true)
+    expect(pathsCollide('/tmp/a', '/tmp/b')).toBe(false)
+  })
+
+  it('respects the separator boundary (no false prefix match)', () => {
+    expect(pathsCollide('/tmp/ab', '/tmp/abc')).toBe(false)
+  })
+
+  it('normalizes trailing slash and .. before comparing', () => {
+    expect(pathsCollide('/tmp/a/', '/tmp/a')).toBe(true)
+    expect(pathsCollide('/tmp/a/../a/sub', '/tmp/a')).toBe(true)
+  })
+})
+
+describe('machineSyncedPaths', () => {
+  it("collects this machine's project folders plus the user-level dir roots", () => {
+    const set = machineSyncedPaths(sampleConfig(), adapter(), 'laptop').map((p) => p.path)
+    expect(set).toContain('/home/me/code/demo/.claude')
+    expect(set).toContain('/home/me/code/demo/docs')
+    expect(set).toContain(`${HOME}/.claude/commands`)
+    expect(set).toContain(`${HOME}/.claude/agents`)
+    expect(set).toContain(`${HOME}/.claude/skills`)
+    // user-level FILE roots (CLAUDE.md, settings.json) are not folders → excluded
+    expect(set).not.toContain(`${HOME}/.claude/CLAUDE.md`)
+  })
+
+  it('excludes the (project, slot) being edited', () => {
+    const set = machineSyncedPaths(sampleConfig(), adapter(), 'laptop', {
+      project: 'demo',
+      slot: 'memory',
+    }).map((p) => p.path)
+    expect(set).not.toContain('/home/me/code/demo/.claude')
+    expect(set).toContain('/home/me/code/demo/docs')
+  })
+
+  it('only considers the given machine', () => {
+    const set = machineSyncedPaths(sampleConfig(), adapter(), 'desktop').map((p) => p.path)
+    expect(set).toContain('/Users/me/code/demo/.claude') // desktop's memory path
+    expect(set).not.toContain('/home/me/code/demo/docs') // laptop-only
   })
 })
