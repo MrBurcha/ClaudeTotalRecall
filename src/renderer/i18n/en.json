@@ -20,7 +20,6 @@
   "nav": {
     "home": "Sync",
     "projects": "Projects",
-    "machines": "Machines",
     "settings": "Settings"
   },
   "sidebar": {
@@ -212,7 +211,9 @@
     },
     "project": {
       "invalidName": "Invalid project name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore.",
-      "folderNested": "This folder overlaps \"{{conflict}}\" ({{where}}), already synced on this machine. Nesting would sync the same files twice."
+      "folderNested": "This folder overlaps \"{{conflict}}\" ({{where}}), already synced on this machine. Nesting would sync the same files twice.",
+      "exists": "A project named \"{{name}}\" already exists.",
+      "notFound": "Project \"{{name}}\" not found."
     },
     "slot": {
       "invalidName": "Invalid slot name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore."
@@ -251,21 +252,10 @@
     "noPathForMachine": "no path for machine \"{{machine}}\""
   },
   "machines": {
-    "eyebrow": "Identity",
     "title": "Machines",
-    "sub": "Every computer that syncs has a logical id and its own home.",
-    "registered": "Machine \"{{machineId}}\" registered.",
-    "connectRepoTitle": "Connect a repo first",
-    "connectRepoBody": "Configure the repo in Settings or from the wizard.",
-    "registerThisMachine": "Register this machine",
-    "logicalNameLabel": "Logical name (optional)",
-    "logicalNameHint": "If you leave it empty, we use the hostname.",
-    "register": "Register",
     "registeredAs": "This machine is registered as <b>{{machineId}}</b>.",
     "knownMachines_one": "Known machine ({{count}})",
     "knownMachines_other": "Known machines ({{count}})",
-    "noneYetTitle": "None yet",
-    "noneYetBody": "Register this machine to get started.",
     "thisMachine": "this"
   },
   "constellation": {
@@ -293,6 +283,10 @@
     "title": "Projects",
     "sub": "A project groups memory folders; each folder's path is stored literally per machine.",
     "newProject": "New project",
+    "nameLabel": "Name",
+    "renamed": "Project renamed to \"{{to}}\".",
+    "folderCount_one": "{{count}} folder",
+    "folderCount_other": "{{count}} folders",
     "registerMachineFirst": "Register this machine first",
     "registerMachineHint": "You need to register this computer before assigning folders.",
     "noProjectsYet": "No projects yet",
@@ -322,15 +316,9 @@
     "projectNameHint": "Links the project across your machines (letters, numbers, . _ -).",
     "pickOrPasteFolder": "Pick or paste a folder.",
     "folderSaved": "Folder \"{{slot}}\" saved in {{project}}.",
-    "editFolderTitle": "Edit folder · {{project}}",
-    "addFolderTitle": "Add folder · {{project}}",
     "slotLabel": "Slot",
-    "slotHintEditing": "The slot isn't renamed; remove it and create another if you want to change it.",
-    "slotHint": "Logical name of the folder (default: memory).",
-    "folderOnMachine": "Folder on this machine",
     "folderPathPlaceholder": "/path/to/folder",
     "choose": "Choose…",
-    "pathLiteralHint": "The path is stored literally for this machine; on others it may differ.",
     "project": {
       "nameEmpty": "The project name can't be empty.",
       "nameInvalid": "Invalid project name. Use only letters, numbers, dot, hyphen and underscore."

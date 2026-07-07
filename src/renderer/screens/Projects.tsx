@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
-import { ProjectCard } from '../features/projects/ProjectCard'
+import { ProjectItem } from '../features/projects/ProjectItem'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 import { ViewHeader } from './ViewHeader'
@@ -46,9 +46,13 @@ export function Projects(): JSX.Element {
         </div>
       )}
 
-      {projects.map(([name, project]) => (
-        <ProjectCard key={name} name={name} project={project} machineId={machineId} />
-      ))}
+      {projects.length > 0 && (
+        <div className="project-list">
+          {projects.map(([name, project]) => (
+            <ProjectItem key={name} name={name} project={project} machineId={machineId} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

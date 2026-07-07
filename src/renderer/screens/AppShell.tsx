@@ -5,7 +5,6 @@ import { OnboardingWizard } from '../features/wizard/OnboardingWizard'
 import { canSync, conflicts, needsOnboarding } from '../state/selectors'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
-import { Machines } from './Machines'
 import { ModalHost } from './ModalHost'
 import { Projects } from './Projects'
 import { Settings } from './Settings'
@@ -60,7 +59,6 @@ export function AppShell(): JSX.Element {
       <main className="content">
         {state.route === 'home' && <SyncHome />}
         {state.route === 'projects' && <Projects />}
-        {state.route === 'machines' && <Machines />}
         {state.route === 'settings' && <Settings />}
       </main>
       {showWizard && <OnboardingWizard />}

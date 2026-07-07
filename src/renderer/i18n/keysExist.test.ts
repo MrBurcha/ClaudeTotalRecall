@@ -64,6 +64,6 @@ describe('i18n static keys exist in the catalog', () => {
       expect(has(`planReason.${k}`), `planReason.${k}`).toBe(true)
     for (const k of ['git.missing', 'git.install', 'gh.missing', 'gh.install', 'ghAuth.ok', 'ghAuth.fix', 'ghAuth.noGh', 'ghAuth.installFirst'])
       expect(has(`preflight.${k}`), `preflight.${k}`).toBe(true)
-    for (const k of ['home', 'projects', 'machines', 'settings']) expect(has(`nav.${k}`), `nav.${k}`).toBe(true)
+    for (const k of ['home', 'projects', 'settings']) expect(has(`nav.${k}`), `nav.${k}`).toBe(true)
   })
 })

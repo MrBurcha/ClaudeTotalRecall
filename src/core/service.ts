@@ -1,4 +1,4 @@
-import { mkdir, stat, writeFile } from 'node:fs/promises'
+import { mkdir, rename, stat, writeFile } from 'node:fs/promises'
 import { hostname } from 'node:os'
 import { join } from 'node:path'
 import type { PlatformAdapter } from '../platform'
@@ -296,6 +296,40 @@ export async function deleteProject(adapter: PlatformAdapter, projectName: strin
   await commitConfigChange(adapter, `Claude Total Recall: delete project ${projectName}`, (config) => {
     delete config.projects[projectName]
   })
+}
+
+/**
+ * Renames a project: moves its config entry AND its repo folder
+ * (memories/projects/<old> → <new>) in the same commit, so already-gathered
+ * files aren't orphaned under the old name. Rejects on invalid/colliding/missing
+ * names (the throw aborts the commit — nothing is persisted).
+ */
+export async function renameProject(
+  adapter: PlatformAdapter,
+  oldName: string,
+  newName: string,
+): Promise<void> {
+  const to = assertSafeName('project', newName)
+  await commitConfigChange(
+    adapter,
+    `Claude Total Recall: rename project ${oldName} -> ${to}`,
+    async (config) => {
+      if (!config.projects[oldName])
+        throw new AppError('project.notFound', `Project "${oldName}" not found.`, { name: oldName })
+      if (oldName === to) return
+      if (config.projects[to])
+        throw new AppError('project.exists', `A project named "${to}" already exists.`, { name: to })
+      config.projects[to] = config.projects[oldName]
+      delete config.projects[oldName]
+      // Move the gathered folder so its files follow the new name (no orphans).
+      const base = join(workingCopyDir(adapter), 'memories', 'projects')
+      const src = join(base, oldName)
+      const exists = await stat(src)
+        .then(() => true)
+        .catch(() => false)
+      if (exists) await rename(src, join(base, to))
+    },
+  )
 }
 
 // ── conflicts ───────────────────────────────────────────────────────────────

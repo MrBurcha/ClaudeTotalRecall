@@ -52,6 +52,8 @@ const api = {
   projectRemoveFolder: (name: string, slot: string) =>
     ipcRenderer.invoke('project:removeFolder', { name, slot }) as Promise<void>,
   projectDelete: (name: string) => ipcRenderer.invoke('project:delete', name) as Promise<void>,
+  projectRename: (oldName: string, newName: string) =>
+    ipcRenderer.invoke('project:rename', { oldName, newName }) as Promise<void>,
   projectPickFolder: () => ipcRenderer.invoke('project:pickFolder') as Promise<string | null>,
 
   planBuild: (verb: Verb) => ipcRenderer.invoke('plan:build', verb) as Promise<Plan>,

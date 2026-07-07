@@ -9,7 +9,7 @@ import type {
 } from '../../core/types'
 
 /** Navigable sections of the steady-state (the wizard is a separate takeover). */
-export type Route = 'home' | 'projects' | 'machines' | 'settings'
+export type Route = 'home' | 'projects' | 'settings'
 export type Theme = 'dark' | 'light'
 export type ToastKind = 'ok' | 'err' | 'info'
 
@@ -37,7 +37,6 @@ export type ModalDescriptor =
   | { kind: 'plan-review'; verb: Verb; plan: Plan }
   | { kind: 'plan-drift'; verb: Verb; planId: string; drifted: PlanAction[] }
   | { kind: 'project-create' }
-  | { kind: 'folder-form'; project: string; slot?: string; path?: string }
   | { kind: 'about' }
 
 /** In-progress sync operation; feeds the constellation's animated state. */

@@ -90,6 +90,9 @@ export function registerIpc(scheduler: SyncScheduler): void {
     svc.removeProjectFolder(adapter(), p.name, p.slot),
   )
   handle('project:delete', (_e, name: string) => svc.deleteProject(adapter(), name))
+  handle('project:rename', (_e, p: { oldName: string; newName: string }) =>
+    svc.renameProject(adapter(), p.oldName, p.newName),
+  )
   handle('project:pickFolder', async () => {
     const a = adapter()
     const r = await dialog.showOpenDialog({

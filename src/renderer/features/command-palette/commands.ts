@@ -77,7 +77,7 @@ export function buildCommands(state: AppState, actions: Actions, t: TFunction): 
     },
     { id: 'go-home', title: t('palette.goHome'), icon: 'orbit', group: t('palette.group.navigate'), keywords: ['home', 'sync', 'inicio', 'sincronizacion'], run: () => actions.navigate('home') },
     { id: 'go-projects', title: t('palette.goProjects'), icon: 'folder', group: t('palette.group.navigate'), keywords: ['projects', 'proyectos'], run: () => actions.navigate('projects') },
-    { id: 'go-machines', title: t('palette.goMachines'), icon: 'monitor', group: t('palette.group.navigate'), keywords: ['machines', 'maquinas'], run: () => actions.navigate('machines') },
+    { id: 'go-machines', title: t('palette.goMachines'), icon: 'monitor', group: t('palette.group.navigate'), keywords: ['machines', 'maquinas', 'máquinas'], run: () => actions.navigate('settings') },
     { id: 'go-settings', title: t('palette.goSettings'), icon: 'sliders', group: t('palette.group.navigate'), keywords: ['settings', 'ajustes', 'config'], run: () => actions.navigate('settings') },
     {
       id: 'new-project',

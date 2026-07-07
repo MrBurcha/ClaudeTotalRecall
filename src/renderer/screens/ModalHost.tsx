@@ -5,7 +5,6 @@ import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { PlanDriftDialog } from '../features/plan-review/PlanDriftDialog'
 import { PlanReview } from '../features/plan-review/PlanReview'
-import { FolderFormModal } from '../features/projects/FolderFormModal'
 import { ProjectFormModal } from '../features/projects/ProjectFormModal'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
@@ -52,8 +51,6 @@ export function ModalHost(): JSX.Element | null {
       return <PlanDriftDialog modal={top} />
     case 'project-create':
       return <ProjectFormModal />
-    case 'folder-form':
-      return <FolderFormModal modal={top} />
     case 'about':
       return <AboutModal />
     default:
