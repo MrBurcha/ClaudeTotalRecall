@@ -115,17 +115,17 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
   const closeWizard = (): void => dispatch({ t: 'wizard', open: false })
 
   // ── Synchronization ────────────────────────────────────────────────────────
-  /** Builds the Plan (pulling first if scatter) and opens the review modal. */
+  /** Builds the Plan (pulling first if incoming) and opens the review modal. */
   const openPlan = async (verb: Verb): Promise<void> => {
     dispatch({ t: 'busy', busy: true })
     dispatch({ t: 'activeOp', op: { verb, phase: 'building' } })
     try {
-      if (verb === 'scatter') {
+      if (verb === 'incoming') {
         const pulled = await api.repoPull()
         if (!pulled.ok) {
           await refresh()
           throw new Error(
-            i18n.t('sync.resolveBeforeScatter', { conflicts: pulled.conflicts.join(', ') }),
+            i18n.t('sync.resolveBeforeIncoming', { conflicts: pulled.conflicts.join(', ') }),
           )
         }
       }
@@ -159,7 +159,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
       if ('conflicts' in res && res.conflicts.length > 0) {
         notify(i18n.t('sync.integrateConflicts', { conflicts: res.conflicts.join(', ') }), 'info')
       } else {
-        const label = verb === 'gather' ? 'Gather' : 'Scatter'
+        const label = i18n.t(verb === 'outgoing' ? 'sync.outgoing' : 'sync.incoming')
         notify(i18n.t('sync.applied', { count: res.exec.applied, verb: label }), 'ok')
       }
     } catch (e) {

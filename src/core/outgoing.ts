@@ -1,16 +1,16 @@
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
 import type { Plan } from './types'
 
-/** Arma el Plan de gather (máquina → repo). */
-export function buildGatherPlan(
+/** Builds the outgoing Plan (machine → repo). */
+export function buildOutgoingPlan(
   ctx: SyncContext,
   meta: { id: string; createdAt: string },
 ): Promise<Plan> {
-  return buildPlan(ctx, 'gather', meta)
+  return buildPlan(ctx, 'outgoing', meta)
 }
 
-/** Ejecuta un Plan de gather ya previsualizado (con revalidación TOCTOU). */
-export function executeGather(
+/** Executes an already-previewed outgoing Plan (with TOCTOU revalidation). */
+export function executeOutgoing(
   plan: Plan,
   ctx: SyncContext,
   opts?: { force?: boolean },

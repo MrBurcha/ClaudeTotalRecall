@@ -11,9 +11,9 @@ import type {
 import type {
   ConnectResult,
   CreateProjectResult,
-  GatherResult,
+  OutgoingResult,
   RegisterResult,
-  ScatterResult,
+  IncomingResult,
 } from '../core/service'
 
 /**
@@ -23,7 +23,7 @@ import type {
  * El plan queda cacheado por su id → "Forzar" re-ejecuta con el mismo planId.
  */
 export type ExecOutcome =
-  | { ok: true; result: GatherResult | ScatterResult }
+  | { ok: true; result: OutgoingResult | IncomingResult }
   | { ok: false; drift: true; drifted: PlanAction[] }
 
 /**

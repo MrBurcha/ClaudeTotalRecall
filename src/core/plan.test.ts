@@ -3,9 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createPlatformAdapter } from '../platform'
-import { buildGatherPlan, executeGather } from './gather'
+import { buildOutgoingPlan, executeOutgoing } from './outgoing'
 import { PlanDriftError, type SyncContext } from './plan'
-import { buildScatterPlan, executeScatter } from './scatter'
+import { buildIncomingPlan, executeIncoming } from './incoming'
 import type { Config } from './types'
 
 const META = { id: 'test-plan', createdAt: '2026-07-05T00:00:00.000Z' }
@@ -92,12 +92,12 @@ afterEach(async () => {
   for (const b of bases.splice(0)) await rm(b, { recursive: true, force: true })
 })
 
-describe('gather → scatter round-trip', () => {
+describe('outgoing → incoming round-trip', () => {
   it('reproduces files cross-machine, sanitizes settings and excludes secrets', async () => {
     const sb = await seed()
     const ctx1 = ctxFor(sb, sb.home1, 'm1', { local: 'ignored' })
 
-    const plan = await buildGatherPlan(ctx1, META)
+    const plan = await buildOutgoingPlan(ctx1, META)
 
     // Guard: no secret in the Plan.
     for (const a of plan.actions) {
@@ -105,7 +105,7 @@ describe('gather → scatter round-trip', () => {
       if (a.from) expect(a.from).not.toMatch(/\.credentials\.json|\.jsonl$|\.claude\.json/)
     }
 
-    await executeGather(plan, ctx1)
+    await executeOutgoing(plan, ctx1)
 
     // Repo populated with logical names.
     expect(await read(join(sb.repoDir, 'memories/user/CLAUDE.md'))).toBe('user memory\n')
@@ -121,16 +121,16 @@ describe('gather → scatter round-trip', () => {
     expect(await exists(join(sb.repoDir, 'memories/user/commands/x.jsonl'))).toBe(false)
     expect(await exists(join(sb.repoDir, 'memories/user/commands/.claude.json'))).toBe(false)
 
-    // Idempotency: re-planning gather produces no copies.
-    const again = await buildGatherPlan(ctx1, META)
+    // Idempotency: re-planning outgoing produces no copies.
+    const again = await buildOutgoingPlan(ctx1, META)
     expect(again.actions.filter((a) => a.type === 'create' || a.type === 'overwrite')).toHaveLength(
       0,
     )
 
-    // Scatter to machine 2 (empty home + its own project path).
+    // Incoming to machine 2 (empty home + its own project path).
     const ctx2 = ctxFor(sb, sb.home2, 'm2', { local: 'M2VAL' })
-    const splan = await buildScatterPlan(ctx2, META)
-    await executeScatter(splan, ctx2)
+    const splan = await buildIncomingPlan(ctx2, META)
+    await executeIncoming(splan, ctx2)
 
     expect(await read(join(sb.home2, '.claude/CLAUDE.md'))).toBe('user memory\n')
     expect(await read(join(sb.home2, '.claude/commands/foo.md'))).toBe('cmd\n')
@@ -148,14 +148,14 @@ describe('Plan action types', () => {
     const sb = await seed()
     const ctx1 = ctxFor(sb, sb.home1, 'm1', { local: 'x' })
 
-    await executeGather(await buildGatherPlan(ctx1, META), ctx1)
+    await executeOutgoing(await buildOutgoingPlan(ctx1, META), ctx1)
 
     // Changes on the machine.
     await writeFile(join(sb.home1, '.claude/commands/foo.md'), 'CHANGED\n') // overwrite
     await writeFile(join(sb.home1, '.claude/commands/bar.md'), 'bar\n') // create
     await rm(join(sb.p1, 'note.md')) // delete (exists in repo, not in source)
 
-    const plan = await buildGatherPlan(ctx1, META)
+    const plan = await buildOutgoingPlan(ctx1, META)
     const byLogical = new Map(plan.actions.map((a) => [a.logicalPath, a]))
 
     expect(byLogical.get('memories/user/commands/foo.md')?.type).toBe('overwrite')
@@ -173,12 +173,12 @@ describe('TOCTOU revalidation', () => {
     const sb = await seed()
     const ctx1 = ctxFor(sb, sb.home1, 'm1', { local: 'x' })
 
-    const plan = await buildGatherPlan(ctx1, META)
+    const plan = await buildOutgoingPlan(ctx1, META)
     // Mutate a file with a pending create action.
     await writeFile(join(sb.home1, '.claude/CLAUDE.md'), 'MUTATED\n')
 
-    await expect(executeGather(plan, ctx1)).rejects.toBeInstanceOf(PlanDriftError)
+    await expect(executeOutgoing(plan, ctx1)).rejects.toBeInstanceOf(PlanDriftError)
     // With force, it applies anyway.
-    await expect(executeGather(plan, ctx1, { force: true })).resolves.toBeDefined()
+    await expect(executeOutgoing(plan, ctx1, { force: true })).resolves.toBeDefined()
   })
 })

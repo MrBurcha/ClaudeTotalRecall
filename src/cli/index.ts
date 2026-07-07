@@ -10,8 +10,8 @@ import {
   pullRepo,
   registerMachine,
   repoStatus,
-  syncGather,
-  syncScatter,
+  syncOutgoing,
+  syncIncoming,
 } from '../core/service'
 
 // ── util ─────────────────────────────────────────────────────────────────────
@@ -115,12 +115,12 @@ async function cmdSync(verb: Verb, args: string[]): Promise<number> {
   const dryRun = hasFlag(args, '--dry-run')
   const yes = hasFlag(args, '--yes')
 
-  // scatter: pull the latest before writing to the machine (except on dry-run).
-  if (verb === 'scatter' && !dryRun) {
+  // incoming: pull the latest before writing to the machine (except on dry-run).
+  if (verb === 'incoming' && !dryRun) {
     const pulled = await pullRepo(adapter)
     if (!pulled.ok) {
       out(`Conflicts while pulling the repo: ${pulled.conflicts.join(', ')}`)
-      out('Resolve the conflicts before scatter.')
+      out('Resolve the conflicts before the incoming sync.')
       return 1
     }
   }
@@ -142,8 +142,8 @@ async function cmdSync(verb: Verb, args: string[]): Promise<number> {
     return 1
   }
 
-  if (verb === 'gather') {
-    const r = await syncGather(adapter, plan)
+  if (verb === 'outgoing') {
+    const r = await syncOutgoing(adapter, plan)
     out(`Applied: ${r.exec.applied} (create=${r.exec.created}, overwrite=${r.exec.overwritten}, delete=${r.exec.deleted}).`)
     if (r.conflicts.length) {
       out(`Conflicts while integrating: ${r.conflicts.join(', ')}. Resolve them and retry.`)
@@ -151,7 +151,7 @@ async function cmdSync(verb: Verb, args: string[]): Promise<number> {
     }
     out(r.pushed ? 'Pushed to the remote.' : r.committed ? 'Committed (no push).' : 'Nothing to commit.')
   } else {
-    const r = await syncScatter(adapter, plan)
+    const r = await syncIncoming(adapter, plan)
     out(`Applied: ${r.exec.applied} (create=${r.exec.created}, overwrite=${r.exec.overwritten}, delete=${r.exec.deleted}).`)
   }
   return 0
@@ -163,8 +163,8 @@ function usage(): void {
   out('  connect <remote>             clone/initialize the repo')
   out('  status                       repo status')
   out('  register [--name X]          register this machine')
-  out('  gather  [--dry-run] [--yes]  machine → repo')
-  out('  scatter [--dry-run] [--yes]  repo → machine')
+  out('  outgoing [--dry-run] [--yes]  machine → repo')
+  out('  incoming [--dry-run] [--yes]  repo → machine')
 }
 
 async function main(argv: string[]): Promise<number> {
@@ -178,10 +178,10 @@ async function main(argv: string[]): Promise<number> {
       return cmdStatus()
     case 'register':
       return cmdRegister(args)
-    case 'gather':
-      return cmdSync('gather', args)
-    case 'scatter':
-      return cmdSync('scatter', args)
+    case 'outgoing':
+      return cmdSync('outgoing', args)
+    case 'incoming':
+      return cmdSync('incoming', args)
     case undefined:
     case 'help':
     case '--help':

@@ -111,7 +111,7 @@ export function PlanReview({
   const [filter, setFilter] = useState<Filter>('all')
   const [showUnchanged, setShowUnchanged] = useState(false)
 
-  const dest = verb === 'gather' ? t('planReview.destRepo') : t('planReview.destMachine')
+  const dest = verb === 'outgoing' ? t('planReview.destRepo') : t('planReview.destMachine')
   const parts: string[] = []
   if (counts.create) parts.push(t('planReview.partCreate', { count: counts.create }))
   if (counts.overwrite) parts.push(t('planReview.partOverwrite', { count: counts.overwrite }))
@@ -125,8 +125,8 @@ export function PlanReview({
     <span className="cluster">
       {t('planReview.title')}
       <span className="pill">
-        <Icon name={verb === 'gather' ? 'arrow-up' : 'arrow-down'} size={14} />
-        {verb === 'gather' ? t('planReview.dirGather') : t('planReview.dirScatter')}
+        <Icon name={verb === 'outgoing' ? 'arrow-up' : 'arrow-down'} size={14} />
+        {verb === 'outgoing' ? t('planReview.dirOutgoing') : t('planReview.dirIncoming')}
       </span>
     </span>
   )
@@ -142,11 +142,11 @@ export function PlanReview({
           </Button>
           <Button
             variant="primary"
-            icon={verb === 'gather' ? 'arrow-up' : 'arrow-down'}
+            icon={verb === 'outgoing' ? 'arrow-up' : 'arrow-down'}
             disabled={!mutating}
             onClick={() => actions.executePlan(verb, plan.id)}
           >
-            {verb === 'gather' ? t('planReview.push') : t('planReview.apply')}
+            {verb === 'outgoing' ? t('planReview.push') : t('planReview.apply')}
           </Button>
         </>
       }

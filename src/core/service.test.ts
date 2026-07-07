@@ -18,8 +18,8 @@ import {
   renameProject,
   repoStatus,
   setProjectFolder,
-  syncGather,
-  syncScatter,
+  syncOutgoing,
+  syncIncoming,
   workingCopyDir,
 } from './service'
 
@@ -108,12 +108,12 @@ describe('registerMachine', () => {
   })
 })
 
-describe('gather → scatter via the service (two machines, one remote)', () => {
+describe('outgoing → incoming via the service (two machines, one remote)', () => {
   it('propagates user-level memory and settings from m1 to m2', async () => {
     const base = await newBase()
     const remote = await bareRemote(base)
 
-    // Machine 1: seed ~/.claude, connect, register, gather.
+    // Machine 1: seed ~/.claude, connect, register, outgoing.
     const home1 = join(base, 'home1')
     await mkdir(join(home1, '.claude', 'commands'), { recursive: true })
     await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'memoria de m1\n')
@@ -123,12 +123,12 @@ describe('gather → scatter via the service (two machines, one remote)', () => 
     await connectRepo(remote, a1)
     await registerMachine(a1, 'm1')
 
-    const gplan = await buildVerbPlan(a1, 'gather', { id: 'g', createdAt: 't' })
-    const gres = await syncGather(a1, gplan)
+    const gplan = await buildVerbPlan(a1, 'outgoing', { id: 'g', createdAt: 't' })
+    const gres = await syncOutgoing(a1, gplan)
     expect(gres.pushed).toBe(true)
     expect(gres.conflicts).toEqual([])
 
-    // Machine 2: empty home, connect (clones memories), register, scatter.
+    // Machine 2: empty home, connect (clones memories), register, incoming.
     const home2 = join(base, 'home2')
     const a2 = adapterFor(home2)
     await connectRepo(remote, a2)
@@ -137,8 +137,8 @@ describe('gather → scatter via the service (two machines, one remote)', () => 
     const pulled = await pullRepo(a2)
     expect(pulled.ok).toBe(true)
 
-    const splan = await buildVerbPlan(a2, 'scatter', { id: 's', createdAt: 't' })
-    await syncScatter(a2, splan)
+    const splan = await buildVerbPlan(a2, 'incoming', { id: 's', createdAt: 't' })
+    await syncIncoming(a2, splan)
 
     expect(await readFile(join(home2, '.claude', 'CLAUDE.md'), 'utf8')).toBe('memoria de m1\n')
     expect(await readFile(join(home2, '.claude', 'commands', 'deploy.md'), 'utf8')).toBe('deploy cmd\n')

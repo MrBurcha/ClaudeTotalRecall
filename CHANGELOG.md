@@ -7,6 +7,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Renamed the sync verbs** `gather`/`scatter` → **`outgoing`/`incoming`** (UI: *Outgoing / Saliente*
+  and *Incoming / Entrante*). The rename spans the UI, the `Verb` type, CLI subcommands
+  (`claude-total-recall outgoing|incoming` — the old `gather`/`scatter` subcommands are gone),
+  and commit messages (`Claude Total Recall: outgoing on <machine>`). Command-palette search still
+  matches the old terms.
+
 ## [0.1.5] - 2026-07-06
 
 ### Added

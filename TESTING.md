@@ -49,9 +49,9 @@ The app clones, creates `claudetr.json` + `memories/…`, and makes the first pu
 
 The **literal** path for this machine is stored.
 
-## 6. Gather (Sync → Advanced sync)
+## 6. Outgoing (Sync → Advanced sync)
 
-**Sync → Advanced sync → Gather** → review the **Plan preview** (create/overwrite/noop/skip) →
+**Sync → Advanced sync → Outgoing** → review the **Plan preview** (create/overwrite/noop/skip) →
 **Confirm**. It uploads:
 - user-level memory: `~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, `settings.json` (sanitized)
 - the `claude-total-recall` project memory
@@ -59,7 +59,7 @@ The **literal** path for this machine is stored.
 The **guard** always excludes `.credentials.json`, `*.jsonl`, and `.claude.json`.
 
 Note: with **auto-sync** enabled (the default), the app pushes on file changes and pulls on a
-periodic poll on its own — the manual gather/scatter above is the **Advanced sync** escape hatch.
+periodic poll on its own — the manual outgoing/incoming above is the **Advanced sync** escape hatch.
 
 ## 7. Verify on GitHub
 
@@ -71,14 +71,14 @@ Open `github.com/MrBurcha/claude-memories` and confirm:
 ## 8. Round-trip (optional, with a second machine)
 
 On the other machine: **Settings → Connect** the same repo → **Machines → Register** (another name)
-→ **Projects → Add** `claude-total-recall/memory` with **its** local path → **Sync → Advanced sync → Scatter**
+→ **Projects → Add** `claude-total-recall/memory` with **its** local path → **Sync → Advanced sync → Incoming**
 → the memory lands on that machine. If you edited the same memory on both sides, the app lists the
 conflicts and you resolve them per file (local / remote → Finalize merge).
 
 ## Per-machine settings
 
 If you have keys in `~/.claude/settings.json` that are specific to this machine, put them in
-**Settings → settings.local.json** (just the keys). They don't travel to the repo, and on scatter
+**Settings → settings.local.json** (just the keys). They don't travel to the repo, and on incoming
 they're layered over the shared base.
 
 ## Language

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { filterCommands, scoreMatch } from './filter'
 
 const items = [
-  { title: 'Subir cambios (gather)', keywords: ['gather', 'push'] },
-  { title: 'Traer cambios (scatter)', keywords: ['scatter', 'pull'] },
+  { title: 'Subir cambios (outgoing)', keywords: ['outgoing', 'push'] },
+  { title: 'Traer cambios (incoming)', keywords: ['incoming', 'pull'] },
   { title: 'Ir a Proyectos' },
   { title: 'Cambiar a tema claro', keywords: ['theme'] },
 ]
@@ -32,11 +32,11 @@ describe('filterCommands', () => {
     const r = filterCommands('cambi', items)
     expect(r.map((x) => x.title)).toEqual([
       'Cambiar a tema claro', // prefix
-      'Subir cambios (gather)', // word boundary
-      'Traer cambios (scatter)',
+      'Subir cambios (outgoing)', // word boundary
+      'Traer cambios (incoming)',
     ])
   })
   it('searches by keyword', () => {
-    expect(filterCommands('scatter', items).map((x) => x.title)).toEqual(['Traer cambios (scatter)'])
+    expect(filterCommands('incoming', items).map((x) => x.title)).toEqual(['Traer cambios (incoming)'])
   })
 })

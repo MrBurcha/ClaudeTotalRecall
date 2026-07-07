@@ -97,7 +97,7 @@
     "secrets": "Los secretos nunca viajan: .credentials.json, .claude.json ni transcripts (*.jsonl)."
   },
   "sync": {
-    "resolveBeforeScatter": "Resuelve los conflictos antes de bajar (scatter): {{conflicts}}",
+    "resolveBeforeIncoming": "Resolve los conflictos antes de la sincronización entrante: {{conflicts}}",
     "integrateConflicts": "Conflictos al integrar: {{conflicts}}. Resuélvelos abajo.",
     "applied_one": "{{verb}} aplicado: {{count}} acción.",
     "applied_other": "{{verb}} aplicado: {{count}} acciones.",
@@ -111,10 +111,12 @@
     "clean": "limpio",
     "secrets": "Secretos",
     "excluded": "excluidos",
-    "hintGather": "máquina → repo",
-    "hintGatherCount": "máquina → repo · {{count}} para subir",
-    "hintScatter": "repo → máquina",
-    "hintScatterCount": "repo → máquina · {{count}} por bajar",
+    "outgoing": "Saliente",
+    "incoming": "Entrante",
+    "hintOutgoing": "máquina → repo",
+    "hintOutgoingCount": "máquina → repo · {{count}} para subir",
+    "hintIncoming": "repo → máquina",
+    "hintIncomingCount": "repo → máquina · {{count}} por bajar",
     "automatic": "Automático",
     "syncing": "Sincronizando…",
     "syncNow": "Sincronizar ahora"
@@ -140,12 +142,12 @@
       "enable": "Activar sincronización automática",
       "disable": "Desactivar sincronización automática"
     },
-    "gather": {
-      "title": "Subir cambios (gather)",
+    "outgoing": {
+      "title": "Sincronización saliente",
       "subtitle": "avanzado · máquina → repo"
     },
-    "scatter": {
-      "title": "Traer cambios (scatter)",
+    "incoming": {
+      "title": "Sincronización entrante",
       "subtitle": "avanzado · repo → máquina"
     },
     "refresh": {
@@ -164,8 +166,8 @@
   },
   "planReview": {
     "title": "Revisar cambios",
-    "dirGather": "máquina → repo",
-    "dirScatter": "repo → máquina",
+    "dirOutgoing": "máquina → repo",
+    "dirIncoming": "repo → máquina",
     "push": "Subir cambios",
     "apply": "Aplicar cambios",
     "nothing": "Nada para hacer: todo está sincronizado.",

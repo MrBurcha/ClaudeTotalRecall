@@ -22,17 +22,17 @@ function byId(state: AppState, id: string) {
 }
 
 describe('buildCommands', () => {
-  it('gather/scatter disabled when sync is not possible', () => {
-    expect(byId(initialState, 'gather')?.disabled).toBe(true)
-    expect(byId(ready, 'gather')?.disabled).toBe(false)
+  it('outgoing/incoming disabled when sync is not possible', () => {
+    expect(byId(initialState, 'outgoing')?.disabled).toBe(true)
+    expect(byId(ready, 'outgoing')?.disabled).toBe(false)
   })
 
-  it('gather is blocked when there are conflicts, even with canSync', () => {
+  it('outgoing is blocked when there are conflicts, even with canSync', () => {
     const withConflict = stateWith({
       ...ready,
       status: { branch: 'main', ahead: 0, behind: 0, dirty: false, conflicted: ['a.md'] },
     })
-    expect(byId(withConflict, 'gather')?.disabled).toBe(true)
+    expect(byId(withConflict, 'outgoing')?.disabled).toBe(true)
   })
 
   it('new project requires a registered machine', () => {

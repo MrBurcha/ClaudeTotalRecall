@@ -97,7 +97,7 @@
     "secrets": "Secrets never travel: .credentials.json, .claude.json, or transcripts (*.jsonl)."
   },
   "sync": {
-    "resolveBeforeScatter": "Resolve the conflicts before pulling (scatter): {{conflicts}}",
+    "resolveBeforeIncoming": "Resolve the conflicts before the incoming sync: {{conflicts}}",
     "integrateConflicts": "Conflicts while integrating: {{conflicts}}. Resolve them below.",
     "applied_one": "{{verb}} applied: {{count}} action.",
     "applied_other": "{{verb}} applied: {{count}} actions.",
@@ -111,10 +111,12 @@
     "clean": "clean",
     "secrets": "Secrets",
     "excluded": "excluded",
-    "hintGather": "machine → repo",
-    "hintGatherCount": "machine → repo · {{count}} to push",
-    "hintScatter": "repo → machine",
-    "hintScatterCount": "repo → machine · {{count}} to pull",
+    "outgoing": "Outgoing",
+    "incoming": "Incoming",
+    "hintOutgoing": "machine → repo",
+    "hintOutgoingCount": "machine → repo · {{count}} to push",
+    "hintIncoming": "repo → machine",
+    "hintIncomingCount": "repo → machine · {{count}} to pull",
     "automatic": "Automatic",
     "syncing": "Syncing…",
     "syncNow": "Sync now"
@@ -140,12 +142,12 @@
       "enable": "Enable automatic sync",
       "disable": "Disable automatic sync"
     },
-    "gather": {
-      "title": "Push changes (gather)",
+    "outgoing": {
+      "title": "Outgoing sync",
       "subtitle": "advanced · machine → repo"
     },
-    "scatter": {
-      "title": "Pull changes (scatter)",
+    "incoming": {
+      "title": "Incoming sync",
       "subtitle": "advanced · repo → machine"
     },
     "refresh": {
@@ -164,8 +166,8 @@
   },
   "planReview": {
     "title": "Review changes",
-    "dirGather": "machine → repo",
-    "dirScatter": "repo → machine",
+    "dirOutgoing": "machine → repo",
+    "dirIncoming": "repo → machine",
     "push": "Push changes",
     "apply": "Apply changes",
     "nothing": "Nothing to do: everything is in sync.",

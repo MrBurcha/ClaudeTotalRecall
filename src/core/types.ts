@@ -62,7 +62,7 @@ export type SettingsObject = Record<string, unknown>
 // Plan (mandatory dry-run). See §10.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type Verb = 'gather' | 'scatter'
+export type Verb = 'outgoing' | 'incoming'
 
 export type PlanActionType =
   | 'create' // the destination doesn't exist
@@ -94,7 +94,7 @@ export interface PlanAction {
    * (the settings.json merge/split, §6). The executor recomputes the content
    * instead of copying the file.
    */
-  transform?: 'settings-gather' | 'settings-scatter'
+  transform?: 'settings-outgoing' | 'settings-incoming'
 }
 
 export interface Plan {

@@ -248,7 +248,7 @@ export async function setProjectFolder(
   if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
   await commitConfigChange(adapter, `Claude Total Recall: ${proj}/${sl} on ${id}`, (config) => {
     // Recursion guard (#20): reject a folder that overlaps another path already
-    // synced on THIS machine — gather/scatter and the watcher work recursively, so
+    // synced on THIS machine — outgoing/incoming and the watcher work recursively, so
     // a nested folder would sync the same files twice. Runs against the freshly
     // pulled config; the (proj, sl) being edited is excluded so re-assigning a slot
     // doesn't collide with its own old value.
@@ -398,25 +398,26 @@ export async function buildVerbPlan(
 }
 
 // ── git-backed execution ────────────────────────────────────────────────────
-export interface GatherResult {
+export interface OutgoingResult {
   exec: ExecResult
   conflicts: string[]
   pushed: boolean
   committed: boolean
 }
 
-/** Runs gather (machine → working copy) and syncs with the remote. */
-export async function syncGather(
+/** Runs the outgoing sync (machine → working copy) and syncs with the remote. */
+export async function syncOutgoing(
   adapter: PlatformAdapter,
   plan: Plan,
   opts: { force?: boolean } = {},
-): Promise<GatherResult> {
+): Promise<OutgoingResult> {
   const git = new Git(workingCopyDir(adapter))
   const ctx = await buildContext(adapter)
   const exec = await executePlan(plan, ctx, opts)
 
   await git.add()
-  const c = await git.commit('Claude Total Recall: gather')
+  // Stamp the machine so the activity history (#8) can attribute and direct (↑/↓) it.
+  const c = await git.commit(`Claude Total Recall: outgoing on ${ctx.machineId}`)
   if (!c.committed) return { exec, conflicts: [], pushed: false, committed: false }
 
   const pull = await git.pull()
@@ -431,16 +432,16 @@ export async function syncGather(
   return { exec, conflicts: [], pushed: push.ok, committed: true }
 }
 
-export interface ScatterResult {
+export interface IncomingResult {
   exec: ExecResult
 }
 
-/** Runs scatter (working copy → machine). Does not modify the repo. */
-export async function syncScatter(
+/** Runs the incoming sync (working copy → machine). Does not modify the repo. */
+export async function syncIncoming(
   adapter: PlatformAdapter,
   plan: Plan,
   opts: { force?: boolean } = {},
-): Promise<ScatterResult> {
+): Promise<IncomingResult> {
   const ctx = await buildContext(adapter)
   const exec = await executePlan(plan, ctx, opts)
   return { exec }

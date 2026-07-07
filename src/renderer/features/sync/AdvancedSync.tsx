@@ -16,20 +16,21 @@ function SyncKey({
   disabled,
   onClick,
 }: {
-  verb: 'gather' | 'scatter'
+  verb: 'outgoing' | 'incoming'
   hint: string
   shortcut: string
   disabled: boolean
   onClick: () => void
 }): JSX.Element {
-  const gather = verb === 'gather'
+  const { t } = useTranslation()
+  const outgoing = verb === 'outgoing'
   return (
     <button className="sync-key" disabled={disabled} onClick={onClick}>
       <span className="sync-key__icon">
-        <Icon name={gather ? 'arrow-up' : 'arrow-down'} size={22} />
+        <Icon name={outgoing ? 'arrow-up' : 'arrow-down'} size={22} />
       </span>
       <span className="sync-key__text">
-        <span className="sync-key__title">{gather ? 'Gather' : 'Scatter'}</span>
+        <span className="sync-key__title">{outgoing ? t('sync.outgoing') : t('sync.incoming')}</span>
         <span className="sync-key__sub">{hint}</span>
       </span>
       <Kbd>{shortcut}</Kbd>
@@ -39,7 +40,7 @@ function SyncKey({
 
 /**
  * Collapsible "Advanced" panel inside Sync: what used to be the whole view
- * (gather/scatter with Plan review + conflict resolution). It auto-expands on a
+ * (outgoing/incoming with Plan review + conflict resolution). It auto-expands on a
  * conflict; the red CTA scrolls here.
  */
 export const AdvancedSync = forwardRef<
@@ -106,26 +107,26 @@ export const AdvancedSync = forwardRef<
 
           <div className="sync-keys">
             <SyncKey
-              verb="gather"
+              verb="outgoing"
               shortcut="⌘G"
               hint={
                 status && status.ahead > 0
-                  ? t('sync.hintGatherCount', { count: status.ahead })
-                  : t('sync.hintGather')
+                  ? t('sync.hintOutgoingCount', { count: status.ahead })
+                  : t('sync.hintOutgoing')
               }
               disabled={blocked}
-              onClick={() => void actions.openPlan('gather')}
+              onClick={() => void actions.openPlan('outgoing')}
             />
             <SyncKey
-              verb="scatter"
+              verb="incoming"
               shortcut="⌘S"
               hint={
                 status && status.behind > 0
-                  ? t('sync.hintScatterCount', { count: status.behind })
-                  : t('sync.hintScatter')
+                  ? t('sync.hintIncomingCount', { count: status.behind })
+                  : t('sync.hintIncoming')
               }
               disabled={blocked}
-              onClick={() => void actions.openPlan('scatter')}
+              onClick={() => void actions.openPlan('incoming')}
             />
           </div>
         </div>

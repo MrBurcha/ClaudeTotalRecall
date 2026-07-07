@@ -29,18 +29,18 @@ Releases: pushing a `v*.*.*` tag triggers `.github/workflows/release.yml`, which
 
 Layering rule: `src/core/` is pure Node/TypeScript with **no Electron imports** — everything else is a thin shell around it.
 
-- `src/core/` — all logic: config, plan build/execute, gather/scatter, git wrapper, service orchestration, preflight, settings merge, the auto-sync engine (`syncEngine.ts`), conflict resolution, and typed errors (`errors.ts`). Tests live next to sources (`*.test.ts`) and run directly under Node (vitest, aliases `@core`/`@platform`).
+- `src/core/` — all logic: config, plan build/execute, outgoing/incoming, git wrapper, service orchestration, preflight, settings merge, the auto-sync engine (`syncEngine.ts`), conflict resolution, and typed errors (`errors.ts`). Tests live next to sources (`*.test.ts`) and run directly under Node (vitest, aliases `@core`/`@platform`).
 - `src/platform/` — the ONLY OS-specific code. `PlatformAdapter` (linux/macos) resolves `home`, `~/.claude`, `~/.config/claudetr`, and expands `~`. Home dir is injectable for tests. Adding Windows = one more adapter + a branch in `index.ts`.
-- `src/cli/` — headless entrypoint (`claude-total-recall check|connect|status|register|gather|scatter`), built with tsup to CJS. English-only.
+- `src/cli/` — headless entrypoint (`claude-total-recall check|connect|status|register|outgoing|incoming`), built with tsup to CJS. English-only.
 - `src/main/` — Electron bootstrap, IPC handlers (`ipc.ts`), preload, the auto-sync scheduler (`syncScheduler.ts`), and the frameless window. IPC handlers are thin wrappers over `core/service.ts`.
 - `src/renderer/` — React UI (`AppShell` + `screens/` + `features/` + the i18n catalog under `i18n/`), talks to main only through the preload bridge.
 
 ### Core domain model
 
-Two verbs move files between the machine and a **working copy** (a clone of the memories repo at `~/.config/claudetr/repo`):
+Two verbs move files between the machine and a **working copy** (a clone of the memories repo at `~/.config/claudetr/repo`). The UI labels them **Outgoing / Saliente** and **Incoming / Entrante**; internally (the `Verb` type, CLI subcommands, commit messages) they are `outgoing`/`incoming` — renamed from the former `gather`/`scatter`:
 
-- **gather** = machine → working copy → commit/pull/push
-- **scatter** = working copy → machine (never touches the remote; CLI pulls first)
+- **outgoing** = machine → working copy → commit/pull/push
+- **incoming** = working copy → machine (never touches the remote; CLI pulls first)
 
 What syncs: user-level items (`~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, `settings.json`) defined in `resolve.ts` (`USER_LEVEL_SPEC`), plus per-project folders declared in config. They map to logical paths `memories/user/…` and `memories/projects/<name>/<slot>/…` in the repo.
 
@@ -48,10 +48,10 @@ Key invariants (preserve these when changing core):
 
 - **Every mutating verb builds a Plan first** (`plan.ts: buildPlan`) — a dry-run of typed actions (create/overwrite/delete/noop/skip) with SHA-256 hashes. `executePlan` revalidates source hashes before applying (TOCTOU guard) and throws `PlanDriftError` if disk changed since the preview. The Electron IPC layer caches Plans by id so `plan:execute` runs exactly what the user confirmed.
 - **Secrets never sync**: `plan.ts: isSecretExcluded` hard-excludes `.credentials.json`, `.claude.json`, and `*.jsonl` regardless of configuration. Defense in depth: the repo's `.gitignore` (written on init) excludes them too.
-- **settings.json is computed, not copied** (`transform` actions). `settingsMerge.ts` does a shallow top-level-key split/merge: `~/.config/claudetr/settings.local.json` declares machine-local keys that never travel to the repo; on scatter, local overrides win over the shared base.
+- **settings.json is computed, not copied** (`transform` actions). `settingsMerge.ts` does a shallow top-level-key split/merge: `~/.config/claudetr/settings.local.json` declares machine-local keys that never travel to the repo; on incoming, local overrides win over the shared base.
 - **Config lives in the repo** (`claudetr.json`, zod-validated in `types.ts`): machines, projects, and per-machine literal paths. Local state (just `machineId`) lives outside the repo in `~/.config/claudetr/local.json`.
 - **Config edits avoid JSON merge conflicts** via fetch + `reset --hard origin` + reapply + push, retried up to 6 times (`service.ts: commitConfigChange`, `registerMachine`).
-- **Memory-file conflicts** (concurrent gathers) are resolved per-file as local (`--ours`) / remote (`--theirs`), then `completeConflictMerge`.
+- **Memory-file conflicts** (concurrent outgoing syncs) are resolved per-file as local (`--ours`) / remote (`--theirs`), then `completeConflictMerge`.
 
 `git.ts` shells out to the `git` binary via `exec.ts` — no libgit2/isomorphic-git. Tests use local `file://` remotes; the mechanics are identical to GitHub over HTTPS/SSH.
 

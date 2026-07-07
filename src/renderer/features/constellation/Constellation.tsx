@@ -49,7 +49,7 @@ function describe(
   activeOp: ActiveOp | null,
 ): string {
   if (activeOp)
-    return t(activeOp.verb === 'gather' ? 'constellation.syncingUp' : 'constellation.syncingDown')
+    return t(activeOp.verb === 'outgoing' ? 'constellation.syncingUp' : 'constellation.syncingDown')
   if (!currentId) return t('constellation.overview')
   if (!status) return t('constellation.connected', { machineId: currentId })
   const parts: string[] = []
@@ -82,7 +82,7 @@ export function Constellation({
   // Only the current machine's link carries a real direction (the backend
   // doesn't know the state of the other machines).
   let direction: FlowDirection | null = null
-  if (activeOp) direction = activeOp.verb === 'gather' ? 'up' : 'down'
+  if (activeOp) direction = activeOp.verb === 'outgoing' ? 'up' : 'down'
   else if (status && status.ahead > 0) direction = 'up'
   else if (status && status.behind > 0) direction = 'down'
   // One engine cycle moves in both directions: if there's no clear direction, we upload.
