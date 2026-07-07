@@ -7,6 +7,11 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **DMG volume icon** (#18, stopgap): the mounted installer no longer shows the app icon squished
+  into the disk. `dmg.icon` is now explicit `null`, so macOS renders its generic removable-disk
+  icon. A branded drive icon is deferred to #18 (pending the visual-identity cleanup in #9).
+
 ### Changed
 - **Recent activity now lists the files touched by each sync** (#8): every `outgoing` entry expands
   to show the files added / modified / deleted (from `git log --name-status`, with colored `+` / `~` /
