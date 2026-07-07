@@ -14,9 +14,11 @@ import {
   deleteProject,
   pullRepo,
   registerMachine,
+  removePinnedFile,
   removeProjectFolder,
   renameProject,
   repoStatus,
+  setPinnedFile,
   setProjectFolder,
   syncOutgoing,
   syncIncoming,
@@ -285,5 +287,61 @@ describe('project operations (CRUD)', () => {
     const config = await cfg(a) // nothing was clobbered
     expect(config.projects.alpha).toBeDefined()
     expect(config.projects.beta).toBeDefined()
+  })
+})
+
+describe('file slots and pinned files (#11)', () => {
+  async function setup() {
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a = adapterFor(join(base, 'home1'))
+    await connectRepo(remote, a)
+    await registerMachine(a, 'm1')
+    return a
+  }
+  const cfg = (a: ReturnType<typeof adapterFor>) => loadConfig(configPath(a))
+
+  it('setProjectFolder records the slot kind (default dir, explicit file)', async () => {
+    const a = await setup()
+    await setProjectFolder(a, 'proj', 'memory', '/tmp/x') // default → dir
+    await setProjectFolder(a, 'proj', 'rules', '/tmp/rules.md', undefined, 'file')
+
+    const config = await cfg(a)
+    expect(config.projects.proj.slotKinds).toEqual({ memory: 'dir', rules: 'file' })
+  })
+
+  it('removeProjectFolder drops the slot kind when the slot is emptied', async () => {
+    const a = await setup()
+    await setProjectFolder(a, 'proj', 'rules', '/tmp/rules.md', undefined, 'file')
+    await removeProjectFolder(a, 'proj', 'rules')
+
+    const config = await cfg(a)
+    expect(config.projects.proj.folders.rules).toBeUndefined()
+    expect(config.projects.proj.slotKinds?.rules).toBeUndefined()
+  })
+
+  it('setPinnedFile upserts a global pin for this machine and expands ~; removePinnedFile drops it', async () => {
+    const a = await setup()
+    await setPinnedFile(a, 'rules', '~/CLAUDE.md')
+    expect((await cfg(a)).pinnedFiles?.rules.m1).toBe(join(a.home(), 'CLAUDE.md'))
+
+    await setPinnedFile(a, 'rules', '/tmp/other.md') // upsert same machine
+    expect((await cfg(a)).pinnedFiles?.rules.m1).toBe('/tmp/other.md')
+
+    await removePinnedFile(a, 'rules')
+    expect((await cfg(a)).pinnedFiles?.rules).toBeUndefined()
+  })
+
+  it('rejects an invalid pin name and a pin nested in an already-synced folder', async () => {
+    const a = await setup()
+    await expect(setPinnedFile(a, 'bad name', '/tmp/x.md')).rejects.toMatchObject({
+      code: 'pin.invalidName',
+    })
+
+    // A pin inside a project folder already synced on this machine → nesting guard.
+    await setProjectFolder(a, 'proj', 'memory', '/tmp/a')
+    await expect(setPinnedFile(a, 'rules', '/tmp/a/rules.md')).rejects.toMatchObject({
+      code: 'pin.folderNested',
+    })
   })
 })

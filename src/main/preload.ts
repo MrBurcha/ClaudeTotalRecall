@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
   Config,
+  HistoryEntry,
   Plan,
   PlanAction,
   PreflightResult,
@@ -38,6 +39,8 @@ const api = {
   repoConnect: (remote: string) =>
     ipcRenderer.invoke('repo:connect', remote) as Promise<ConnectResult>,
   repoStatus: () => ipcRenderer.invoke('repo:status') as Promise<RepoStatus>,
+  repoHistory: (limit?: number) =>
+    ipcRenderer.invoke('repo:history', limit) as Promise<HistoryEntry[]>,
   repoPull: () =>
     ipcRenderer.invoke('repo:pull') as Promise<{ ok: boolean; conflicts: string[] }>,
 
@@ -47,14 +50,19 @@ const api = {
 
   projectCreate: (name: string) =>
     ipcRenderer.invoke('project:create', name) as Promise<CreateProjectResult>,
-  projectSetFolder: (name: string, slot: string, path: string) =>
-    ipcRenderer.invoke('project:setFolder', { name, slot, path }) as Promise<void>,
+  projectSetFolder: (name: string, slot: string, path: string, kind?: 'file' | 'dir') =>
+    ipcRenderer.invoke('project:setFolder', { name, slot, path, kind }) as Promise<void>,
   projectRemoveFolder: (name: string, slot: string) =>
     ipcRenderer.invoke('project:removeFolder', { name, slot }) as Promise<void>,
   projectDelete: (name: string) => ipcRenderer.invoke('project:delete', name) as Promise<void>,
   projectRename: (oldName: string, newName: string) =>
     ipcRenderer.invoke('project:rename', { oldName, newName }) as Promise<void>,
   projectPickFolder: () => ipcRenderer.invoke('project:pickFolder') as Promise<string | null>,
+  pickFile: () => ipcRenderer.invoke('path:pickFile') as Promise<string | null>,
+
+  pinnedSet: (pinId: string, path: string) =>
+    ipcRenderer.invoke('pinned:set', { pinId, path }) as Promise<void>,
+  pinnedRemove: (pinId: string) => ipcRenderer.invoke('pinned:remove', pinId) as Promise<void>,
 
   planBuild: (verb: Verb) => ipcRenderer.invoke('plan:build', verb) as Promise<Plan>,
   planExecute: (verb: Verb, planId: string, force?: boolean) =>

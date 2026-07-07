@@ -4,6 +4,7 @@ import { StatusDot } from '../components/Badge'
 import { Button } from '../components/Button'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { MachinesCard } from '../features/machines/MachinesCard'
+import { PinnedFilesCard } from '../features/projects/PinnedFilesCard'
 import { AutoToggle } from '../features/sync/AutoToggle'
 import type { Locale } from '../i18n'
 import { api } from '../state/api'
@@ -124,6 +125,8 @@ export function Settings(): JSX.Element {
           </div>
         </div>
       </div>
+
+      <PinnedFilesCard />
 
       <MachinesCard />
 

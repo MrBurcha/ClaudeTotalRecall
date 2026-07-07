@@ -217,6 +217,10 @@
       "exists": "A project named \"{{name}}\" already exists.",
       "notFound": "Project \"{{name}}\" not found."
     },
+    "pin": {
+      "invalidName": "Invalid pinned-file name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore.",
+      "folderNested": "This file overlaps \"{{conflict}}\" ({{where}}), already synced on this machine."
+    },
     "slot": {
       "invalidName": "Invalid slot name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore."
     },
@@ -251,7 +255,8 @@
     "noRepoSettings": "no settings.json in the repo",
     "sourceMissing": "source does not exist",
     "notInSource": "not present in source",
-    "noPathForMachine": "no path for machine \"{{machine}}\""
+    "noPathForMachine": "no path for machine \"{{machine}}\"",
+    "secretExcluded": "secret file, never synced"
   },
   "machines": {
     "title": "Machines",
@@ -287,13 +292,16 @@
     "newProject": "New project",
     "nameLabel": "Name",
     "renamed": "Project renamed to \"{{to}}\".",
-    "folderCount_one": "{{count}} folder",
-    "folderCount_other": "{{count}} folders",
+    "sourceCount_one": "{{count}} source",
+    "sourceCount_other": "{{count}} sources",
     "registerMachineFirst": "Register this machine first",
     "registerMachineHint": "You need to register this computer before assigning folders.",
     "noProjectsYet": "No projects yet",
     "noProjectsHint": "Create one to sync specific memory folders.",
     "folder": "Folder",
+    "file": "File",
+    "sourceType": "Source type",
+    "addSource": "Source",
     "delete": "Delete",
     "deleted": "Project \"{{name}}\" deleted.",
     "deleteProject": {
@@ -301,7 +309,7 @@
       "body": "Delete \"{{name}}\" for all machines? It doesn't remove your local folders, only the sync configuration."
     },
     "noFoldersYet": "No folders yet",
-    "noFoldersHint": "Add a folder so this project syncs on this machine.",
+    "noSourcesHint": "Add a folder or file so this project syncs on this machine.",
     "removeFolder": {
       "title": "Remove folder",
       "body": "Remove the slot \"{{slot}}\" from this machine? It doesn't delete the folder, it just stops syncing it here."
@@ -316,11 +324,13 @@
     "logicalName": "Logical name",
     "projectNamePlaceholder": "my-project",
     "projectNameHint": "Links the project across your machines (letters, numbers, . _ -).",
-    "pickOrPasteFolder": "Pick or paste a folder.",
-    "folderSaved": "Folder \"{{slot}}\" saved in {{project}}.",
+    "pickOrPastePath": "Pick or paste a path.",
+    "folderSaved": "Saved \"{{slot}}\" in {{project}}.",
     "slotLabel": "Slot",
     "folderPathPlaceholder": "/path/to/folder",
-    "choose": "Choose…",
+    "filePathPlaceholder": "/path/to/file",
+    "chooseFolder": "Choose folder",
+    "chooseFile": "Choose file",
     "project": {
       "nameEmpty": "The project name can't be empty.",
       "nameInvalid": "Invalid project name. Use only letters, numbers, dot, hyphen and underscore."
@@ -383,5 +393,42 @@
       "sub": "Your memory is ready to sync across machines.",
       "goToSync": "Go to Sync"
     }
+  },
+  "pinned": {
+    "title": "Pinned files",
+    "sub": "Single files synced globally, outside any project (for example a specific CLAUDE.md).",
+    "registerFirst": "Register this machine first to pin files.",
+    "empty": "No pinned files yet.",
+    "add": "Pin a file",
+    "nameLabel": "Name",
+    "namePlaceholder": "my-file",
+    "nameRequired": "Give the pinned file a name.",
+    "noPathHere": "no path on this machine",
+    "editPath": "Edit path",
+    "remove": "Remove",
+    "removed": "Pinned file \"{{pin}}\" removed.",
+    "saved": "Pinned file \"{{pin}}\" saved.",
+    "deleteFile": {
+      "title": "Remove pinned file",
+      "body": "Remove \"{{pin}}\" for all machines? It doesn't delete the file, it just stops syncing it."
+    }
+  },
+  "activity": {
+    "title": "Recent activity",
+    "empty": "No activity yet.",
+    "outgoingLocal": "Synced from this machine",
+    "outgoingRemote": "Synced from another machine",
+    "sourceUpdated": "Updated source {{slot}} in {{project}}",
+    "sourceRemoved": "Removed source {{slot}} from {{project}}",
+    "projectCreated": "Created project {{name}}",
+    "projectDeleted": "Deleted project {{name}}",
+    "projectRenamed": "Renamed project {{from}} → {{to}}",
+    "machineRegistered": "Registered machine {{machine}}",
+    "filePinned": "Pinned file {{pin}}",
+    "fileUnpinned": "Unpinned file {{pin}}",
+    "conflictsResolved": "Resolved conflicts",
+    "change": "Change",
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files"
   }
 }

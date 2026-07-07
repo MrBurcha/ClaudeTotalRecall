@@ -90,7 +90,7 @@ export function ProjectItem({
       >
         <Icon name={open ? 'chevron-down' : 'chevron-right'} size={16} />
         <span className="project-item__name grow">{name}</span>
-        <span className="muted">{t('projects.folderCount', { count: folders.length })}</span>
+        <span className="muted">{t('projects.sourceCount', { count: folders.length })}</span>
       </button>
 
       {open && (
@@ -136,9 +136,9 @@ export function ProjectItem({
           </div>
 
           <div className="stack stack-2">
-            <span className="label">{t('projects.folderCount', { count: folders.length })}</span>
+            <span className="label">{t('projects.sourceCount', { count: folders.length })}</span>
             {folders.length === 0 && !adding ? (
-              <p className="muted">{t('projects.noFoldersHint')}</p>
+              <p className="muted">{t('projects.noSourcesHint')}</p>
             ) : (
               <ul className="folder-list">
                 {folders.map(([slot, byMachine]) => (
@@ -147,6 +147,7 @@ export function ProjectItem({
                     project={name}
                     slot={slot}
                     byMachine={byMachine}
+                    kind={project.slotKinds?.[slot] ?? 'dir'}
                     machineId={machineId}
                   />
                 ))}
@@ -157,7 +158,7 @@ export function ProjectItem({
             ) : (
               <div className="row">
                 <Button size="sm" icon="plus" disabled={busy} onClick={() => setAdding(true)}>
-                  {t('projects.folder')}
+                  {t('projects.addSource')}
                 </Button>
               </div>
             )}

@@ -2,7 +2,14 @@ import { createHash } from 'node:crypto'
 import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, posix } from 'node:path'
 import type { PlatformAdapter } from '../platform'
-import { projectSlotLogicalPath, projectSlotPath, projectSlots, userLevelItems } from './resolve'
+import {
+  pinnedFileItems,
+  projectSlotKind,
+  projectSlotLogicalPath,
+  projectSlotPath,
+  projectSlots,
+  userLevelItems,
+} from './resolve'
 import { mergeForIncoming, splitForOutgoing } from './settingsMerge'
 import type { Config, Plan, PlanAction, SettingsObject, Verb } from './types'
 
@@ -183,6 +190,19 @@ async function planFileSync(
   destFile: string,
   logicalPath: string,
 ): Promise<PlanAction> {
+  // Secret guard for single-file slots/pins: planDirSync filters via listFiles,
+  // but a file slot pointing straight at a secret needs the same hard exclusion.
+  if (isSecretExcluded(srcFile) || isSecretExcluded(destFile)) {
+    return {
+      slot,
+      logicalPath,
+      from: null,
+      to: null,
+      type: 'skip',
+      reason: 'excluded secret (never syncs)',
+      reasonCode: 'secretExcluded',
+    }
+  }
   const srcExists = await pathExists(srcFile)
   const destExists = await pathExists(destFile)
   if (!srcExists) {
@@ -256,9 +276,21 @@ export async function buildPlan(
         })
         continue
       }
+      const kind = projectSlotKind(ctx.config, projectName, slot)
       const [src, dest] = verb === 'outgoing' ? [machinePath, repoPath] : [repoPath, machinePath]
-      actions.push(...(await planDirSync(slotBase, src, dest, logicalPrefix)))
+      if (kind === 'file') {
+        actions.push(await planFileSync(slotBase, src, dest, logicalPrefix))
+      } else {
+        actions.push(...(await planDirSync(slotBase, src, dest, logicalPrefix)))
+      }
     }
+  }
+
+  // pinned files (global, outside any project): each syncs as a single file
+  for (const pin of pinnedFileItems(ctx.config, ctx.machineId)) {
+    const repoPath = join(ctx.repoDir, pin.logicalPath)
+    const [src, dest] = verb === 'outgoing' ? [pin.realPath, repoPath] : [repoPath, pin.realPath]
+    actions.push(await planFileSync(`pinned:${pin.pinId}`, src, dest, pin.logicalPath))
   }
 
   return { id: meta.id, verb, createdAt: meta.createdAt, actions }

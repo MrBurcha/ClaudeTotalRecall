@@ -60,7 +60,7 @@ describe('i18n static keys exist in the catalog', () => {
       expect(has(k === 'now' ? 'relativeTime.now' : `relativeTime.${k}_other`), `relativeTime.${k}`).toBe(true)
     }
     for (const k of ['create', 'overwrite', 'delete', 'noop', 'skip']) expect(has(`tag.${k}`), `tag.${k}`).toBe(true)
-    for (const k of ['noLocalSettings', 'noRepoSettings', 'sourceMissing', 'notInSource', 'noPathForMachine'])
+    for (const k of ['noLocalSettings', 'noRepoSettings', 'sourceMissing', 'notInSource', 'noPathForMachine', 'secretExcluded'])
       expect(has(`planReason.${k}`), `planReason.${k}`).toBe(true)
     for (const k of ['git.missing', 'git.install', 'gh.missing', 'gh.install', 'ghAuth.ok', 'ghAuth.fix', 'ghAuth.noGh', 'ghAuth.installFirst'])
       expect(has(`preflight.${k}`), `preflight.${k}`).toBe(true)
