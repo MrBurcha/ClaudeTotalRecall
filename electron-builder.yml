@@ -24,6 +24,12 @@ mac:
 # de armar el dmg) para sellar los recursos y evitar el veredicto "dañado".
 afterPack: scripts/afterPack.cjs
 dmg:
+  # Volume icon (#18): explicit `null` → electron-builder passes no `--icon` to dmgbuild,
+  # so the mounted DMG shows macOS's generic removable-disk icon instead of the app icon
+  # (the "square" reported in #18). dmg-builder distinguishes explicit `null` (no icon)
+  # from `undefined` (which would re-default to the app icon). Stopgap until #18 ships a
+  # branded drive icon aligned with the app's visual identity (#9).
+  icon: null
   # Nombre de volumen versionado (default de electron-builder): cada versión monta
   # con un nombre distinto, así Finder lee el .DS_Store fresco sin arrastrar estado.
   title: Claude Total Recall ${version}
