@@ -15,6 +15,7 @@ import {
   pullRepo,
   registerMachine,
   removeProjectFolder,
+  renameProject,
   repoStatus,
   setProjectFolder,
   syncGather,
@@ -240,5 +241,49 @@ describe('project operations (CRUD)', () => {
     await setProjectFolder(a, 'proj', 'memory', '/tmp/x')
     await deleteProject(a, 'proj')
     expect((await cfg(a)).projects.proj).toBeUndefined()
+  })
+
+  it('renameProject moves the config entry and the gathered repo folder (#12)', async () => {
+    const a = await setup()
+    await setProjectFolder(a, 'proj', 'memory', '/tmp/x')
+
+    // Seed a gathered file under the project's repo folder, committed + pushed to
+    // origin so commitConfigChange's `reset --hard origin` doesn't wipe it.
+    const wc = workingCopyDir(a)
+    const projMem = join(wc, 'memories', 'projects', 'proj', 'memory')
+    await mkdir(projMem, { recursive: true })
+    await writeFile(join(projMem, 'CLAUDE.md'), '# hi\n')
+    const git = new Git(wc)
+    await git.add()
+    await git.commit('seed gathered file')
+    await git.push()
+
+    await renameProject(a, 'proj', 'renamed')
+
+    const config = await cfg(a)
+    expect(config.projects.renamed).toBeDefined()
+    expect(config.projects.proj).toBeUndefined()
+    expect(config.projects.renamed.folders.memory.m1).toBe('/tmp/x') // folders preserved
+    // the gathered folder followed the rename (no orphan under the old name)
+    expect(await exists(join(wc, 'memories', 'projects', 'renamed', 'memory', 'CLAUDE.md'))).toBe(
+      true,
+    )
+    expect(await exists(join(wc, 'memories', 'projects', 'proj'))).toBe(false)
+  })
+
+  it('renameProject rejects collisions, missing source, and invalid names (#12)', async () => {
+    const a = await setup()
+    await createProject(a, 'alpha')
+    await createProject(a, 'beta')
+
+    await expect(renameProject(a, 'alpha', 'beta')).rejects.toMatchObject({ code: 'project.exists' })
+    await expect(renameProject(a, 'ghost', 'x')).rejects.toMatchObject({ code: 'project.notFound' })
+    await expect(renameProject(a, 'alpha', '../x')).rejects.toMatchObject({
+      code: 'project.invalidName',
+    })
+
+    const config = await cfg(a) // nothing was clobbered
+    expect(config.projects.alpha).toBeDefined()
+    expect(config.projects.beta).toBeDefined()
   })
 })

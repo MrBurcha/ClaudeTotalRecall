@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { StatusDot } from '../components/Badge'
 import { Button } from '../components/Button'
 import { SegmentedControl } from '../components/SegmentedControl'
+import { MachinesCard } from '../features/machines/MachinesCard'
 import { AutoToggle } from '../features/sync/AutoToggle'
 import type { Locale } from '../i18n'
 import { api } from '../state/api'
@@ -123,6 +124,8 @@ export function Settings(): JSX.Element {
           </div>
         </div>
       </div>
+
+      <MachinesCard />
 
       <div className="card">
         <div className="card__head">

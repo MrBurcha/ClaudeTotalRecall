@@ -11,7 +11,6 @@ import type { Route } from '../state/types'
 const NAV: { route: Route; labelKey: string; icon: IconName }[] = [
   { route: 'home', labelKey: 'nav.home', icon: 'orbit' },
   { route: 'projects', labelKey: 'nav.projects', icon: 'folder' },
-  { route: 'machines', labelKey: 'nav.machines', icon: 'monitor' },
   { route: 'settings', labelKey: 'nav.settings', icon: 'sliders' },
 ]
 

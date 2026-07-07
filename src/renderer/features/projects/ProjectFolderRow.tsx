@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../components/IconButton'
 import { api } from '../../state/api'
 import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
+import { FolderEditor } from './FolderEditor'
 
 export function ProjectFolderRow({
   project,
@@ -18,10 +20,9 @@ export function ProjectFolderRow({
   const { t } = useTranslation()
   const { busy } = useAppState()
   const actions = useActions()
+  const [editing, setEditing] = useState(false)
   const current = machineId ? byMachine[machineId] : undefined
   const others = Object.keys(byMachine).filter((m) => m !== machineId)
-
-  const edit = (): void => actions.openModal({ kind: 'folder-form', project, slot, path: current })
 
   const remove = async (): Promise<void> => {
     const ok = await actions.confirm({
@@ -37,6 +38,14 @@ export function ProjectFolderRow({
     })
   }
 
+  if (editing) {
+    return (
+      <li className="folder-row">
+        <FolderEditor project={project} slot={slot} path={current} onDone={() => setEditing(false)} />
+      </li>
+    )
+  }
+
   return (
     <li className="folder-row">
       <div className="folder-row__main">
@@ -46,7 +55,12 @@ export function ProjectFolderRow({
         ) : (
           <span className="muted grow">{t('projects.noPathOnMachine')}</span>
         )}
-        <IconButton icon="pencil" label={t('projects.editFolder')} disabled={busy} onClick={edit} />
+        <IconButton
+          icon="pencil"
+          label={t('projects.editFolder')}
+          disabled={busy}
+          onClick={() => setEditing(true)}
+        />
         {current && (
           <IconButton
             icon="trash"

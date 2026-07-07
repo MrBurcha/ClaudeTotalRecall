@@ -20,7 +20,6 @@
   "nav": {
     "home": "Sincronización",
     "projects": "Proyectos",
-    "machines": "Máquinas",
     "settings": "Ajustes"
   },
   "sidebar": {
@@ -212,7 +211,9 @@
     },
     "project": {
       "invalidName": "Nombre de proyecto inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo.",
-      "folderNested": "Esta carpeta se solapa con \"{{conflict}}\" ({{where}}), que ya se sincroniza en esta máquina. Anidarlas sincronizaría los mismos archivos dos veces."
+      "folderNested": "Esta carpeta se solapa con \"{{conflict}}\" ({{where}}), que ya se sincroniza en esta máquina. Anidarlas sincronizaría los mismos archivos dos veces.",
+      "exists": "Ya existe un proyecto llamado \"{{name}}\".",
+      "notFound": "No se encontró el proyecto \"{{name}}\"."
     },
     "slot": {
       "invalidName": "Nombre de ranura inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo."
@@ -251,21 +252,10 @@
     "noPathForMachine": "sin ruta para la máquina \"{{machine}}\""
   },
   "machines": {
-    "eyebrow": "Identidad",
     "title": "Máquinas",
-    "sub": "Cada computadora que sincroniza tiene un id lógico y su propio home.",
-    "registered": "Máquina \"{{machineId}}\" registrada.",
-    "connectRepoTitle": "Conecta un repo primero",
-    "connectRepoBody": "Configura el repo en Ajustes o desde el asistente.",
-    "registerThisMachine": "Registrar esta máquina",
-    "logicalNameLabel": "Nombre lógico (opcional)",
-    "logicalNameHint": "Si lo dejas vacío, usamos el hostname.",
-    "register": "Registrar",
     "registeredAs": "Esta máquina está registrada como <b>{{machineId}}</b>.",
     "knownMachines_one": "Máquina conocida ({{count}})",
     "knownMachines_other": "Máquinas conocidas ({{count}})",
-    "noneYetTitle": "Ninguna todavía",
-    "noneYetBody": "Registra esta máquina para empezar.",
     "thisMachine": "esta"
   },
   "constellation": {
@@ -293,6 +283,10 @@
     "title": "Proyectos",
     "sub": "Un proyecto agrupa carpetas de memoria; la ruta de cada carpeta se guarda literal por máquina.",
     "newProject": "Nuevo proyecto",
+    "nameLabel": "Nombre",
+    "renamed": "Proyecto renombrado a \"{{to}}\".",
+    "folderCount_one": "{{count}} carpeta",
+    "folderCount_other": "{{count}} carpetas",
     "registerMachineFirst": "Registra esta máquina primero",
     "registerMachineHint": "Necesitas registrar esta computadora antes de asignar carpetas.",
     "noProjectsYet": "Ningún proyecto todavía",
@@ -322,15 +316,9 @@
     "projectNameHint": "Une el proyecto entre tus máquinas (letras, números, . _ -).",
     "pickOrPasteFolder": "Elige o pega una carpeta.",
     "folderSaved": "Carpeta \"{{slot}}\" guardada en {{project}}.",
-    "editFolderTitle": "Editar carpeta · {{project}}",
-    "addFolderTitle": "Agregar carpeta · {{project}}",
     "slotLabel": "Ranura",
-    "slotHintEditing": "La ranura no se renombra; quítala y crea otra si quieres cambiarla.",
-    "slotHint": "Nombre lógico de la carpeta (predeterminado: memory).",
-    "folderOnMachine": "Carpeta en esta máquina",
     "folderPathPlaceholder": "/ruta/a/la/carpeta",
     "choose": "Elegir…",
-    "pathLiteralHint": "La ruta se guarda literal para esta máquina; en otras puede ser distinta.",
     "project": {
       "nameEmpty": "El nombre de proyecto no puede estar vacío.",
       "nameInvalid": "Nombre de proyecto inválido. Usa solo letras, números, punto, guion y guion bajo."
