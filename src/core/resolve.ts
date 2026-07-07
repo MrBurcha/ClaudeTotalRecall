@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { join, resolve as resolvePath, sep } from 'node:path'
 import type { PlatformAdapter } from '../platform'
 import type { Config } from './types'
 
@@ -59,4 +59,50 @@ export function projectSlots(config: Config, projectName: string): string[] {
 /** logicalPath en el repo para una ranura de proyecto. */
 export function projectSlotLogicalPath(projectName: string, slot: string): string {
   return `memories/projects/${projectName}/${slot}`
+}
+
+/**
+ * True si dos paths absolutos son el mismo o uno está anidado dentro del otro.
+ * Normaliza ambos (colapsa `.`/`..`/trailing slash con `resolve`) y compara en el
+ * LÍMITE del separador, así `/tmp/ab` NO colisiona con `/tmp/abc`. Case-sensitive.
+ */
+export function pathsCollide(a: string, b: string): boolean {
+  const na = resolvePath(a)
+  const nb = resolvePath(b)
+  if (na === nb) return true
+  const aPrefix = na.endsWith(sep) ? na : na + sep
+  const bPrefix = nb.endsWith(sep) ? nb : nb + sep
+  return nb.startsWith(aPrefix) || na.startsWith(bPrefix)
+}
+
+/** Un path ya sincronizado en una máquina, con una etiqueta para el mensaje de error. */
+export interface SyncedPath {
+  path: string
+  where: string
+}
+
+/**
+ * Todos los paths que YA sincroniza `machineId`: las ranuras de proyecto de esa
+ * máquina (excepto el `exclude` que se está editando, para no auto-colisionar) más
+ * los roots dir user-level (`~/.claude/{commands,agents,skills}`, que se sincronizan
+ * recursivos). Base para el chequeo anti-anidamiento de `setProjectFolder`.
+ */
+export function machineSyncedPaths(
+  config: Config,
+  adapter: PlatformAdapter,
+  machineId: string,
+  exclude?: { project: string; slot: string },
+): SyncedPath[] {
+  const out: SyncedPath[] = []
+  for (const [projectName, project] of Object.entries(config.projects)) {
+    for (const [slot, folder] of Object.entries(project.folders)) {
+      if (exclude && exclude.project === projectName && exclude.slot === slot) continue
+      const p = folder[machineId]
+      if (p) out.push({ path: p, where: `${projectName}/${slot}` })
+    }
+  }
+  for (const item of userLevelItems(adapter)) {
+    if (item.kind === 'dir') out.push({ path: item.realPath, where: `~/.claude/${item.slot}` })
+  }
+  return out
 }

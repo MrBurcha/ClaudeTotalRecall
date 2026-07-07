@@ -188,6 +188,41 @@ describe('project operations (CRUD)', () => {
     expect((await cfg(a)).projects.proj.folders.docs.m1).toBe(join(a.home(), 'docs'))
   })
 
+  it('rejects a folder nested in (or containing) another synced folder on this machine (#20)', async () => {
+    const a = await setup()
+    await setProjectFolder(a, 'proj', 'memory', '/tmp/a')
+
+    // nested inside an existing folder → rejected
+    await expect(setProjectFolder(a, 'proj', 'docs', '/tmp/a/sub')).rejects.toMatchObject({
+      code: 'project.folderNested',
+    })
+    // ancestor of an existing folder → rejected
+    await expect(setProjectFolder(a, 'other', 'memory', '/tmp')).rejects.toMatchObject({
+      code: 'project.folderNested',
+    })
+    // inside a user-level dir root (~/.claude/skills) → rejected (it already syncs recursively)
+    await expect(
+      setProjectFolder(a, 'proj', 'skills', join(a.claudeHome(), 'skills', 'x')),
+    ).rejects.toMatchObject({ code: 'project.folderNested' })
+
+    // a sibling is allowed
+    await setProjectFolder(a, 'proj', 'sib', '/tmp/b')
+    expect((await cfg(a)).projects.proj.folders.sib.m1).toBe('/tmp/b')
+
+    // re-assigning the SAME slot (self excluded) is allowed even if the new path is
+    // nested under its own previous value
+    await setProjectFolder(a, 'proj', 'memory', '/tmp/a/deeper')
+    expect((await cfg(a)).projects.proj.folders.memory.m1).toBe('/tmp/a/deeper')
+  })
+
+  it('scopes the recursion guard to the current machine (#20)', async () => {
+    const a = await setup()
+    await setProjectFolder(a, 'proj', 'memory', '/tmp/a') // m1
+    // another machine's path may overlap m1's without conflict (different filesystem)
+    await setProjectFolder(a, 'proj', 'docs', '/tmp/a/sub', 'm2')
+    expect((await cfg(a)).projects.proj.folders.docs.m2).toBe('/tmp/a/sub')
+  })
+
   it('removeProjectFolder removes only this machine and cleans up the empty slot', async () => {
     const a = await setup()
     await setProjectFolder(a, 'proj', 'memory', '/tmp/x') // m1

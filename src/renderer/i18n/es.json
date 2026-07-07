@@ -213,7 +213,8 @@
       "retriesExhausted": "No se pudo guardar tras varios reintentos."
     },
     "project": {
-      "invalidName": "Nombre de proyecto inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo."
+      "invalidName": "Nombre de proyecto inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo.",
+      "folderNested": "Esta carpeta se solapa con \"{{conflict}}\" ({{where}}), que ya se sincroniza en esta máquina. Anidarlas sincronizaría los mismos archivos dos veces."
     },
     "slot": {
       "invalidName": "Nombre de ranura inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo."

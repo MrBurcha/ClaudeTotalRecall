@@ -213,7 +213,8 @@
       "retriesExhausted": "Could not save after several retries."
     },
     "project": {
-      "invalidName": "Invalid project name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore."
+      "invalidName": "Invalid project name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore.",
+      "folderNested": "This folder overlaps \"{{conflict}}\" ({{where}}), already synced on this machine. Nesting would sync the same files twice."
     },
     "slot": {
       "invalidName": "Invalid slot name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore."
