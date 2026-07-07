@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/Button'
+import { BrandMark } from '../../components/BrandMark'
 import { StatusDot } from '../../components/Badge'
 import { TextField } from '../../components/Field'
 import { Icon, type IconName } from '../../components/Icon'
@@ -189,7 +190,7 @@ function DonePanel(): JSX.Element {
       <p className="muted">{t('wizard.done.sub')}</p>
       <Button
         variant="primary"
-        icon="orbit"
+        icon="sync"
         onClick={() => {
           actions.closeWizard()
           actions.navigate('home')
@@ -217,7 +218,7 @@ export function OnboardingWizard(): JSX.Element {
     <div className="wizard">
       <div className="wizard__panel">
         <div className="wizard__brand">
-          <Icon name="orbit" size={22} className="brand__mark" />
+          <BrandMark size={22} />
           <div>
             <div className="brand__name">Claude Total Recall</div>
             <span className="brand__tag">{t('wizard.brandTag')}</span>

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/Button'
+import { BrandMark } from '../components/BrandMark'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
@@ -25,7 +26,7 @@ function AboutModal(): JSX.Element {
       }
     >
       <div className="cluster">
-        <Icon name="orbit" size={20} className="brand__mark" />
+        <BrandMark size={20} />
         <b>Claude Total Recall</b>
         <span className="pill mono">v{version ?? '—'}</span>
       </div>
