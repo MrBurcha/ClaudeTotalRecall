@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { StatusDot } from '../components/Badge'
 import { Button } from '../components/Button'
-import { TextArea } from '../components/Field'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { AutoToggle } from '../features/sync/AutoToggle'
 import type { Locale } from '../i18n'
@@ -17,28 +16,11 @@ export function Settings(): JSX.Element {
   const actions = useActions()
   const intervalValue = String(syncEngine?.intervalMs ?? 120_000)
   const [remote, setRemote] = useState('')
-  const [localJson, setLocalJson] = useState('{}')
-
-  useEffect(() => {
-    void api.settingsLocalLoad().then((o) => setLocalJson(JSON.stringify(o, null, 2)))
-  }, [])
 
   const connect = (): Promise<void> =>
     actions.run(async () => {
       const r = await api.repoConnect(remote.trim())
       return r.initialized ? t('settings.repoConnectedCreated') : t('settings.repoConnected')
-    })
-
-  const saveLocal = (): Promise<void> =>
-    actions.run(async () => {
-      let parsed: Record<string, unknown>
-      try {
-        parsed = JSON.parse(localJson)
-      } catch {
-        throw new Error(t('settings.invalidJson'))
-      }
-      await api.settingsLocalSave(parsed)
-      return t('settings.localSaved')
     })
 
   return (
@@ -66,6 +48,7 @@ export function Settings(): JSX.Element {
         <div className="card__head">
           <span className="card__title">{t('settings.requirements')}</span>
         </div>
+        <p className="muted">{t('settings.requirementsSub')}</p>
         <ul className="check-list">
           {(preflight?.checks ?? []).map((c) => (
             <li key={c.name} className="check-row">
@@ -99,6 +82,7 @@ export function Settings(): JSX.Element {
         <div className="card__head">
           <span className="card__title">{t('settings.repo')}</span>
         </div>
+        <p className="muted">{t('settings.repoSub')}</p>
         {config ? (
           <p className="mono muted truncate">{config.repo.remote}</p>
         ) : (
@@ -137,19 +121,6 @@ export function Settings(): JSX.Element {
               ]}
             />
           </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card__head">
-          <span className="card__title">{t('settings.localTitle')}</span>
-        </div>
-        <p className="muted">{t('settings.localSub')}</p>
-        <TextArea value={localJson} onChange={(e) => setLocalJson(e.target.value)} spellCheck={false} />
-        <div className="row">
-          <Button variant="primary" icon="check" disabled={busy} onClick={saveLocal}>
-            {t('common.save')}
-          </Button>
         </div>
       </div>
 

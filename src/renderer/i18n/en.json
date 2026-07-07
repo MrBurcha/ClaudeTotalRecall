@@ -37,10 +37,12 @@
   "settings": {
     "eyebrow": "Configuration",
     "title": "Settings",
-    "sub": "System requirements, repo, and local settings overrides.",
+    "sub": "Requirements, your memory repo, and how it syncs.",
     "requirements": "Requirements",
+    "requirementsSub": "Claude Total Recall syncs your memory through a private GitHub repo, using git and the GitHub CLI (gh). Both need to be installed, and gh signed in to your GitHub account.",
     "recheck": "Re-check",
     "repo": "Repo",
+    "repoSub": "The private GitHub repo that stores your synced memory — one repo, shared by all your machines.",
     "remotePlaceholder": "git@github.com:user/claude-memories.git",
     "repoConnected": "Repo connected.",
     "repoConnectedCreated": "Repo connected (structure created).",
@@ -48,10 +50,6 @@
     "autoSyncSub": "Pushes instantly when files change and pulls from the repo periodically. Runs while the app is open.",
     "remoteCheck": "Remote check",
     "remoteCheckFreq": "Remote check frequency",
-    "localTitle": "settings.local.json",
-    "localSub": "Keys here stay on this machine and don't travel to the repo.",
-    "invalidJson": "Invalid JSON.",
-    "localSaved": "Local overrides saved.",
     "about": "About",
     "aboutText": "Claude Total Recall v{{version}} — syncs Claude Code memory across your machines via a private GitHub repo.",
     "language": "Language",
@@ -366,11 +364,11 @@
     },
     "preflight": {
       "title": "System requirements",
-      "sub": "Claude Total Recall uses git and gh to sync. Let's make sure they're ready."
+      "sub": "Claude Total Recall syncs your memory through a private GitHub repo, using git and the GitHub CLI (gh). Both need to be installed, and gh signed in to your GitHub account."
     },
     "connect": {
       "title": "Connect your memory repo",
-      "sub": "A private GitHub repo where your memories live. Paste its URL (HTTPS or SSH).",
+      "sub": "The private GitHub repo where your synced memory lives. Create an empty private repo — we suggest naming it claude-memories — then paste its URL below. Needs git and gh ready (previous step).",
       "urlLabel": "Repo URL",
       "urlPlaceholder": "git@github.com:user/claude-memories.git",
       "privacyNote": "Secrets and transcripts never travel.",

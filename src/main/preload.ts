@@ -5,7 +5,6 @@ import type {
   PlanAction,
   PreflightResult,
   RepoStatus,
-  SettingsObject,
   SyncEngineState,
   Verb,
 } from '../core/types'
@@ -64,10 +63,6 @@ const api = {
     ipcRenderer.invoke('conflict:resolve', { file, side }) as Promise<void>,
   conflictComplete: () =>
     ipcRenderer.invoke('conflict:complete') as Promise<{ pushed: boolean }>,
-
-  settingsLocalLoad: () => ipcRenderer.invoke('settingsLocal:load') as Promise<SettingsObject>,
-  settingsLocalSave: (obj: SettingsObject) =>
-    ipcRenderer.invoke('settingsLocal:save', obj) as Promise<void>,
 
   // Auto-sync: estado actual (pull), cambio de prefs, disparo manual, y la
   // suscripción al push en tiempo real (devuelve una función para desuscribirse).
