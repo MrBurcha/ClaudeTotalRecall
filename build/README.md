@@ -7,9 +7,17 @@ electron-builder pulls its resources from here (`buildResources: build` in `elec
 1. Save the app artwork as **`build/icon-source.png`** (square PNG, ideally ≥1024×1024).
 2. Run **`npm run icon`** → generates `build/icon.png` (1024×1024).
    - To crop the black margin: `CROP_PCT=90 npm run icon`.
-3. electron-builder generates the `.icns` (macOS) and uses the `.png` (Linux) automatically.
+3. Run **`npm run icons`** → generates the Linux set `build/icons/<N>x<N>.png` (16…512).
+4. macOS: electron-builder builds the `.icns` from `build/icon.png` automatically.
 
-`icon-source.png` and `icon.png` are committed (the release CI uses them).
+**Linux needs the explicit `build/icons/` set** — do NOT rely on `build/icon.png` alone.
+electron-builder does not resize a single Linux PNG: it installs `build/icon.png` at its
+native 1024×1024 into `hicolor/1024x1024/apps`, a size the icon theme does not index, so
+the launcher falls back to a generic icon (issue #19). `electron-builder.yml` points
+`linux.icon` at `build/icons`, which installs each size into its `hicolor/<N>x<N>/apps` dir.
+
+`icon-source.png`, `icon.png` and `icons/` are committed (the release CI only checks out —
+it does not regenerate them, so no ImageMagick is needed at build time).
 
 ## DMG background (macOS installer)
 
