@@ -7,6 +7,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-07
+
 ### Fixed
 - **DMG volume icon** (#18, stopgap): the mounted installer no longer shows the app icon squished
   into the disk. `dmg.icon` is now explicit `null`, so macOS renders its generic removable-disk
@@ -127,7 +129,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.3.0
 [0.2.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.2.0
 [0.1.5]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.5
 [0.1.4]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.4
