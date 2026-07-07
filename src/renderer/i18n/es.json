@@ -37,10 +37,12 @@
   "settings": {
     "eyebrow": "Configuración",
     "title": "Ajustes",
-    "sub": "Requisitos del sistema, repo y ajustes locales.",
+    "sub": "Requisitos, tu repo de memoria y cómo se sincroniza.",
     "requirements": "Requisitos",
+    "requirementsSub": "Claude Total Recall sincroniza tu memoria a través de un repositorio privado de GitHub, usando git y la CLI de GitHub (gh). Ambos tienen que estar instalados, y gh con la sesión iniciada en tu cuenta de GitHub.",
     "recheck": "Volver a revisar",
     "repo": "Repo",
+    "repoSub": "El repositorio privado de GitHub donde se guarda tu memoria sincronizada — un solo repo, compartido por todas tus máquinas.",
     "remotePlaceholder": "git@github.com:usuario/claude-memories.git",
     "repoConnected": "Repo conectado.",
     "repoConnectedCreated": "Repo conectado (estructura creada).",
@@ -48,10 +50,6 @@
     "autoSyncSub": "Sube al instante cuando cambian los archivos y baja del repo cada tanto. Funciona mientras la app está abierta.",
     "remoteCheck": "Consulta al remoto",
     "remoteCheckFreq": "Frecuencia de consulta al remoto",
-    "localTitle": "settings.local.json",
-    "localSub": "Las claves aquí se quedan en esta máquina y no viajan al repo.",
-    "invalidJson": "JSON inválido.",
-    "localSaved": "Se guardaron los ajustes locales.",
     "about": "Acerca de",
     "aboutText": "Claude Total Recall v{{version}} — sincroniza la memoria de Claude Code entre tus máquinas mediante un repositorio privado de GitHub.",
     "language": "Idioma",
@@ -366,11 +364,11 @@
     },
     "preflight": {
       "title": "Requisitos del sistema",
-      "sub": "Claude Total Recall usa git y gh para sincronizar. Revisemos que estén listos."
+      "sub": "Claude Total Recall sincroniza tu memoria a través de un repositorio privado de GitHub, usando git y la CLI de GitHub (gh). Ambos tienen que estar instalados, y gh con la sesión iniciada en tu cuenta de GitHub."
     },
     "connect": {
       "title": "Conecta tu repo de memoria",
-      "sub": "Un repo privado de GitHub donde viven tus memorias. Pega su URL (HTTPS o SSH).",
+      "sub": "El repositorio privado de GitHub donde vive tu memoria sincronizada. Crea un repo privado vacío — te sugerimos llamarlo claude-memories — y pega su URL abajo. Necesita git y gh listos (paso anterior).",
       "urlLabel": "URL del repo",
       "urlPlaceholder": "git@github.com:usuario/claude-memories.git",
       "privacyNote": "Nunca viajan secretos ni transcripts.",

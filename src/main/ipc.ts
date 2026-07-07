@@ -3,11 +3,10 @@ import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { createPlatformAdapter } from '../platform'
 import { AppError, encodeAppError } from '../core/errors'
-import { loadSettingsLocal, saveSettingsLocal } from '../core/localState'
 import { PlanDriftError } from '../core/plan'
 import { runPreflight } from '../core/preflight'
 import * as svc from '../core/service'
-import type { AutoSyncPrefs, Plan, SettingsObject, Verb } from '../core/types'
+import type { AutoSyncPrefs, Plan, Verb } from '../core/types'
 import type { SyncScheduler } from './syncScheduler'
 
 /**
@@ -137,8 +136,4 @@ export function registerIpc(scheduler: SyncScheduler): void {
     await scheduler.resumeAfterConflict() // pull the resolved merge and resume auto
     return r
   })
-
-  // settings.local.json
-  handle('settingsLocal:load', () => loadSettingsLocal(adapter()))
-  handle('settingsLocal:save', (_e, obj: SettingsObject) => saveSettingsLocal(adapter(), obj))
 }
