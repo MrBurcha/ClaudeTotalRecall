@@ -1,4 +1,4 @@
-import type { RepoStatus, SyncEngineState } from '../../core/types'
+import type { Config, RepoStatus, SyncEngineState } from '../../core/types'
 import type { ActiveOp, AppState, ModalDescriptor, PaletteState, Route, Snapshot, Theme, ToastItem } from './types'
 
 /** Reducer actions. Everything is pure and synchronous; I/O lives in useActions. */
@@ -17,6 +17,7 @@ export type Action =
   | { t: 'wizard'; open: boolean }
   | { t: 'syncState'; state: SyncEngineState }
   | { t: 'status'; status: RepoStatus | null }
+  | { t: 'config'; config: Config | null }
 
 export const initialState: AppState = {
   config: null,
@@ -66,6 +67,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, syncEngine: action.state }
     case 'status':
       return { ...state, status: action.status }
+    case 'config':
+      return { ...state, config: action.config }
     default:
       return state
   }

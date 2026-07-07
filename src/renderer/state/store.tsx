@@ -32,9 +32,13 @@ export function AppStateProvider({ children }: { children: ReactNode }): JSX.Ele
   // Auto-sync engine state: request the current one and listen for the live push.
   useEffect(() => {
     let alive = true
-    // When a cycle settles (not 'syncing'), we also refresh the RepoStatus: the
-    // engine pushes its state but not the telemetry (ahead/behind/dirty), so
-    // without this the Avanzado panel keeps stale numbers even if it says "Al día".
+    // When a cycle settles (not 'syncing'), we refresh two things the engine's push
+    // does NOT carry, both of which a remote pull may have changed on disk:
+    //   1. RepoStatus telemetry (ahead/behind/dirty) — else "Avanzado" shows stale numbers.
+    //   2. The shared config (machines/projects/folders/remote) — else a machine or
+    //      project synced from another machine stays invisible until restart. The
+    //      engine only pushes SyncEngineState, never the config, and config:load reads
+    //      fresh from the (just-pulled) working copy. Fixes issues #17 and #10.
     const apply = (s: SyncEngineState): void => {
       dispatch({ t: 'syncState', state: s })
       if (s.status !== 'syncing') {
@@ -42,6 +46,16 @@ export function AppStateProvider({ children }: { children: ReactNode }): JSX.Ele
           .repoStatus()
           .then((status) => {
             if (alive) dispatch({ t: 'status', status })
+          })
+          .catch(() => {
+            /* no repo yet; ignored */
+          })
+        void api
+          .configLoad()
+          .then((config) => {
+            // Guard on truthy: a transient read error returns null (config:load swallows
+            // it) and we keep the last good config instead of blanking the lists.
+            if (alive && config) dispatch({ t: 'config', config })
           })
           .catch(() => {
             /* no repo yet; ignored */
