@@ -182,7 +182,11 @@
 .view__sub {
   color: var(--muted);
   font-size: var(--text-md);
-  max-width: 62ch;
+  /* Measure aligned to the view column (which caps at 920px): a 62ch measure left
+     the subtitle at ~60% of the column while the cards below filled it, reading as
+     "text stops halfway" (issue #21). ~90ch fills the column and still caps line
+     length on very wide windows. */
+  max-width: 90ch;
 }
 
 /* ══ Botones ══════════════════════════════════════════════════════════════ */
