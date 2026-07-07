@@ -1,5 +1,5 @@
 import { run, type ExecResult } from './exec'
-import type { RepoStatus } from './types'
+import type { FileChange, RepoStatus } from './types'
 
 export class GitError extends Error {
   constructor(
@@ -35,8 +35,26 @@ export interface RawLogEntry {
   at: string
   author: string
   subject: string
-  /** número de archivos cambiados (líneas de --numstat) */
+  /** número de archivos cambiados (= changes.length) */
   files: number
+  /** archivos tocados por el commit (de --name-status) */
+  changes: FileChange[]
+}
+
+/** Mapea la letra de estado de git (A/M/D/R###/C###/T) al estado semántico. */
+function fileStatus(code: string): FileChange['status'] {
+  switch (code[0]) {
+    case 'A':
+      return 'added'
+    case 'M':
+      return 'modified'
+    case 'D':
+      return 'deleted'
+    case 'R':
+      return 'renamed'
+    default:
+      return 'other'
+  }
 }
 
 /**
@@ -117,7 +135,7 @@ export class Git {
     const SEP = '\x1f'
     const REC = '\x1e'
     const fmt = `${REC}%H${SEP}%aI${SEP}%an${SEP}%s`
-    const r = await this.raw(['log', `-n${limit}`, '--numstat', `--pretty=format:${fmt}`])
+    const r = await this.raw(['log', `-n${limit}`, '--name-status', `--pretty=format:${fmt}`])
     if (r.code !== 0) return []
     const out: RawLogEntry[] = []
     for (const rec of r.stdout.split(REC)) {
@@ -125,9 +143,14 @@ export class Git {
       const lines = rec.split('\n')
       const [hash, at, author, subject] = lines[0].split(SEP)
       if (!hash) continue
-      // numstat lines look like "added\tdeleted\tpath" — one per changed file.
-      const files = lines.slice(1).filter((l) => l.includes('\t')).length
-      out.push({ hash, at, author, subject: subject ?? '', files })
+      // name-status rows: "<A|M|D|R###|C###>\t<path>[\t<newpath>]" — one per changed file.
+      const changes: FileChange[] = []
+      for (const line of lines.slice(1)) {
+        if (!line.includes('\t')) continue
+        const cols = line.split('\t')
+        changes.push({ status: fileStatus(cols[0]), path: cols[cols.length - 1] })
+      }
+      out.push({ hash, at, author, subject: subject ?? '', files: changes.length, changes })
     }
     return out
   }

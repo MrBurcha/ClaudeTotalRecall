@@ -119,6 +119,28 @@ describe('Git.log', () => {
     expect(log[1].files).toBe(1)
     expect(log[0].hash).toMatch(/^[0-9a-f]{40}$/)
     expect(Number.isNaN(Date.parse(log[0].at))).toBe(false)
+    // Per-file changes (#8): the second commit added two files, the first added one.
+    expect(log[0].changes.map((c) => c.path).sort()).toEqual(['three.txt', 'two.txt'])
+    expect(log[0].changes.every((c) => c.status === 'added')).toBe(true)
+    expect(log[1].changes).toEqual([{ status: 'added', path: 'one.txt' }])
+  })
+
+  it('captures per-file status (added / modified / deleted)', async () => {
+    const g = await repoWithCommits('log-status')
+    await writeFile(join(g.cwd, 'keep.txt'), 'v1\n')
+    await writeFile(join(g.cwd, 'gone.txt'), 'x\n')
+    await g.add()
+    await g.commit('seed')
+    await writeFile(join(g.cwd, 'keep.txt'), 'v2\n') // modify
+    await rm(join(g.cwd, 'gone.txt')) // delete
+    await g.add() // default -A stages the modify + the delete
+    await g.commit('modify and delete')
+
+    const log = await g.log()
+    const byPath = Object.fromEntries(log[0].changes.map((c) => [c.path, c.status]))
+    expect(byPath['keep.txt']).toBe('modified')
+    expect(byPath['gone.txt']).toBe('deleted')
+    expect(log[0].files).toBe(2)
   })
 
   it('returns [] for a repo with no commits', async () => {

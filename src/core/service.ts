@@ -430,7 +430,7 @@ export async function history(adapter: PlatformAdapter, limit = 50): Promise<His
   for (const r of raw) {
     const c = classifyCommit(r.subject)
     if (!c) continue
-    out.push({ hash: r.hash, at: r.at, files: r.files, ...c })
+    out.push({ hash: r.hash, at: r.at, files: r.files, changes: r.changes, ...c })
   }
   return out
 }

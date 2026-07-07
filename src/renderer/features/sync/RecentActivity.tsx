@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import type { HistoryEntry } from '../../../core/types'
+import type { FileChange, HistoryEntry } from '../../../core/types'
 import { Icon, type IconName } from '../../components/Icon'
 import { api } from '../../state/api'
 import { useAppState } from '../../state/store'
@@ -77,6 +77,22 @@ function metaBits(e: HistoryEntry, t: TFunction): string {
   return bits.join(' · ')
 }
 
+/** How many files to list before collapsing the rest into a "+N more" line. */
+const FILE_CAP = 8
+
+const CHANGE_GLYPH: Record<FileChange['status'], string> = {
+  added: '+',
+  modified: '~',
+  deleted: '−',
+  renamed: '→',
+  other: '·',
+}
+
+/** Drops the repo's `memories/` prefix so the path reads cleanly in the list. */
+function trimPath(p: string): string {
+  return p.replace(/^memories\//, '')
+}
+
 /**
  * "Recent activity" (#8): a collapsible timeline on the Sync home, derived from
  * the memories repo's git log. Refetches when a sync cycle settles (the engine's
@@ -92,7 +108,7 @@ export function RecentActivity(): JSX.Element {
   useEffect(() => {
     let alive = true
     void api
-      .repoHistory(20)
+      .repoHistory(100)
       .then((h) => {
         if (alive) setEntries(h)
       })
@@ -133,6 +149,21 @@ export function RecentActivity(): JSX.Element {
                   </div>
                   {metaBits(e, t) && (
                     <div className="muted mono folder-row__others">{metaBits(e, t)}</div>
+                  )}
+                  {e.type === 'outgoing' && e.changes.length > 0 && (
+                    <ul className="activity-files">
+                      {e.changes.slice(0, FILE_CAP).map((c) => (
+                        <li key={c.path} className={`activity-file activity-file--${c.status}`}>
+                          <span className="activity-file__glyph mono">{CHANGE_GLYPH[c.status]}</span>
+                          <span className="mono truncate">{trimPath(c.path)}</span>
+                        </li>
+                      ))}
+                      {e.changes.length > FILE_CAP && (
+                        <li className="muted mono">
+                          {t('activity.moreFiles', { count: e.changes.length - FILE_CAP })}
+                        </li>
+                      )}
+                    </ul>
                   )}
                 </li>
               ))}
