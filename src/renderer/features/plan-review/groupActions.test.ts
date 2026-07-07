@@ -7,7 +7,7 @@ function act(slot: string, type: PlanActionType): PlanAction {
 }
 
 function plan(actions: PlanAction[]): Plan {
-  return { id: 'p1', verb: 'gather', createdAt: '2026-01-01T00:00:00Z', actions }
+  return { id: 'p1', verb: 'outgoing', createdAt: '2026-01-01T00:00:00Z', actions }
 }
 
 describe('groupActions', () => {

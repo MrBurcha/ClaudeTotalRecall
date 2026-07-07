@@ -1,11 +1,11 @@
 import type { SettingsObject } from './types'
 
 /**
- * gather (máquina → repo): del objeto real saca las top-level keys declaradas
+ * outgoing (máquina → repo): del objeto real saca las top-level keys declaradas
  * como locales (las claves de `localOverrides`); el resto es lo compartido que
  * viaja al repo. Merge SHALLOW por top-level key. No muta las entradas.
  */
-export function splitForGather(
+export function splitForOutgoing(
   real: SettingsObject,
   localOverrides: SettingsObject,
 ): SettingsObject {
@@ -18,12 +18,12 @@ export function splitForGather(
 }
 
 /**
- * scatter (repo → máquina): al objeto compartido le encima los overrides
+ * incoming (repo → máquina): al objeto compartido le encima los overrides
  * locales (lo local gana). Reconstrucción completa (no patch): el resultado es
  * exactamente shared + localOverrides. Merge SHALLOW por top-level key. No muta
  * las entradas.
  */
-export function mergeForScatter(
+export function mergeForIncoming(
   shared: SettingsObject,
   localOverrides: SettingsObject,
 ): SettingsObject {

@@ -3,7 +3,7 @@ import type { PlatformAdapter } from '../platform'
 import { Git } from './git'
 import { loadBaseline, saveBaseline } from './localState'
 import { PlanDriftError } from './plan'
-import { buildVerbPlan, pullRepo, syncGather, syncScatter, workingCopyDir } from './service'
+import { buildVerbPlan, pullRepo, syncOutgoing, syncIncoming, workingCopyDir } from './service'
 import type { Plan, PlanAction } from './types'
 
 /**
@@ -14,7 +14,7 @@ import type { Plan, PlanAction } from './types'
  * - `error`: fallo de red/git ⇒ el scheduler decide backoff y reintenta.
  */
 export type SyncOutcome =
-  | { kind: 'synced'; pushed: boolean; pulled: boolean; scattered: boolean }
+  | { kind: 'synced'; pushed: boolean; pulled: boolean; incoming: boolean }
   | { kind: 'conflict'; files: string[] }
   | { kind: 'error'; message: string }
 
@@ -44,11 +44,11 @@ function safeActions(plan: Plan, baseline: Set<string>): PlanAction[] {
 
 /**
  * Conjunto de logicalPaths presentes en el working copy, leído de un plan de
- * scatter (donde `from` = working copy). Es el nuevo baseline al cerrar el ciclo.
+ * incoming (donde `from` = working copy). Es el nuevo baseline al cerrar el ciclo.
  */
-function workingCopySnapshot(scatterPlan: Plan): Set<string> {
+function workingCopySnapshot(incomingPlan: Plan): Set<string> {
   const paths = new Set<string>()
-  for (const a of scatterPlan.actions) {
+  for (const a of incomingPlan.actions) {
     if (a.from !== null && a.type !== 'skip') paths.add(a.logicalPath)
   }
   return paths
@@ -61,10 +61,10 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
   let pulled = false
 
   // ── Fase 1: subir (máquina → working copy), con borrados vetados por baseline ──
-  const gatherPlan = await buildVerbPlan(adapter, 'gather', newMeta())
-  const up = safeActions(gatherPlan, baseline)
+  const outgoingPlan = await buildVerbPlan(adapter, 'outgoing', newMeta())
+  const up = safeActions(outgoingPlan, baseline)
   if (up.length > 0) {
-    const r = await syncGather(adapter, { ...gatherPlan, actions: up })
+    const r = await syncOutgoing(adapter, { ...outgoingPlan, actions: up })
     if (r.conflicts.length > 0) return { kind: 'conflict', files: r.conflicts }
     // Commiteamos pero el push no entró (red caída o rechazo persistente): no es
     // "al día" — el commit local quedó sin llegar al remoto. Salimos como error
@@ -73,7 +73,7 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
       return { kind: 'error', message: 'No se pudo pushear el commit al remoto' }
     }
     pushed = r.pushed
-    pulled = true // syncGather pullea (merge del remoto) tras commitear
+    pulled = true // syncOutgoing pullea (merge del remoto) tras commitear
   } else {
     // Nada para subir por cambios locales: sincronizar con el remoto igual.
     await git.fetch()
@@ -94,24 +94,24 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
   }
 
   // ── Fase 2: bajar a la máquina (working copy → máquina), mismos vetos ──────────
-  const scatterPlan = await buildVerbPlan(adapter, 'scatter', newMeta())
-  const down = safeActions(scatterPlan, baseline)
-  let scattered = false
+  const incomingPlan = await buildVerbPlan(adapter, 'incoming', newMeta())
+  const down = safeActions(incomingPlan, baseline)
+  let incoming = false
   if (down.length > 0) {
-    await syncScatter(adapter, { ...scatterPlan, actions: down })
-    scattered = true
+    await syncIncoming(adapter, { ...incomingPlan, actions: down })
+    incoming = true
   }
 
   // ── Fase 3: baseline := estado sincronizado del working copy (post-pull) ───────
-  await saveBaseline(adapter, workingCopySnapshot(scatterPlan))
+  await saveBaseline(adapter, workingCopySnapshot(incomingPlan))
 
-  return { kind: 'synced', pushed, pulled, scattered }
+  return { kind: 'synced', pushed, pulled, incoming }
 }
 
 /**
  * Corre un ciclo completo de auto-sync. Orquesta las primitivas de `service.ts`
  * en modo 3-vías con baseline: sube los cambios locales (mergeando el remoto vía
- * `syncGather`), baja lo que trajo el merge, y actualiza el baseline. Los conflictos
+ * `syncOutgoing`), baja lo que trajo el merge, y actualiza el baseline. Los conflictos
  * de contenido entre máquinas los detecta el `pull` de git y se devuelven como
  * `conflict`. Nunca tira: los fallos de red/git salen como `error`, y un
  * `PlanDriftError` (el disco cambió entre armar y ejecutar el Plan) reintenta una
@@ -135,13 +135,13 @@ export async function runSyncCycle(adapter: PlatformAdapter): Promise<SyncOutcom
 /**
  * Tras resolver un conflicto (el working copy ya tiene el merge finalizado y
  * pusheado por `completeConflictMerge`), baja SÓLO ese resultado a la máquina —
- * sin gatherear, para no pisar la resolución con la versión vieja de la máquina —
+ * sin subir cambios (outgoing), para no pisar la resolución con la versión vieja de la máquina —
  * y actualiza el baseline. La llama el scheduler al reanudar tras un conflicto.
  */
-export async function scatterResolved(adapter: PlatformAdapter): Promise<void> {
+export async function incomingResolved(adapter: PlatformAdapter): Promise<void> {
   const baseline = await loadBaseline(adapter)
-  const scatterPlan = await buildVerbPlan(adapter, 'scatter', newMeta())
-  const down = safeActions(scatterPlan, baseline)
-  if (down.length > 0) await syncScatter(adapter, { ...scatterPlan, actions: down })
-  await saveBaseline(adapter, workingCopySnapshot(scatterPlan))
+  const incomingPlan = await buildVerbPlan(adapter, 'incoming', newMeta())
+  const down = safeActions(incomingPlan, baseline)
+  if (down.length > 0) await syncIncoming(adapter, { ...incomingPlan, actions: down })
+  await saveBaseline(adapter, workingCopySnapshot(incomingPlan))
 }

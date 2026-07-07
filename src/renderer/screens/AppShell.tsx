@@ -22,7 +22,7 @@ export function AppShell(): JSX.Element {
     void actions.refresh()
   }, [actions])
 
-  // Global shortcuts: ⌘K palette, ⌘G gather, ⌘S scatter.
+  // Global shortcuts: ⌘K palette, ⌘G outgoing, ⌘S incoming.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const mod = e.metaKey || e.ctrlKey
@@ -42,10 +42,10 @@ export function AppShell(): JSX.Element {
         !state.busy
       if (key === 'g' && canRunSync) {
         e.preventDefault()
-        void actions.openPlan('gather')
+        void actions.openPlan('outgoing')
       } else if (key === 's' && canRunSync) {
         e.preventDefault()
-        void actions.openPlan('scatter')
+        void actions.openPlan('incoming')
       }
     }
     window.addEventListener('keydown', onKey)

@@ -1,16 +1,16 @@
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
 import type { Plan } from './types'
 
-/** Arma el Plan de scatter (repo → máquina). */
-export function buildScatterPlan(
+/** Builds the incoming Plan (repo → machine). */
+export function buildIncomingPlan(
   ctx: SyncContext,
   meta: { id: string; createdAt: string },
 ): Promise<Plan> {
-  return buildPlan(ctx, 'scatter', meta)
+  return buildPlan(ctx, 'incoming', meta)
 }
 
-/** Ejecuta un Plan de scatter ya previsualizado (con revalidación TOCTOU). */
-export function executeScatter(
+/** Executes an already-previewed incoming Plan (with TOCTOU revalidation). */
+export function executeIncoming(
   plan: Plan,
   ctx: SyncContext,
   opts?: { force?: boolean },

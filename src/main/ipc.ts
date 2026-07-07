@@ -116,9 +116,9 @@ export function registerIpc(scheduler: SyncScheduler): void {
     const opts = { force: args.force }
     try {
       const result =
-        args.verb === 'gather'
-          ? await svc.syncGather(adapter(), plan, opts)
-          : await svc.syncScatter(adapter(), plan, opts)
+        args.verb === 'outgoing'
+          ? await svc.syncOutgoing(adapter(), plan, opts)
+          : await svc.syncIncoming(adapter(), plan, opts)
       planCache.delete(args.planId) // only consumed after success
       return { ok: true, result }
     } catch (e) {

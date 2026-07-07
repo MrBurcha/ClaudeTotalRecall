@@ -6,7 +6,7 @@ export type FlowDirection = 'up' | 'down'
 /**
  * Animates particles along the current machine's link with requestAnimationFrame,
  * writing cx/cy directly into the group's <circle> elements (no re-render per frame).
- * 'up' = node→vault (gather pending/in progress), 'down' = vault→node (scatter).
+ * 'up' = node→vault (outgoing pending/in progress), 'down' = vault→node (incoming).
  * Doesn't start if !enabled (reduced-motion) or there's no direction: the component
  * falls back to a static state. rAF cleanup on every change → safe under StrictMode.
  */

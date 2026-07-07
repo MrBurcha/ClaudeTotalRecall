@@ -10,11 +10,11 @@ repo**, using `git`/`gh` as transport. macOS and Linux; Windows is deliberately 
   the per-project memory folders you declare) is copied to/from a **working copy** of the repo
   under logical names.
 - **Auto-sync runs while the app is open**: it pushes the moment a watched file changes and
-  pulls from the repo on a periodic poll. Manual `gather`/`scatter` live under **Advanced sync**.
+  pulls from the repo on a periodic poll. Manual `outgoing`/`incoming` live under **Advanced sync**.
 - Every mutating verb builds a **Plan (dry-run)** first, previewed before anything touches disk.
 - **Merge conflicts** are resolved per file: `ours` = local, `theirs` = remote.
 - **Secrets never travel**: a guard hard-excludes `.credentials.json`, `*.jsonl`, `.claude.json`.
-- `settings.json` = a shared base + `settings.local.json` per-key overrides (local wins on scatter).
+- `settings.json` = a shared base + `settings.local.json` per-key overrides (local wins on incoming).
 - The UI is **bilingual** — English and neutral Latin American Spanish (es-419). It defaults to the
   host locale and can be switched in **Settings → Language**.
 
@@ -37,7 +37,7 @@ npm run lint         # eslint . --ext .ts,.tsx
 
 On first launch an **onboarding wizard** walks you through: connect the memories repo, register
 this machine, and (optionally) add your first project. After that, the **Sync** screen keeps
-everything up to date on its own; **Advanced sync** exposes the manual gather/scatter flow.
+everything up to date on its own; **Advanced sync** exposes the manual outgoing/incoming flow.
 
 ## Headless CLI (same core as the UI)
 
@@ -47,8 +47,8 @@ node dist-cli/index.js check                    # preflight: git/gh/auth
 node dist-cli/index.js connect <remote-url>     # clone/initialize the repo
 node dist-cli/index.js status                   # repo status
 node dist-cli/index.js register --name <id>     # register this machine
-node dist-cli/index.js gather  [--dry-run] [--yes]   # machine → repo
-node dist-cli/index.js scatter [--dry-run] [--yes]   # repo → machine
+node dist-cli/index.js outgoing  [--dry-run] [--yes]   # machine → repo
+node dist-cli/index.js incoming [--dry-run] [--yes]   # repo → machine
 ```
 
 ## Packaging (ad-hoc signing, personal use)
@@ -82,7 +82,7 @@ xattr -cr "/Applications/Claude Total Recall.app"
 
 ## Layout
 
-- `src/core/` — pure logic (config, plan, gather/scatter, git, service, preflight, sync engine,
+- `src/core/` — pure logic (config, plan, outgoing/incoming, git, service, preflight, sync engine,
   conflict resolution, settings merge, error codes). No Electron imports.
 - `src/platform/` — the only OS-specific code (linux/macos adapter).
 - `src/cli/` — headless entrypoint.

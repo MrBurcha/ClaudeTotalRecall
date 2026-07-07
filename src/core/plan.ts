@@ -3,7 +3,7 @@ import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs
 import { dirname, join, posix } from 'node:path'
 import type { PlatformAdapter } from '../platform'
 import { projectSlotLogicalPath, projectSlotPath, projectSlots, userLevelItems } from './resolve'
-import { mergeForScatter, splitForGather } from './settingsMerge'
+import { mergeForIncoming, splitForOutgoing } from './settingsMerge'
 import type { Config, Plan, PlanAction, SettingsObject, Verb } from './types'
 
 export interface SyncContext {
@@ -90,16 +90,16 @@ async function settingsWrite(ctx: SyncContext, verb: Verb): Promise<SettingsWrit
   const realPath = join(ctx.adapter.claudeHome(), 'settings.json')
   const sharedPath = join(ctx.repoDir, SETTINGS_LOGICAL)
 
-  if (verb === 'gather') {
+  if (verb === 'outgoing') {
     if (!(await pathExists(realPath))) return null
     const real = JSON.parse(await readFile(realPath, 'utf8')) as SettingsObject
-    const shared = splitForGather(real, ctx.localOverrides)
+    const shared = splitForOutgoing(real, ctx.localOverrides)
     return { from: realPath, to: sharedPath, content: JSON.stringify(shared, null, 2) + '\n' }
   }
-  // scatter
+  // incoming
   if (!(await pathExists(sharedPath))) return null
   const shared = JSON.parse(await readFile(sharedPath, 'utf8')) as SettingsObject
-  const merged = mergeForScatter(shared, ctx.localOverrides)
+  const merged = mergeForIncoming(shared, ctx.localOverrides)
   return { from: sharedPath, to: realPath, content: JSON.stringify(merged, null, 2) + '\n' }
 }
 
@@ -112,8 +112,8 @@ async function settingsAction(ctx: SyncContext, verb: Verb): Promise<PlanAction>
       from: null,
       to: null,
       type: 'skip',
-      reason: verb === 'gather' ? 'no local ~/.claude/settings.json' : 'no settings.json in the repo',
-      reasonCode: verb === 'gather' ? 'noLocalSettings' : 'noRepoSettings',
+      reason: verb === 'outgoing' ? 'no local ~/.claude/settings.json' : 'no settings.json in the repo',
+      reasonCode: verb === 'outgoing' ? 'noLocalSettings' : 'noRepoSettings',
     }
   }
   const hashFrom = hashString(w.content)
@@ -127,7 +127,7 @@ async function settingsAction(ctx: SyncContext, verb: Verb): Promise<PlanAction>
     type,
     hashFrom,
     hashTo,
-    transform: verb === 'gather' ? 'settings-gather' : 'settings-scatter',
+    transform: verb === 'outgoing' ? 'settings-outgoing' : 'settings-incoming',
   }
 }
 
@@ -225,7 +225,7 @@ export async function buildPlan(
     if (item.slot === 'settings.json') continue // handled separately
     const repoPath = join(ctx.repoDir, item.logicalPath)
     const [src, dest] =
-      verb === 'gather' ? [item.realPath, repoPath] : [repoPath, item.realPath]
+      verb === 'outgoing' ? [item.realPath, repoPath] : [repoPath, item.realPath]
     if (item.kind === 'file') {
       actions.push(await planFileSync(`user:${item.slot}`, src, dest, item.logicalPath))
     } else {
@@ -256,7 +256,7 @@ export async function buildPlan(
         })
         continue
       }
-      const [src, dest] = verb === 'gather' ? [machinePath, repoPath] : [repoPath, machinePath]
+      const [src, dest] = verb === 'outgoing' ? [machinePath, repoPath] : [repoPath, machinePath]
       actions.push(...(await planDirSync(slotBase, src, dest, logicalPrefix)))
     }
   }
@@ -286,7 +286,7 @@ export interface ExecResult {
 /** Recomputes the hash of the content the action would write, for revalidation. */
 async function currentSourceHash(action: PlanAction, ctx: SyncContext): Promise<string | null> {
   if (action.transform) {
-    const w = await settingsWrite(ctx, action.transform === 'settings-gather' ? 'gather' : 'scatter')
+    const w = await settingsWrite(ctx, action.transform === 'settings-outgoing' ? 'outgoing' : 'incoming')
     return w ? hashString(w.content) : null
   }
   if (!action.from) return null
@@ -328,7 +328,7 @@ export async function executePlan(
     if (!a.to) continue
     await mkdir(dirname(a.to), { recursive: true })
     if (a.transform) {
-      const w = await settingsWrite(ctx, a.transform === 'settings-gather' ? 'gather' : 'scatter')
+      const w = await settingsWrite(ctx, a.transform === 'settings-outgoing' ? 'outgoing' : 'incoming')
       if (w) await writeFile(a.to, w.content)
     } else if (a.from) {
       await copyFile(a.from, a.to)

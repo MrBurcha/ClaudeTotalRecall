@@ -70,7 +70,7 @@ describe('reducer', () => {
     expect(reducer(initialState, { t: 'navigate', route: 'projects' }).route).toBe('projects')
     expect(reducer(initialState, { t: 'theme', theme: 'light' }).theme).toBe('light')
     expect(reducer(initialState, { t: 'wizard', open: true }).wizardOpen).toBe(true)
-    const op = { verb: 'gather', phase: 'executing' } as const
+    const op = { verb: 'outgoing', phase: 'executing' } as const
     expect(reducer(initialState, { t: 'activeOp', op }).activeOp).toEqual(op)
   })
 })

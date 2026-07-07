@@ -4,7 +4,7 @@ import { loadAutoSyncPrefs, saveAutoSyncPrefs } from '../core/localState'
 import { isSecretExcluded } from '../core/plan'
 import { projectSlotPath, projectSlots, userLevelItems } from '../core/resolve'
 import * as svc from '../core/service'
-import { runSyncCycle, scatterResolved, type SyncOutcome } from '../core/syncEngine'
+import { runSyncCycle, incomingResolved, type SyncOutcome } from '../core/syncEngine'
 import type { AutoSyncPrefs, SyncEngineState } from '../core/types'
 
 // El watch usa notificaciones nativas del SO (inotify/FSEvents): ~0% CPU en
@@ -107,7 +107,7 @@ export class SyncScheduler {
   /** Tras finalizar un merge en el panel Avanzado: baja el resultado y reanuda. */
   async resumeAfterConflict(): Promise<void> {
     try {
-      await scatterResolved(this.adapter)
+      await incomingResolved(this.adapter)
       this.setState({
         status: 'idle',
         conflicts: [],
