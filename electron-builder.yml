@@ -54,6 +54,17 @@ linux:
     - pacman
   category: Development
   maintainer: MrBurcha
+  # Multi-size icon set. Without this, electron-builder installs the single
+  # build/icon.png at its native 1024x1024 into hicolor/1024x1024/apps — a size the
+  # icon theme does NOT index — so the launcher (app grid) shows a generic icon.
+  # A directory of <N>x<N>.png (see scripts/make-icons.sh) lands each size in its
+  # hicolor dir; 256/512 are what the app grid renders. (issue #19)
+  icon: build/icons
+  # Pin the executable name so the binary, Exec, the .desktop Icon field and the
+  # installed hicolor/*/apps/<name>.png are all deterministic lowercase, matching
+  # StartupWMClass below. Otherwise they derive from productName ("Claude Total
+  # Recall", with spaces).
+  executableName: claude-total-recall
   # GNOME/mutter binds the window to its .desktop entry via WM_CLASS (case-sensitive).
   # Electron reports WM_CLASS "claude-total-recall" (the package.json name), but
   # electron-builder defaults StartupWMClass to productName ("Claude Total Recall") →

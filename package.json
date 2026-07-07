@@ -16,6 +16,7 @@
     "build:cli": "tsup",
     "cli:check": "npm run build:cli && node dist-cli/index.js check",
     "icon": "bash scripts/make-icon.sh",
+    "icons": "bash scripts/make-icons.sh",
     "background": "bash scripts/make-background.sh",
     "build:mac": "npm run build:app && electron-builder --mac --config electron-builder.yml",
     "build:linux": "npm run build:app && electron-builder --linux --config electron-builder.yml",
