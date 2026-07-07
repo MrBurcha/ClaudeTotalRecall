@@ -7,6 +7,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-07
+
 ### Added
 - **File sources for projects** (#11): a project source can now be a single **file**, not only a
   folder. When adding a source you pick its kind (folder or file); a file source syncs as one
@@ -110,7 +112,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.2.0
 [0.1.5]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.5
 [0.1.4]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.4
 [0.1.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.3
