@@ -1,5 +1,6 @@
 import { join, resolve as resolvePath, sep } from 'node:path'
 import type { PlatformAdapter } from '../platform'
+import { parseMemoryPath } from './memoryPath'
 import type { Config } from './types'
 
 export interface UserLevelItem {
@@ -136,4 +137,36 @@ export function machineSyncedPaths(
     if (item.kind === 'dir') out.push({ path: item.realPath, where: `~/.claude/${item.slot}` })
   }
   return out
+}
+
+/**
+ * Reverse of the logical-path builders: given a repo-relative memories path,
+ * return the real file path on THIS machine (the user's configured source), or
+ * null when it isn't mapped here (project/slot/pin not configured for this
+ * machine, or an unrecognized path). Used to reveal a file in the OS file
+ * manager — never to read content (that comes from the working copy).
+ */
+export function machinePathForLogical(
+  repoRelPath: string,
+  config: Config,
+  machineId: string,
+  adapter: PlatformAdapter,
+): string | null {
+  const loc = parseMemoryPath(repoRelPath)
+  switch (loc.bucket) {
+    case 'user': {
+      const base = join(adapter.claudeHome(), loc.slot)
+      return loc.rest ? join(base, loc.rest) : base
+    }
+    case 'project': {
+      const base = projectSlotPath(config, loc.project, loc.slot, machineId)
+      if (!base) return null
+      if (projectSlotKind(config, loc.project, loc.slot) === 'file') return base
+      return loc.rest ? join(base, loc.rest) : base
+    }
+    case 'pinned':
+      return config.pinnedFiles?.[loc.pin]?.[machineId] ?? null
+    default:
+      return null
+  }
 }

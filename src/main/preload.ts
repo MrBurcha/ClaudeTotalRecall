@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
   Config,
+  FilePreview,
   HistoryEntry,
   Plan,
   PlanAction,
@@ -58,6 +59,11 @@ const api = {
     ipcRenderer.invoke('project:rename', { oldName, newName }) as Promise<void>,
   projectPickFolder: () => ipcRenderer.invoke('project:pickFolder') as Promise<string | null>,
   pickFile: () => ipcRenderer.invoke('path:pickFile') as Promise<string | null>,
+
+  filePreview: (repoRelPath: string) =>
+    ipcRenderer.invoke('file:preview', repoRelPath) as Promise<FilePreview>,
+  revealSource: (repoRelPath: string) =>
+    ipcRenderer.invoke('file:reveal', repoRelPath) as Promise<boolean>,
 
   pinnedSet: (pinId: string, path: string) =>
     ipcRenderer.invoke('pinned:set', { pinId, path }) as Promise<void>,

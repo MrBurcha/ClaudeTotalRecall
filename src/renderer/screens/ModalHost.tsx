@@ -6,6 +6,7 @@ import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { PlanDriftDialog } from '../features/plan-review/PlanDriftDialog'
 import { PlanReview } from '../features/plan-review/PlanReview'
+import { FilePreviewModal } from '../features/preview/FilePreviewModal'
 import { ProjectFormModal } from '../features/projects/ProjectFormModal'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
@@ -54,6 +55,8 @@ export function ModalHost(): JSX.Element | null {
       return <ProjectFormModal />
     case 'about':
       return <AboutModal />
+    case 'file-preview':
+      return <FilePreviewModal modal={top} />
     default:
       return null
   }

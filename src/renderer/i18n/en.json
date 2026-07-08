@@ -198,6 +198,9 @@
     "skip": "skip"
   },
   "errors": {
+    "preview": {
+      "sourceUnavailable": "This file has no source on this machine to open."
+    },
     "machine": {
       "invalidName": "Invalid machine name.",
       "notRegistered": "Machine not registered.",
@@ -438,6 +441,21 @@
     "files_one": "{{count}} file",
     "files_other": "{{count}} files",
     "moreFiles": "+{{count}} more"
+  },
+  "preview": {
+    "rendererAria": "Preview renderer",
+    "kind": {
+      "markdown": "Markdown",
+      "json": "JSON",
+      "properties": "Properties",
+      "text": "Plain text"
+    },
+    "openLocation": "Open location",
+    "removed": "This file was removed in this change — no preview.",
+    "binary": "Binary file — no text preview.",
+    "empty": "This file is empty.",
+    "truncated": "Large file — showing the first part only.",
+    "parseError": "Not valid JSON — showing the raw text."
   },
   "fileTag": {
     "added": "Added",

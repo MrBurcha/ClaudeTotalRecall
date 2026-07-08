@@ -172,6 +172,19 @@ export interface HistoryEntry {
   changes: FileChange[]
 }
 
+/** Content + machine location of a memories file, for the preview modal (#43). */
+export interface FilePreview {
+  /** UTF-8 content from the repo working copy; empty when binary or missing */
+  content: string
+  /** full byte size on disk (even when truncated) */
+  size: number
+  truncated: boolean
+  binary: boolean
+  exists: boolean
+  /** the file's real path on THIS machine, or null if not mapped/present here */
+  sourcePath: string | null
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Local activity log (outside the repo). Incoming syncs never commit or touch
 // the remote, so their trace can't come from git; we record them locally here

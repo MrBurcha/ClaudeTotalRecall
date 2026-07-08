@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createPlatformAdapter } from '../platform'
 import type { Config } from './types'
 import {
+  machinePathForLogical,
   machineSyncedPaths,
   pathsCollide,
   projectSlotLogicalPath,
@@ -149,5 +150,60 @@ describe('machineSyncedPaths', () => {
     const set = machineSyncedPaths(sampleConfig(), adapter(), 'desktop').map((p) => p.path)
     expect(set).toContain('/Users/me/code/demo/.claude') // desktop's memory path
     expect(set).not.toContain('/home/me/code/demo/docs') // laptop-only
+  })
+})
+
+describe('machinePathForLogical', () => {
+  const a = adapter()
+
+  it('resolves user-level files under ~/.claude, with and without a rest path', () => {
+    const c = sampleConfig()
+    expect(machinePathForLogical('memories/user/CLAUDE.md', c, 'laptop', a)).toBe(
+      `${HOME}/.claude/CLAUDE.md`,
+    )
+    expect(machinePathForLogical('memories/user/commands/deploy.md', c, 'laptop', a)).toBe(
+      `${HOME}/.claude/commands/deploy.md`,
+    )
+  })
+
+  it('joins a dir project slot with the rest of the path', () => {
+    expect(
+      machinePathForLogical('memories/projects/demo/memory/notes.md', sampleConfig(), 'laptop', a),
+    ).toBe('/home/me/code/demo/.claude/notes.md')
+  })
+
+  it('resolves a file project slot to the configured path itself', () => {
+    const c: Config = {
+      version: 1,
+      repo: { remote: 'r' },
+      machines: {},
+      projects: {
+        p: { folders: { env: { laptop: '/home/me/app/.env' } }, slotKinds: { env: 'file' } },
+      },
+    }
+    expect(machinePathForLogical('memories/projects/p/env', c, 'laptop', a)).toBe(
+      '/home/me/app/.env',
+    )
+  })
+
+  it('resolves a pinned file to its configured path', () => {
+    const c: Config = {
+      version: 1,
+      repo: { remote: 'r' },
+      machines: {},
+      projects: {},
+      pinnedFiles: { 'prod-env': { laptop: '/home/me/secrets/.env' } },
+    }
+    expect(machinePathForLogical('memories/pinned/prod-env', c, 'laptop', a)).toBe(
+      '/home/me/secrets/.env',
+    )
+  })
+
+  it('returns null when not mapped on this machine or unrecognized', () => {
+    const c = sampleConfig()
+    expect(machinePathForLogical('memories/projects/demo/docs/x', c, 'desktop', a)).toBeNull()
+    expect(machinePathForLogical('memories/projects/nope/memory/x', c, 'laptop', a)).toBeNull()
+    expect(machinePathForLogical('memories/pinned/none', c, 'laptop', a)).toBeNull()
+    expect(machinePathForLogical('claudetr.json', c, 'laptop', a)).toBeNull()
   })
 })

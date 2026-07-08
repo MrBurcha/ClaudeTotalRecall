@@ -201,6 +201,20 @@
   color: var(--text-dim);
   font-size: var(--text-sm);
 }
+/* Filename as a preview link (#43): no color change from the row — it inherits
+   --text-dim — just an underline + pointer. NB: don't set `font` here or the
+   shorthand would beat the `.mono` utility (screens.css loads after it). */
+.activity-file__link {
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .folder-slot {
   padding: 2px 8px;
   flex: none;
@@ -567,4 +581,166 @@
 }
 .folder-editor__err {
   margin-top: 4px;
+}
+
+/* ══ File preview modal (#43) ═════════════════════════════════════════════════ */
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+.preview-note {
+  margin: 0;
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+}
+/* Code / JSON / plain text: wraps so the modal never scrolls sideways. */
+.preview-code {
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Rendered markdown */
+.preview-md {
+  font-size: var(--text-md);
+  line-height: 1.6;
+}
+.preview-md > :first-child {
+  margin-top: 0;
+}
+.preview-md > :last-child {
+  margin-bottom: 0;
+}
+.preview-md h1,
+.preview-md h2,
+.preview-md h3,
+.preview-md h4,
+.preview-md h5,
+.preview-md h6 {
+  margin: var(--space-5) 0 var(--space-3);
+  font-weight: var(--weight-semibold);
+  line-height: 1.3;
+}
+.preview-md h1 {
+  font-size: var(--text-xl);
+}
+.preview-md h2 {
+  font-size: var(--text-lg);
+}
+.preview-md h3 {
+  font-size: var(--text-md);
+}
+.preview-md h4,
+.preview-md h5,
+.preview-md h6 {
+  font-size: var(--text-sm);
+}
+.preview-md p,
+.preview-md ul,
+.preview-md ol,
+.preview-md blockquote,
+.preview-md table {
+  margin: 0 0 var(--space-3);
+}
+.preview-md ul,
+.preview-md ol {
+  padding-left: 1.4em;
+}
+.preview-md li {
+  margin: var(--space-1) 0;
+}
+.preview-md code {
+  padding: 0.05em 0.35em;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+.preview-md pre {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+.preview-md pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+}
+.preview-md blockquote {
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-dim);
+}
+.preview-md a,
+.preview-md__link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.preview-md__img {
+  color: var(--muted);
+}
+.preview-md hr {
+  margin: var(--space-4) 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.preview-md table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.preview-md th,
+.preview-md td {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.preview-md th {
+  background: var(--panel-2);
+  font-weight: var(--weight-semibold);
+}
+
+/* Properties / .env key–value view */
+.preview-props {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-sm);
+}
+.preview-props__row {
+  display: grid;
+  grid-template-columns: minmax(120px, 260px) 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+.preview-props__key {
+  color: var(--accent);
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+}
+.preview-props__val {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.preview-props__comment {
+  padding-top: var(--space-1);
+}
+.preview-props__blank {
+  height: var(--space-2);
 }
