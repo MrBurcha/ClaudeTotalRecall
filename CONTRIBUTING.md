@@ -29,6 +29,20 @@ npm run format:check
 npm run test:coverage   # runs the suite + coverage (the core has a coverage threshold)
 ```
 
+## Pull requests
+
+You don't need write access to contribute: **fork** the repo, push your branch to your fork, and open
+a pull request against `main`. A maintainer reviews it and merges — your commits never land in this
+repo until then.
+
+`main` is protected by branch rulesets, so:
+
+- A PR can only be merged once the **CI `check` job is green** (the same `typecheck` / `lint` /
+  `format:check` / `test:coverage` run listed above). Push a fix and the check re-runs automatically.
+- `main` can't be force-pushed or deleted by anyone — history only moves forward.
+
+Keep pull requests small and focused; it makes review (and the eventual changelog entry) easier.
+
 ## Conventions
 
 - **English** for code identifiers, comments, commit messages, and docs. The UI is the only
