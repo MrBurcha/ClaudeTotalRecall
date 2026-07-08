@@ -75,8 +75,11 @@ linux:
   # Electron reports WM_CLASS "claude-total-recall" (the package.json name), but
   # electron-builder defaults StartupWMClass to productName ("Claude Total Recall") →
   # it won't match and the DE shows a generic icon. Force it to the real WM_CLASS.
+  # electron-builder 26 nests the [Desktop Entry] pairs under `desktop.entry`
+  # (v25 accepted them flat under `desktop`).
   desktop:
-    StartupWMClass: claude-total-recall
+    entry:
+      StartupWMClass: claude-total-recall
 # Deps with Arch names: electron-builder's default uses Debian naming (e.g.
 # http-parser), which doesn't exist in the Arch repos. The .deb keeps its
 # defaults; only the pacman package needs this override.
