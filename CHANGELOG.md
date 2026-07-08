@@ -7,6 +7,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-07-07
+
+### Changed
+
+- **Recent activity / Advanced typography** (#8): fixed the font hierarchy on the Sync home. The
+  collapsible panel titles ("Recent activity", "Advanced") were rendering smaller than the row labels
+  inside them, and each per-file group heading was smaller than the filenames it groups. Panel titles
+  are now proper section headers (on par with the sync status), group headings sit a step above their
+  files, and the status labels are no longer sub-11px — so the feed reads with a clear top-to-bottom
+  hierarchy (16 → 14 → 12.5 px) instead of a flat cluster of tiny text.
+
 ## [0.4.2] - 2026-07-07
 
 ### Fixed
@@ -179,7 +190,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.3
 [0.4.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.2
 [0.4.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.1
 [0.4.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.0
