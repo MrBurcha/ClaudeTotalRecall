@@ -7,6 +7,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-07
+
+### Changed
+
+- **Development tooling hardened** (no user-facing changes): stricter ESLint (React-hooks rules and
+  type-aware promise checks, with warnings failing CI), Prettier enforced in CI, code-coverage
+  measurement with a threshold on the core, and new automated tests for the CLI and UI components.
+
 ## [0.4.0] - 2026-07-07
 
 ### Added
@@ -162,7 +170,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.1
 [0.4.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.0
 [0.3.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.3.0
 [0.2.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.2.0
