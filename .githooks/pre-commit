@@ -1,0 +1,24 @@
+#!/bin/sh
+# Pre-commit: keep staged files Prettier-formatted, so an unformatted file can't
+# reach main and break the CI `format:check` job. Scoped to staged files (a fast
+# mirror of `npm run format:check`). Enabled automatically by the "prepare" npm
+# script, which points core.hooksPath at this directory on install.
+
+# Nothing staged (added/copied/modified)? Nothing to check.
+git diff --cached --name-only --diff-filter=ACM | grep -q . || exit 0
+
+# Prefer the repo-local Prettier; fall back to npx without triggering a download.
+if [ -x node_modules/.bin/prettier ]; then
+  prettier=node_modules/.bin/prettier
+else
+  prettier="npx --no-install prettier"
+fi
+
+# --ignore-unknown lets Prettier skip files it can't parse (images, binaries, …).
+# -z / -0 keeps paths with spaces intact.
+if ! git diff --cached --name-only --diff-filter=ACM -z | xargs -0 $prettier --check --ignore-unknown; then
+  echo "" >&2
+  echo "✖ Prettier: some staged files above are not formatted." >&2
+  echo "  Fix them with: npm run format" >&2
+  exit 1
+fi
