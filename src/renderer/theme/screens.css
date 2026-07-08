@@ -514,6 +514,11 @@
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
 }
+/* Collapsed-state "last change …" peek (#39): mirrors .sync-bar__meta so the
+   Recent activity header echoes the up-to-date card's state/meta stacking. */
+.advanced__summary {
+  font-size: var(--text-xs);
+}
 .advanced__body {
   padding: 0 var(--space-5) var(--space-5);
 }

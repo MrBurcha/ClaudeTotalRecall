@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import type { FileChange, HistoryEntry } from '../../../core/types'
@@ -7,6 +7,11 @@ import { FileTag } from '../../components/Badge'
 import { Icon, type IconName } from '../../components/Icon'
 import { api } from '../../state/api'
 import { useAppState } from '../../state/store'
+import {
+  type ActivityLocation,
+  type LastActivitySummary,
+  summarizeLastActivity,
+} from './lastActivity'
 import { relativeParts } from './relativeTime'
 
 /**
@@ -83,6 +88,35 @@ function timeText(at: string, now: number, t: TFunction): string {
   if (Number.isNaN(then)) return ''
   const p = relativeParts(then, now)
   return p.key === 'now' ? t('relativeTime.now') : t(`relativeTime.${p.key}`, { count: p.count })
+}
+
+/** Friendly name for where the last change landed; null for a mixed change set. */
+function locationLabel(loc: ActivityLocation, t: TFunction): string | null {
+  switch (loc.kind) {
+    case 'project':
+      return loc.name
+    case 'user':
+      return t('activity.bucketUser')
+    case 'pinned':
+      return t('activity.bucketPinned')
+    case 'mixed':
+      return null
+  }
+}
+
+/**
+ * Collapsed-state one-liner shown under the "Recent activity" header: the last
+ * time real memory changed, how many files, and where — so the user can tell at
+ * a glance whether it's worth expanding the timeline (#39).
+ */
+function summaryText(s: LastActivitySummary, now: number, t: TFunction): string {
+  const bits = [
+    t('activity.lastChange', { time: timeText(s.at, now, t) }),
+    t('activity.files', { count: s.fileCount }),
+  ]
+  const where = locationLabel(s.location, t)
+  if (where) bits.push(where)
+  return bits.join(' · ')
 }
 
 /**
@@ -174,6 +208,7 @@ export function RecentActivity(): JSX.Element {
   const [open, setOpen] = useState(false)
   const [entries, setEntries] = useState<HistoryEntry[]>([])
   const [now, setNow] = useState(() => Date.now())
+  const summary = useMemo(() => summarizeLastActivity(entries), [entries])
 
   useEffect(() => {
     let alive = true
@@ -199,8 +234,13 @@ export function RecentActivity(): JSX.Element {
     <section className="advanced">
       <button className="advanced__head" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <Icon name={open ? 'chevron-down' : 'chevron-right'} size={16} />
-        <span className="grow">
+        <span className="grow stack stack-1">
           <span className="advanced__title">{t('activity.title')}</span>
+          {/* Collapsed only: a peek at the last real change, so the user can tell
+              whether it's worth expanding. Hidden once open — the timeline says it. */}
+          {!open && summary && (
+            <span className="advanced__summary muted mono">{summaryText(summary, now, t)}</span>
+          )}
         </span>
       </button>
 

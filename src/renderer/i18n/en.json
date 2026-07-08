@@ -70,7 +70,7 @@
       "toResolve_other": "{{count}} files to resolve",
       "syncing": "putting everything in order…",
       "offline": "offline, retrying on its own",
-      "lastSynced": "last synced {{time}}",
+      "lastChecked": "last checked {{time}}",
       "autoOn": "automatic on",
       "autoOff": "automatic off"
     },
@@ -416,6 +416,7 @@
   "activity": {
     "title": "Recent activity",
     "empty": "No activity yet.",
+    "lastChange": "last change {{time}}",
     "outgoingLocal": "Synced from this machine",
     "outgoingRemote": "Synced from another machine",
     "outgoingRemoteNamed": "Synced from {{machine}}",
