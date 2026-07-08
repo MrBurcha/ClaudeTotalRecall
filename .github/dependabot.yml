@@ -1,0 +1,22 @@
+# Dependabot version updates. Security alerts/updates are enabled separately in
+# the repo's security settings.
+version: 2
+updates:
+  # npm dependencies (app + CLI + toolchain). Minor/patch updates are grouped into
+  # a single weekly PR to keep the noise down; majors come as their own PRs.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Keep the GitHub Actions used by CI and the release workflow up to date.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
