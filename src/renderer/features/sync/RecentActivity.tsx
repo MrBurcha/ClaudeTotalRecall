@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import type { FileChange, HistoryEntry } from '../../../core/types'
-import { parseMemoryPath } from '../../../core/memoryPath'
+import { isStructuralNoise, parseMemoryPath } from '../../../core/memoryPath'
 import { FileTag } from '../../components/Badge'
 import { Icon, type IconName } from '../../components/Icon'
 import { api } from '../../state/api'
@@ -85,16 +85,25 @@ function timeText(at: string, now: number, t: TFunction): string {
   return p.key === 'now' ? t('relativeTime.now') : t(`relativeTime.${p.key}`, { count: p.count })
 }
 
-/** Secondary line: who it came from (incoming) / which other machine (outgoing) + file count. */
-function metaBits(e: HistoryEntry, currentMachine: string | null, t: TFunction): string {
+/**
+ * Secondary line: who it came from (incoming) / which other machine (outgoing) +
+ * file count. `fileCount` is the count of user-visible files (structural `.gitkeep`
+ * placeholders already dropped), so it matches the list below.
+ */
+function metaBits(
+  e: HistoryEntry,
+  currentMachine: string | null,
+  fileCount: number,
+  t: TFunction,
+): string {
   const bits: string[] = []
   if (e.type === 'incoming') {
     const from = e.fromMachines ?? []
     if (from.length) bits.push(t('activity.fromMachines', { machines: from.join(', ') }))
-    if (e.files > 0) bits.push(t('activity.files', { count: e.files }))
+    if (fileCount > 0) bits.push(t('activity.files', { count: fileCount }))
   } else if (e.type === 'outgoing') {
     if (e.machineId && e.machineId !== currentMachine) bits.push(e.machineId)
-    if (e.files > 0) bits.push(t('activity.files', { count: e.files }))
+    if (fileCount > 0) bits.push(t('activity.files', { count: fileCount }))
   } else if (e.machineId) {
     bits.push(e.machineId)
   }
@@ -202,13 +211,17 @@ export function RecentActivity(): JSX.Element {
           ) : (
             <ul className="folder-list">
               {entries.map((e) => {
+                // Hide `.gitkeep` placeholders: the first sync deletes the ones
+                // seeding the empty memories/ dirs, which would otherwise read as
+                // a bunch of spurious "removed" rows.
+                const visible = e.changes.filter((c) => !isStructuralNoise(c.path))
                 // File details only for the sync verbs: config commits also touch
                 // claudetr.json, which would be noise here.
                 const showFiles =
-                  (e.type === 'outgoing' || e.type === 'incoming') && e.changes.length > 0
-                const shown = e.changes.slice(0, FILE_CAP)
-                const overflow = e.changes.length - shown.length
-                const meta = metaBits(e, machineId, t)
+                  (e.type === 'outgoing' || e.type === 'incoming') && visible.length > 0
+                const shown = visible.slice(0, FILE_CAP)
+                const overflow = visible.length - shown.length
+                const meta = metaBits(e, machineId, visible.length, t)
                 return (
                   <li key={e.hash} className="folder-row">
                     <div className="folder-row__main">

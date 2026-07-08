@@ -48,3 +48,13 @@ export function parseMemoryPath(repoRelPath: string): MemoryLocation {
       return unknown
   }
 }
+
+/**
+ * True for repo-structure placeholders that aren't real memory content — the
+ * `.gitkeep` files that seed the empty `memories/**` dirs. The activity feed
+ * hides them so the first sync doesn't read as "removed a bunch of files".
+ */
+export function isStructuralNoise(repoRelPath: string): boolean {
+  const path = repoRelPath.replace(/\\/g, '/')
+  return path === '.gitkeep' || path.endsWith('/.gitkeep')
+}
