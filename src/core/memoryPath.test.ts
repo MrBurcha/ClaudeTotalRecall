@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseMemoryPath } from './memoryPath'
+import { isStructuralNoise, parseMemoryPath } from './memoryPath'
 
 describe('parseMemoryPath', () => {
   describe('project bucket', () => {
@@ -86,5 +86,25 @@ describe('parseMemoryPath', () => {
       slot: 'memory',
       rest: 'foo.md',
     })
+  })
+})
+
+describe('isStructuralNoise', () => {
+  it.each([
+    'memories/user/commands/.gitkeep',
+    'memories/projects/demo/memory/.gitkeep',
+    '.gitkeep',
+    'memories\\user\\agents\\.gitkeep',
+  ])('flags .gitkeep placeholders (%j)', (p) => {
+    expect(isStructuralNoise(p)).toBe(true)
+  })
+
+  it.each([
+    'memories/user/CLAUDE.md',
+    'memories/projects/demo/memory/foo.md',
+    'memories/user/commands/gitkeep.md',
+    '.gitkeeper',
+  ])('leaves real files alone (%j)', (p) => {
+    expect(isStructuralNoise(p)).toBe(false)
   })
 })

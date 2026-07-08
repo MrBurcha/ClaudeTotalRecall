@@ -7,6 +7,15 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-07-07
+
+### Fixed
+
+- **Recent activity hides `.gitkeep` placeholders** (#8): the empty `memories/**` dirs are seeded
+  with `.gitkeep` files that the first sync then deletes; the feed was listing those deletions as
+  spurious "removed" rows and inflating the file count. They are now filtered out, so an entry shows
+  only real memory files (e.g. "2 files" instead of "5").
+
 ## [0.4.1] - 2026-07-07
 
 ### Changed
@@ -170,7 +179,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.2
 [0.4.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.1
 [0.4.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.0
 [0.3.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.3.0
