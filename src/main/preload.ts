@@ -20,7 +20,7 @@ import type {
   RegisterResult,
   IncomingResult,
 } from '../core/service'
-import type { DiscoveryProposal, MachineMappingProposal } from '../core/discovery'
+import type { DiscoveryProposal, MachineMappingProposal, ScannedProject } from '../core/discovery'
 
 /**
  * Resultado de ejecutar un Plan. Si el disco cambió desde el preview, el core
@@ -73,6 +73,13 @@ const api = {
     ipcRenderer.invoke('project:proposeAdoption', name) as Promise<MachineMappingProposal>,
   projectApplyMapping: (input: ApplyMachineMappingInput) =>
     ipcRenderer.invoke('project:applyMapping', input) as Promise<{ slots: number }>,
+  projectScan: () => ipcRenderer.invoke('project:scan') as Promise<ScannedProject[]>,
+  projectApplyScan: (inputs: ApplyDiscoveryInput[]) =>
+    ipcRenderer.invoke('project:applyScan', inputs) as Promise<{
+      projects: number
+      slots: number
+      created: number
+    }>,
 
   filePreview: (repoRelPath: string) =>
     ipcRenderer.invoke('file:preview', repoRelPath) as Promise<FilePreview>,

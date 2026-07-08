@@ -124,6 +124,10 @@ export function registerIpc(scheduler: SyncScheduler): void {
   handle('project:applyMapping', (_e, input: svc.ApplyMachineMappingInput) =>
     svc.applyMachineMapping(adapter(), input),
   )
+  handle('project:scan', () => svc.scanProjects(adapter()))
+  handle('project:applyScan', (_e, inputs: svc.ApplyDiscoveryInput[]) =>
+    svc.applyScan(adapter(), inputs),
+  )
 
   // File preview (Recent activity → open a file's content in a modal, #43).
   handle('file:preview', (_e, repoRelPath: string) => svc.filePreview(adapter(), repoRelPath))

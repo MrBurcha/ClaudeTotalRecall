@@ -370,6 +370,36 @@
       "empty": "No hay nada para configurar — cada fuente ya tiene una ruta acá.",
       "done_one": "Se configuró {{count}} fuente en esta máquina.",
       "done_other": "Se configuraron {{count}} fuentes en esta máquina."
+    },
+    "new": {
+      "title": "Agregar un proyecto",
+      "scan": "Escanear mis proyectos de Claude",
+      "scanHint": "Encontrá proyectos en ~/.claude/projects y crealos en masa.",
+      "folder": "Elegir una carpeta",
+      "folderHint": "Elegí una carpeta y descubrí sus fuentes de memoria.",
+      "empty": "Crear vacío",
+      "emptyHint": "Crear un proyecto sin fuentes y configurarlo después."
+    },
+    "scan": {
+      "title": "Escanear proyectos de Claude",
+      "scanning": "Escaneando ~/.claude/projects…",
+      "none": "No se encontraron proyectos en ~/.claude/projects.",
+      "ready": "Listos para sincronizar",
+      "activate": "Sin memoria todavía",
+      "activateHint": "Tildar estos crea una carpeta memory/ y empieza a sincronizarla.",
+      "synced": "Ya sincronizados acá",
+      "alreadySynced": "ya sincronizado",
+      "willActivate": "va a crear memory/",
+      "existsInConfig": "se suma a un proyecto existente",
+      "create": "Crear proyectos",
+      "created_one": "Se creó {{count}} proyecto.",
+      "created_other": "Se crearon {{count}} proyectos.",
+      "nameLabel": "Nombre del proyecto",
+      "include": "Incluir",
+      "selectOne": "Elegí al menos un proyecto.",
+      "dupeName": "Dos proyectos seleccionados comparten el nombre \"{{name}}\".",
+      "pickInstead": "Elegir una carpeta",
+      "createEmptyInstead": "Crear vacío"
     }
   },
   "conflicts": {
