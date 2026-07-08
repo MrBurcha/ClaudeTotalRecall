@@ -7,6 +7,7 @@ import { FileTag } from '../../components/Badge'
 import { Icon, type IconName } from '../../components/Icon'
 import { api } from '../../state/api'
 import { useAppState } from '../../state/store'
+import { useActions } from '../../state/useActions'
 import {
   type ActivityLocation,
   type LastActivitySummary,
@@ -150,7 +151,7 @@ const FILE_CAP = 8
 interface FileGroup {
   key: string
   heading: string
-  files: { status: FileChange['status']; leaf: string }[]
+  files: { status: FileChange['status']; leaf: string; path: string }[]
 }
 
 /**
@@ -191,7 +192,7 @@ function groupChanges(changes: FileChange[], t: TFunction): FileGroup[] {
       g = { key, heading, files: [] }
       groups.set(key, g)
     }
-    g.files.push({ status: c.status, leaf })
+    g.files.push({ status: c.status, leaf, path: c.path })
   }
   return [...groups.values()]
 }
@@ -205,6 +206,7 @@ function groupChanges(changes: FileChange[], t: TFunction): FileGroup[] {
 export function RecentActivity(): JSX.Element {
   const { t } = useTranslation()
   const { machineId, syncEngine } = useAppState()
+  const actions = useActions()
   const [open, setOpen] = useState(false)
   const [entries, setEntries] = useState<HistoryEntry[]>([])
   const [now, setNow] = useState(() => Date.now())
@@ -279,7 +281,20 @@ export function RecentActivity(): JSX.Element {
                               {g.files.map((f, i) => (
                                 <li key={`${f.leaf}:${i}`} className="activity-file">
                                   <FileTag status={f.status} />
-                                  <span className="mono truncate">{f.leaf}</span>
+                                  {/* Click a file to preview its content (#43). */}
+                                  <button
+                                    type="button"
+                                    className="activity-file__link mono truncate"
+                                    onClick={() =>
+                                      actions.openModal({
+                                        kind: 'file-preview',
+                                        path: f.path,
+                                        name: f.leaf,
+                                      })
+                                    }
+                                  >
+                                    {f.leaf}
+                                  </button>
                                 </li>
                               ))}
                             </ul>

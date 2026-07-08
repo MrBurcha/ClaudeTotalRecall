@@ -551,6 +551,9 @@
 .modal--sm {
   width: min(440px, 100%);
 }
+.modal--lg {
+  width: min(920px, 100%);
+}
 @keyframes modal-in {
   from {
     opacity: 0;

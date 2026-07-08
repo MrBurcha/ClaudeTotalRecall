@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
 import { createPlatformAdapter } from '../platform'
 import { AppError, encodeAppError } from '../core/errors'
 import { PlanDriftError } from '../core/plan'
@@ -113,6 +113,22 @@ export function registerIpc(scheduler: SyncScheduler): void {
       defaultPath: a.claudeHome(),
     })
     return r.canceled || r.filePaths.length === 0 ? null : r.filePaths[0]
+  })
+
+  // File preview (Recent activity → open a file's content in a modal, #43).
+  handle('file:preview', (_e, repoRelPath: string) => svc.filePreview(adapter(), repoRelPath))
+  // Reveal the file's real source in the OS file manager. The path is re-derived
+  // server-side from the repo-relative path, never taken from the renderer.
+  handle('file:reveal', async (_e, repoRelPath: string) => {
+    const path = await svc.resolveSourcePath(adapter(), repoRelPath)
+    if (!path) {
+      throw new AppError(
+        'preview.sourceUnavailable',
+        'This file has no source on this machine to open.',
+      )
+    }
+    shell.showItemInFolder(path)
+    return true
   })
 
   // Pinned files (global pinpoint files, outside any project)

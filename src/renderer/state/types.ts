@@ -38,6 +38,7 @@ export type ModalDescriptor =
   | { kind: 'plan-drift'; verb: Verb; planId: string; drifted: PlanAction[] }
   | { kind: 'project-create' }
   | { kind: 'about' }
+  | { kind: 'file-preview'; path: string; name: string }
 
 /** In-progress sync operation; feeds the constellation's animated state. */
 export interface ActiveOp {

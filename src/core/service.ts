@@ -5,6 +5,7 @@ import type { PlatformAdapter } from '../platform'
 import { loadActivityLog, recordIncoming, seedActivityHead } from './activityLog'
 import { loadConfig, saveConfig } from './config'
 import { AppError } from './errors'
+import { readMemoryFilePreview } from './filePreview'
 import { Git } from './git'
 import { classifyCommit } from './history'
 import {
@@ -14,11 +15,12 @@ import {
   saveLocalState,
 } from './localState'
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
-import { machineSyncedPaths, pathsCollide } from './resolve'
+import { machinePathForLogical, machineSyncedPaths, pathsCollide } from './resolve'
 import {
   emptyConfig,
   type Config,
   type FileChange,
+  type FilePreview,
   type HistoryEntry,
   type Machine,
   type Plan,
@@ -204,6 +206,43 @@ async function commitConfigChange(
 export async function currentMachineId(adapter: PlatformAdapter): Promise<string | null> {
   const local = await loadLocalState(adapter)
   return local?.machineId ?? null
+}
+
+/**
+ * Reads a memories file from the working copy for the preview modal (#43) and
+ * resolves its real path on this machine (for the "reveal in file manager"
+ * button). Content always comes from the synced working copy, never the machine
+ * source, so secrets that never travel can't be surfaced.
+ */
+export async function filePreview(
+  adapter: PlatformAdapter,
+  repoRelPath: string,
+): Promise<FilePreview> {
+  const preview = await readMemoryFilePreview(workingCopyDir(adapter), repoRelPath)
+  const sourcePath = await resolveSourcePath(adapter, repoRelPath)
+  return { ...preview, sourcePath }
+}
+
+/**
+ * The real path of a memories file on this machine, if it's configured here and
+ * present on disk; otherwise null. Re-derived server-side so a reveal request
+ * can never point at an arbitrary path supplied by the renderer.
+ */
+export async function resolveSourcePath(
+  adapter: PlatformAdapter,
+  repoRelPath: string,
+): Promise<string | null> {
+  const machineId = await currentMachineId(adapter)
+  if (!machineId) return null
+  let config: Config
+  try {
+    config = await loadRepoConfig(adapter)
+  } catch {
+    return null
+  }
+  const path = machinePathForLogical(repoRelPath, config, machineId, adapter)
+  if (!path) return null
+  return (await pathExists(path)) ? path : null
 }
 
 // Project and slot names are path segments in the repo

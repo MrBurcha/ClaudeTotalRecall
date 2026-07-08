@@ -198,6 +198,9 @@
     "skip": "omite"
   },
   "errors": {
+    "preview": {
+      "sourceUnavailable": "Este archivo no tiene un origen en esta máquina para abrir."
+    },
     "machine": {
       "invalidName": "Nombre de máquina inválido.",
       "notRegistered": "La máquina no está registrada.",
@@ -438,6 +441,21 @@
     "files_one": "{{count}} archivo",
     "files_other": "{{count}} archivos",
     "moreFiles": "+{{count}} más"
+  },
+  "preview": {
+    "rendererAria": "Renderizador de la vista previa",
+    "kind": {
+      "markdown": "Markdown",
+      "json": "JSON",
+      "properties": "Properties",
+      "text": "Texto plano"
+    },
+    "openLocation": "Abrir ubicación",
+    "removed": "Este archivo se eliminó en este cambio — sin vista previa.",
+    "binary": "Archivo binario — sin vista previa de texto.",
+    "empty": "Este archivo está vacío.",
+    "truncated": "Archivo grande — se muestra solo la primera parte.",
+    "parseError": "JSON inválido — se muestra el texto crudo."
   },
   "fileTag": {
     "added": "Agregado",

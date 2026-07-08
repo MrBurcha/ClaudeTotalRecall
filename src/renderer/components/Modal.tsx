@@ -7,8 +7,14 @@ interface ModalProps {
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
-  size?: 'md' | 'sm'
+  size?: 'md' | 'sm' | 'lg'
   closeOnBackdrop?: boolean
+}
+
+const SIZE_CLASS: Record<NonNullable<ModalProps['size']>, string> = {
+  md: 'modal',
+  sm: 'modal modal--sm',
+  lg: 'modal modal--lg',
 }
 
 export function Modal({
@@ -21,7 +27,7 @@ export function Modal({
 }: ModalProps): JSX.Element {
   return (
     <Overlay onClose={onClose} closeOnBackdrop={closeOnBackdrop}>
-      <div className={size === 'sm' ? 'modal modal--sm' : 'modal'} role="dialog" aria-modal="true">
+      <div className={SIZE_CLASS[size]} role="dialog" aria-modal="true">
         <div className="modal__head">
           <div className="row between row-nowrap">
             <h2 className="modal__title grow">{title}</h2>
