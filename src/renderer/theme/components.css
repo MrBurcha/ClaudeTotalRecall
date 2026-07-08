@@ -497,8 +497,8 @@
   align-items: center;
   gap: 6px;
   flex: none;
-  min-width: 88px;
-  font-size: var(--text-xs);
+  min-width: 100px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 .file-tag__dot {

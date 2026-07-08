@@ -181,9 +181,9 @@
   gap: 3px;
 }
 .activity-group__head {
-  font-size: var(--text-xs);
+  font-size: var(--text-md);
   font-weight: var(--weight-medium);
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .activity-group__files {
   list-style: none;
@@ -504,13 +504,14 @@
   color: var(--text);
   cursor: pointer;
   text-align: left;
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   transition: background var(--dur-fast);
 }
 .advanced__head:hover {
   background: var(--panel-2);
 }
 .advanced__title {
+  font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
 }
 .advanced__body {
