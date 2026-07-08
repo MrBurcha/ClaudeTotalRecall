@@ -73,7 +73,9 @@ describe('runSyncCycle', () => {
     expect(out2.kind).toBe('synced')
 
     expect(await readFile(join(home2, '.claude', 'CLAUDE.md'), 'utf8')).toBe('memoria de m1\n')
-    expect(await readFile(join(home2, '.claude', 'commands', 'deploy.md'), 'utf8')).toBe('deploy cmd\n')
+    expect(await readFile(join(home2, '.claude', 'commands', 'deploy.md'), 'utf8')).toBe(
+      'deploy cmd\n',
+    )
 
     // The repo was NOT emptied: a fresh clone of the remote still has the memories.
     const a3 = adapterFor(join(base, 'home3'))
@@ -128,7 +130,17 @@ describe('runSyncCycle', () => {
     const wc = workingCopyDir(a1)
     await writeFile(join(wc, `${COMMANDS}/extra.md`), 'extra\n')
     await run('git', ['-C', wc, 'add', '-A'])
-    await run('git', ['-C', wc, '-c', 'user.email=x@y', '-c', 'user.name=x', 'commit', '-m', 'sin pushear'])
+    await run('git', [
+      '-C',
+      wc,
+      '-c',
+      'user.email=x@y',
+      '-c',
+      'user.name=x',
+      'commit',
+      '-m',
+      'sin pushear',
+    ])
 
     const out = await runSyncCycle(a1) // no machine changes ⇒ else-branch
     expect(out.kind).toBe('synced')

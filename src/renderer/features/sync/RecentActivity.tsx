@@ -233,7 +233,9 @@ export function RecentActivity(): JSX.Element {
                           </li>
                         ))}
                         {overflow > 0 && (
-                          <li className="muted mono">{t('activity.moreFiles', { count: overflow })}</li>
+                          <li className="muted mono">
+                            {t('activity.moreFiles', { count: overflow })}
+                          </li>
                         )}
                       </ul>
                     )}

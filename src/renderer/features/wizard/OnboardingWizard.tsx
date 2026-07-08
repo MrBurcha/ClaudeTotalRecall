@@ -12,7 +12,15 @@ import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 import { useWizard } from './useWizard'
 
-function StepHeader({ icon, title, sub }: { icon: IconName; title: string; sub: string }): JSX.Element {
+function StepHeader({
+  icon,
+  title,
+  sub,
+}: {
+  icon: IconName
+  title: string
+  sub: string
+}): JSX.Element {
   return (
     <div className="stack-2">
       <div className="wizard__step-icon">
@@ -32,7 +40,9 @@ function Rail(): JSX.Element {
         const cls = i < index ? 'is-done' : i === index ? 'is-current' : 'is-pending'
         return (
           <li key={s.key} className={`step-rail__item ${cls}`}>
-            <span className="step-rail__dot">{i < index ? <Icon name="check" size={13} /> : i + 1}</span>
+            <span className="step-rail__dot">
+              {i < index ? <Icon name="check" size={13} /> : i + 1}
+            </span>
             <span className="step-rail__label">{s.label}</span>
           </li>
         )
@@ -47,7 +57,11 @@ function PreflightPanel(): JSX.Element {
   const actions = useActions()
   return (
     <div className="stack">
-      <StepHeader icon="check" title={t('wizard.preflight.title')} sub={t('wizard.preflight.sub')} />
+      <StepHeader
+        icon="check"
+        title={t('wizard.preflight.title')}
+        sub={t('wizard.preflight.sub')}
+      />
       <ul className="check-list">
         {(preflight?.checks ?? []).map((c) => (
           <li key={c.name} className="check-row">
@@ -57,13 +71,18 @@ function PreflightPanel(): JSX.Element {
                 <b className="mono">{c.name}</b>
                 {c.detail && (
                   <span className="muted">
-                    {c.detailKey ? t(`preflight.${c.detailKey}`, { ...c.params, defaultValue: c.detail }) : c.detail}
+                    {c.detailKey
+                      ? t(`preflight.${c.detailKey}`, { ...c.params, defaultValue: c.detail })
+                      : c.detail}
                   </span>
                 )}
               </div>
               {!c.ok && c.fix && (
                 <div className="muted mono check-fix">
-                  → {c.fixKey ? t(`preflight.${c.fixKey}`, { ...c.params, defaultValue: c.fix }) : c.fix}
+                  →{' '}
+                  {c.fixKey
+                    ? t(`preflight.${c.fixKey}`, { ...c.params, defaultValue: c.fix })
+                    : c.fix}
                 </div>
               )}
             </div>
@@ -91,7 +110,11 @@ function ConnectPanel(): JSX.Element {
     })
   return (
     <div className="stack">
-      <StepHeader icon="git-branch" title={t('wizard.connect.title')} sub={t('wizard.connect.sub')} />
+      <StepHeader
+        icon="git-branch"
+        title={t('wizard.connect.title')}
+        sub={t('wizard.connect.sub')}
+      />
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -110,7 +133,12 @@ function ConnectPanel(): JSX.Element {
         <span className="muted cluster">
           <Icon name="lock" size={15} /> {t('wizard.connect.privacyNote')}
         </span>
-        <Button variant="primary" icon="git-branch" disabled={busy || !remote.trim()} onClick={connect}>
+        <Button
+          variant="primary"
+          icon="git-branch"
+          disabled={busy || !remote.trim()}
+          onClick={connect}
+        >
           {t('common.connect')}
         </Button>
       </div>
@@ -130,7 +158,11 @@ function RegisterPanel(): JSX.Element {
     })
   return (
     <div className="stack">
-      <StepHeader icon="monitor" title={t('wizard.register.title')} sub={t('wizard.register.sub')} />
+      <StepHeader
+        icon="monitor"
+        title={t('wizard.register.title')}
+        sub={t('wizard.register.sub')}
+      />
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -159,9 +191,17 @@ function FirstProjectPanel(): JSX.Element {
   const actions = useActions()
   return (
     <div className="stack">
-      <StepHeader icon="folder" title={t('wizard.firstProject.title')} sub={t('wizard.firstProject.sub')} />
+      <StepHeader
+        icon="folder"
+        title={t('wizard.firstProject.title')}
+        sub={t('wizard.firstProject.sub')}
+      />
       <div className="row">
-        <Button variant="primary" icon="plus" onClick={() => actions.openModal({ kind: 'project-create' })}>
+        <Button
+          variant="primary"
+          icon="plus"
+          onClick={() => actions.openModal({ kind: 'project-create' })}
+        >
           {t('wizard.firstProject.createProject')}
         </Button>
         <Button
@@ -224,7 +264,9 @@ export function OnboardingWizard(): JSX.Element {
             <span className="brand__tag">{t('wizard.brandTag')}</span>
           </div>
           <span className="spacer" />
-          {dismissable && <IconButton icon="x" label={t('wizard.closeAria')} onClick={actions.closeWizard} />}
+          {dismissable && (
+            <IconButton icon="x" label={t('wizard.closeAria')} onClick={actions.closeWizard} />
+          )}
         </div>
         <Rail />
         <div className="wizard__body">

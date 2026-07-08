@@ -58,9 +58,7 @@ export function onboardingStep(
  * Do we need to hijack the user with the wizard? 'first-project' does NOT block
  * (the app can be used without projects), so it doesn't count.
  */
-export function needsOnboarding(
-  s: Pick<AppState, 'preflight' | 'config' | 'machineId'>,
-): boolean {
+export function needsOnboarding(s: Pick<AppState, 'preflight' | 'config' | 'machineId'>): boolean {
   const step = onboardingStep(s)
   return step === 'preflight' || step === 'connect' || step === 'register'
 }

@@ -15,9 +15,11 @@ export function CommandPalette(): JSX.Element | null {
   const { open, query, index } = state.palette
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // i18n.language in the deps so titles/groups re-translate when the language changes.
   const results: Command[] = useMemo(
     () => filterCommands(query, buildCommands(state, actions, t)),
+    // i18n.language forces a recompute so titles/groups re-translate on locale change;
+    // eslint can't see that `t` is language-bound, hence this intentional extra dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [query, state, actions, t, i18n.language],
   )
 
@@ -67,7 +69,9 @@ export function CommandPalette(): JSX.Element | null {
           <Kbd>Esc</Kbd>
         </div>
         <div className="palette__list">
-          {results.length === 0 && <div className="palette__group muted">{t('palette.noResults')}</div>}
+          {results.length === 0 && (
+            <div className="palette__group muted">{t('palette.noResults')}</div>
+          )}
           {results.map((cmd, i) => {
             const header = cmd.group !== lastGroup ? cmd.group : null
             lastGroup = cmd.group

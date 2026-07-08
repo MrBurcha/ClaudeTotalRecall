@@ -41,8 +41,7 @@ const api = {
   repoStatus: () => ipcRenderer.invoke('repo:status') as Promise<RepoStatus>,
   repoHistory: (limit?: number) =>
     ipcRenderer.invoke('repo:history', limit) as Promise<HistoryEntry[]>,
-  repoPull: () =>
-    ipcRenderer.invoke('repo:pull') as Promise<{ ok: boolean; conflicts: string[] }>,
+  repoPull: () => ipcRenderer.invoke('repo:pull') as Promise<{ ok: boolean; conflicts: string[] }>,
 
   machineRegister: (name?: string) =>
     ipcRenderer.invoke('machine:register', name) as Promise<RegisterResult>,
@@ -71,8 +70,7 @@ const api = {
   conflictList: () => ipcRenderer.invoke('conflict:list') as Promise<string[]>,
   conflictResolve: (file: string, side: 'local' | 'remote') =>
     ipcRenderer.invoke('conflict:resolve', { file, side }) as Promise<void>,
-  conflictComplete: () =>
-    ipcRenderer.invoke('conflict:complete') as Promise<{ pushed: boolean }>,
+  conflictComplete: () => ipcRenderer.invoke('conflict:complete') as Promise<{ pushed: boolean }>,
 
   // Auto-sync: estado actual (pull), cambio de prefs, disparo manual, y la
   // suscripción al push en tiempo real (devuelve una función para desuscribirse).

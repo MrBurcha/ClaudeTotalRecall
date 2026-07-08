@@ -27,7 +27,8 @@ function statusLabel(state: ReturnType<typeof useAppState>, t: TFunction): strin
 
 function lastSyncedText(at: number, now: number, t: TFunction): string {
   const p = relativeParts(at, now)
-  const time = p.key === 'now' ? t('relativeTime.now') : t(`relativeTime.${p.key}`, { count: p.count })
+  const time =
+    p.key === 'now' ? t('relativeTime.now') : t(`relativeTime.${p.key}`, { count: p.count })
   return t('home.meta.lastSynced', { time })
 }
 
@@ -68,10 +69,18 @@ export function SyncHome(): JSX.Element {
 
   const goResolve = (): void => {
     setAdvOpen(true)
-    requestAnimationFrame(() => advRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    requestAnimationFrame(() =>
+      advRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    )
   }
 
-  const dotTone = conflict ? 'danger' : tone === 'offline' ? 'warn' : syncEngine?.auto ? 'ok' : 'muted'
+  const dotTone = conflict
+    ? 'danger'
+    : tone === 'offline'
+      ? 'warn'
+      : syncEngine?.auto
+        ? 'ok'
+        : 'muted'
 
   return (
     <div className="view">
@@ -141,7 +150,12 @@ export function SyncHome(): JSX.Element {
 
       <RecentActivity />
 
-      <AdvancedSync ref={advRef} open={advOpen} onToggle={() => setAdvOpen((o) => !o)} files={files} />
+      <AdvancedSync
+        ref={advRef}
+        open={advOpen}
+        onToggle={() => setAdvOpen((o) => !o)}
+        files={files}
+      />
     </div>
   )
 }

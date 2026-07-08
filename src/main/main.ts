@@ -69,7 +69,7 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   // Linux/Windows muestran un menú nativo por defecto (File/Edit/View…) que no
   // aporta nada con chrome propio; lo removemos. En macOS el menú vive en la barra
   // global del sistema (Cmd+Q / Cmd+C/V), así que lo dejamos.

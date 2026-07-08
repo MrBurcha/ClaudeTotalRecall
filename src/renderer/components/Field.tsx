@@ -37,13 +37,7 @@ interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   error?: string
 }
 
-export function TextArea({
-  label,
-  hint,
-  error,
-  className,
-  ...rest
-}: TextAreaProps): JSX.Element {
+export function TextArea({ label, hint, error, className, ...rest }: TextAreaProps): JSX.Element {
   return (
     <label className="field">
       {label && <span className="field__label">{label}</span>}

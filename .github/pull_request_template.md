@@ -4,6 +4,6 @@
 
 ## Checklist
 
-- [ ] `npm run typecheck`, `npm run lint`, and `npm test` pass
+- [ ] `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run test:coverage` pass
 - [ ] If I touched the UI, I verified both locales (English and es-419)
 - [ ] I updated `CHANGELOG.md` under `[Unreleased]` if this change is user-facing

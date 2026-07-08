@@ -46,7 +46,9 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: background var(--dur-fast), color var(--dur-fast);
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast);
 }
 .titlebar__btn:hover {
   background: var(--panel-2);
@@ -117,7 +119,9 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   font-size: var(--text-md);
-  transition: background var(--dur-fast), color var(--dur-fast);
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast);
 }
 .nav-item:hover {
   background: var(--panel-2);
@@ -276,7 +280,9 @@
   color: var(--muted);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background var(--dur-fast), color var(--dur-fast);
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast);
 }
 .icon-btn:hover {
   background: var(--panel-2);
@@ -324,7 +330,9 @@
   font-size: var(--text-md);
   font-family: var(--font-sans);
   width: 100%;
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast);
 }
 .input:focus,
 .textarea:focus {
@@ -638,12 +646,7 @@
 
 /* ══ Skeleton ═════════════════════════════════════════════════════════════ */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--panel-2) 0%,
-    var(--panel-3) 50%,
-    var(--panel-2) 100%
-  );
+  background: linear-gradient(90deg, var(--panel-2) 0%, var(--panel-3) 50%, var(--panel-2) 100%);
   background-size: 200% 100%;
   border-radius: var(--radius-md);
   animation: shimmer 1.4s ease-in-out infinite;
@@ -708,7 +711,9 @@
   cursor: pointer;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  transition: background var(--dur-fast), color var(--dur-fast);
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast);
 }
 .segmented__item:hover {
   color: var(--text);

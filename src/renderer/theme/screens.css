@@ -17,7 +17,9 @@
   color: var(--muted);
   cursor: pointer;
   font-size: var(--text-sm);
-  transition: border-color var(--dur-fast), color var(--dur-fast);
+  transition:
+    border-color var(--dur-fast),
+    color var(--dur-fast);
 }
 .palette-hint:hover {
   border-color: var(--border-strong);
@@ -272,9 +274,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-6);
-  background:
-    radial-gradient(circle at 50% 28%, var(--radar) 0%, transparent 55%),
-    var(--bg);
+  background: radial-gradient(circle at 50% 28%, var(--radar) 0%, transparent 55%), var(--bg);
   animation: overlay-in var(--dur-slow) var(--ease-out);
 }
 .wizard__panel {
@@ -393,7 +393,9 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--panel);
-  transition: border-color var(--dur-base), background var(--dur-base);
+  transition:
+    border-color var(--dur-base),
+    background var(--dur-base);
 }
 .sync-bar--danger {
   border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
@@ -452,7 +454,9 @@
   border-radius: var(--radius-pill);
   background: var(--panel-3);
   border: 1px solid var(--border-strong);
-  transition: background var(--dur-fast), border-color var(--dur-fast);
+  transition:
+    background var(--dur-fast),
+    border-color var(--dur-fast);
 }
 .switch__thumb {
   position: absolute;
@@ -462,7 +466,9 @@
   height: 16px;
   border-radius: 50%;
   background: var(--muted);
-  transition: transform var(--dur-base) var(--ease-spring), background var(--dur-fast);
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    background var(--dur-fast);
 }
 .switch__input:checked + .switch__track {
   background: var(--accent-weak);

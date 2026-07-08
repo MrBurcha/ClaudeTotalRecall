@@ -30,7 +30,9 @@ function SyncKey({
         <Icon name={outgoing ? 'arrow-up' : 'arrow-down'} size={22} />
       </span>
       <span className="sync-key__text">
-        <span className="sync-key__title">{outgoing ? t('sync.outgoing') : t('sync.incoming')}</span>
+        <span className="sync-key__title">
+          {outgoing ? t('sync.outgoing') : t('sync.incoming')}
+        </span>
         <span className="sync-key__sub">{hint}</span>
       </span>
       <Kbd>{shortcut}</Kbd>

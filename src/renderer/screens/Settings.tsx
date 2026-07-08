@@ -27,7 +27,11 @@ export function Settings(): JSX.Element {
 
   return (
     <div className="view">
-      <ViewHeader eyebrow={t('settings.eyebrow')} title={t('settings.title')} sub={t('settings.sub')} />
+      <ViewHeader
+        eyebrow={t('settings.eyebrow')}
+        title={t('settings.title')}
+        sub={t('settings.sub')}
+      />
 
       <div className="card">
         <div className="card__head">
@@ -60,13 +64,18 @@ export function Settings(): JSX.Element {
                   <b className="mono">{c.name}</b>
                   {c.detail && (
                     <span className="muted">
-                      {c.detailKey ? t(`preflight.${c.detailKey}`, { ...c.params, defaultValue: c.detail }) : c.detail}
+                      {c.detailKey
+                        ? t(`preflight.${c.detailKey}`, { ...c.params, defaultValue: c.detail })
+                        : c.detail}
                     </span>
                   )}
                 </div>
                 {!c.ok && c.fix && (
                   <div className="muted mono check-fix">
-                    → {c.fixKey ? t(`preflight.${c.fixKey}`, { ...c.params, defaultValue: c.fix }) : c.fix}
+                    →{' '}
+                    {c.fixKey
+                      ? t(`preflight.${c.fixKey}`, { ...c.params, defaultValue: c.fix })
+                      : c.fix}
                   </div>
                 )}
               </div>
@@ -95,7 +104,12 @@ export function Settings(): JSX.Element {
               value={remote}
               onChange={(e) => setRemote(e.target.value)}
             />
-            <Button variant="primary" icon="git-branch" disabled={busy || !remote.trim()} onClick={connect}>
+            <Button
+              variant="primary"
+              icon="git-branch"
+              disabled={busy || !remote.trim()}
+              onClick={connect}
+            >
               {t('common.connect')}
             </Button>
           </div>

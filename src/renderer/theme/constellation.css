@@ -11,9 +11,7 @@
   width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(circle at 50% 46%, var(--radar) 0%, transparent 60%),
-    var(--panel);
+  background: radial-gradient(circle at 50% 46%, var(--radar) 0%, transparent 60%), var(--panel);
   overflow: hidden;
 }
 .constellation__svg {

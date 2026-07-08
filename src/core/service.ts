@@ -7,7 +7,12 @@ import { loadConfig, saveConfig } from './config'
 import { AppError } from './errors'
 import { Git } from './git'
 import { classifyCommit } from './history'
-import { ensureSettingsLocal, loadLocalState, loadSettingsLocal, saveLocalState } from './localState'
+import {
+  ensureSettingsLocal,
+  loadLocalState,
+  loadSettingsLocal,
+  saveLocalState,
+} from './localState'
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
 import { machineSyncedPaths, pathsCollide } from './resolve'
 import {
@@ -315,9 +320,13 @@ export async function removeProjectFolder(
 
 /** Deletes an entire project (all machines). */
 export async function deleteProject(adapter: PlatformAdapter, projectName: string): Promise<void> {
-  await commitConfigChange(adapter, `Claude Total Recall: delete project ${projectName}`, (config) => {
-    delete config.projects[projectName]
-  })
+  await commitConfigChange(
+    adapter,
+    `Claude Total Recall: delete project ${projectName}`,
+    (config) => {
+      delete config.projects[projectName]
+    },
+  )
 }
 
 /**
@@ -340,7 +349,9 @@ export async function renameProject(
         throw new AppError('project.notFound', `Project "${oldName}" not found.`, { name: oldName })
       if (oldName === to) return
       if (config.projects[to])
-        throw new AppError('project.exists', `A project named "${to}" already exists.`, { name: to })
+        throw new AppError('project.exists', `A project named "${to}" already exists.`, {
+          name: to,
+        })
       config.projects[to] = config.projects[oldName]
       delete config.projects[oldName]
       // Move the gathered folder so its files follow the new name (no orphans).

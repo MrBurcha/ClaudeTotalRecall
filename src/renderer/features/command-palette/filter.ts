@@ -17,9 +17,11 @@ export function scoreMatch(query: string, item: Rankable): number | null {
   const q = query.trim().toLowerCase()
   if (!q) return 0
   const title = item.title.toLowerCase()
-  const hay = [title, item.subtitle?.toLowerCase() ?? '', ...(item.keywords ?? []).map((k) => k.toLowerCase())].join(
-    ' ',
-  )
+  const hay = [
+    title,
+    item.subtitle?.toLowerCase() ?? '',
+    ...(item.keywords ?? []).map((k) => k.toLowerCase()),
+  ].join(' ')
   if (!hay.includes(q)) return null
   if (title.startsWith(q)) return 0
   if (new RegExp(`\\b${escapeRegExp(q)}`).test(title)) return 1

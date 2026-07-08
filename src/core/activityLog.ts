@@ -73,7 +73,10 @@ export async function recordIncoming(
  * Seeds `lastHead` without adding a record, so the FIRST incoming after
  * registration can already attribute its source (called from registerMachine).
  */
-export async function seedActivityHead(adapter: PlatformAdapter, head: string | null): Promise<void> {
+export async function seedActivityHead(
+  adapter: PlatformAdapter,
+  head: string | null,
+): Promise<void> {
   if (!head) return
   const log = await loadActivityLog(adapter)
   log.lastHead = head

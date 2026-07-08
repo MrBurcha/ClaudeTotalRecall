@@ -1,0 +1,9 @@
+node_modules/
+out/
+dist-cli/
+release/
+coverage/
+package-lock.json
+build/
+docs/screenshots/
+*.png

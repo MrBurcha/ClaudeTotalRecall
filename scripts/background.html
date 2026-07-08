@@ -20,93 +20,210 @@
         --eyebrow: #5b6480;
         --line: rgba(122, 138, 200, 0.5);
       }
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      html, body {
-        width: 640px; height: 500px; overflow: hidden;
-        font-family: -apple-system, "SF Pro Display", system-ui, "Segoe UI", Roboto,
-          "DejaVu Sans", sans-serif;
-        -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 640px;
+        height: 500px;
+        overflow: hidden;
+        font-family:
+          -apple-system, 'SF Pro Display', system-ui, 'Segoe UI', Roboto, 'DejaVu Sans', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
       }
       .stage {
-        position: relative; width: 640px; height: 500px;
-        background:
-          radial-gradient(120% 90% at 50% -10%, #10162b 0%, var(--bg-1) 38%, var(--bg-0) 78%);
-        color: var(--ink); overflow: hidden;
+        position: relative;
+        width: 640px;
+        height: 500px;
+        background: radial-gradient(
+          120% 90% at 50% -10%,
+          #10162b 0%,
+          var(--bg-1) 38%,
+          var(--bg-0) 78%
+        );
+        color: var(--ink);
+        overflow: hidden;
       }
 
       /* constellation + glows live behind everything */
-      .field { position: absolute; inset: 0; }
-      .glow {
-        position: absolute; width: 300px; height: 300px; border-radius: 50%;
-        transform: translate(-50%, -50%);
-        background: radial-gradient(circle,
-          rgba(107, 124, 255, 0.16) 0%, rgba(107, 124, 255, 0.06) 34%, transparent 66%);
+      .field {
+        position: absolute;
+        inset: 0;
       }
-      .glow--app  { left: 165px; top: 195px; }
-      .glow--apps { left: 475px; top: 195px; }
+      .glow {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(
+          circle,
+          rgba(107, 124, 255, 0.16) 0%,
+          rgba(107, 124, 255, 0.06) 34%,
+          transparent 66%
+        );
+      }
+      .glow--app {
+        left: 165px;
+        top: 195px;
+      }
+      .glow--apps {
+        left: 475px;
+        top: 195px;
+      }
 
       /* header */
       .eyebrow {
-        position: absolute; top: 34px; left: 0; right: 0;
-        display: flex; align-items: center; justify-content: center; gap: 12px;
-        font-size: 11px; font-weight: 600; letter-spacing: 0.42em;
-        text-transform: uppercase; color: var(--eyebrow); padding-left: 0.42em;
+        position: absolute;
+        top: 34px;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.42em;
+        text-transform: uppercase;
+        color: var(--eyebrow);
+        padding-left: 0.42em;
       }
-      .eyebrow .diamond { color: var(--accent); font-size: 9px; }
+      .eyebrow .diamond {
+        color: var(--accent);
+        font-size: 9px;
+      }
       .title {
-        position: absolute; top: 62px; left: 0; right: 0; text-align: center;
-        font-size: 27px; font-weight: 700; letter-spacing: -0.012em; color: var(--ink);
+        position: absolute;
+        top: 62px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 27px;
+        font-weight: 700;
+        letter-spacing: -0.012em;
+        color: var(--ink);
       }
-      .title .accent { color: var(--accent); }
+      .title .accent {
+        color: var(--accent);
+      }
 
       /* the sync path: a trail of round dots from the app icon toward Applications */
       .path {
-        position: absolute; top: 195px; left: 230px; width: 152px; height: 6px;
+        position: absolute;
+        top: 195px;
+        left: 230px;
+        width: 152px;
+        height: 6px;
         transform: translateY(-50%);
         background-image: radial-gradient(circle, var(--accent) 1.7px, transparent 2.3px);
-        background-size: 16px 6px; background-position: 0 50%; background-repeat: repeat-x;
+        background-size: 16px 6px;
+        background-position: 0 50%;
+        background-repeat: repeat-x;
         opacity: 0.9;
       }
       .chev {
-        position: absolute; top: 195px; left: 398px; transform: translate(-50%, -50%);
-        width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-        color: var(--accent); font-size: 26px; font-weight: 700; line-height: 1;
+        position: absolute;
+        top: 195px;
+        left: 398px;
+        transform: translate(-50%, -50%);
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent);
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1;
         background: radial-gradient(circle, #0c1226 0%, transparent 70%);
       }
 
       /* card */
       .card {
-        position: absolute; left: 40px; right: 40px; top: 306px; height: 166px;
-        border-radius: 18px; padding: 22px 26px;
+        position: absolute;
+        left: 40px;
+        right: 40px;
+        top: 306px;
+        height: 166px;
+        border-radius: 18px;
+        padding: 22px 26px;
         background: linear-gradient(180deg, rgba(124, 140, 220, 0.055), rgba(124, 140, 220, 0.02));
         border: 1px solid rgba(124, 140, 220, 0.14);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
       }
       .card__head {
-        display: flex; align-items: center; gap: 10px;
-        font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
         color: #cdd3e6;
       }
       .card__head .dot {
-        width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
         box-shadow: 0 0 10px rgba(107, 124, 255, 0.8);
       }
-      .card__body { margin-top: 11px; font-size: 14px; line-height: 1.5; color: var(--muted); }
-      .card__body b { color: #d7dcec; font-weight: 600; }
-      .steps { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
-      .step { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
-      .num {
-        flex: none; width: 22px; height: 22px; border-radius: 7px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 12px; font-weight: 700; color: var(--accent-soft);
-        background: rgba(107, 124, 255, 0.12); border: 1px solid rgba(107, 124, 255, 0.28);
+      .card__body {
+        margin-top: 11px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--muted);
       }
-      .step b { color: #e6e9f4; font-weight: 600; }
+      .card__body b {
+        color: #d7dcec;
+        font-weight: 600;
+      }
+      .steps {
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .num {
+        flex: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent-soft);
+        background: rgba(107, 124, 255, 0.12);
+        border: 1px solid rgba(107, 124, 255, 0.28);
+      }
+      .step b {
+        color: #e6e9f4;
+        font-weight: 600;
+      }
       .chip {
-        font-family: "SF Mono", ui-monospace, "DejaVu Sans Mono", "Noto Sans Mono", monospace;
-        font-size: 12px; color: #c6cdec; padding: 3px 8px; border-radius: 7px; margin-left: 8px;
+        font-family: 'SF Mono', ui-monospace, 'DejaVu Sans Mono', 'Noto Sans Mono', monospace;
+        font-size: 12px;
+        color: #c6cdec;
+        padding: 3px 8px;
+        border-radius: 7px;
+        margin-left: 8px;
         white-space: nowrap;
-        background: rgba(10, 14, 30, 0.6); border: 1px solid rgba(124, 140, 220, 0.16);
+        background: rgba(10, 14, 30, 0.6);
+        border: 1px solid rgba(124, 140, 220, 0.16);
       }
     </style>
   </head>
@@ -115,12 +232,22 @@
       <div class="field">
         <svg width="640" height="500" viewBox="0 0 640 500" fill="none">
           <!-- upper-left branch -->
-          <polyline points="70,72 152,122 132,196" stroke="#7a8ac8" stroke-width="1" opacity="0.5" />
+          <polyline
+            points="70,72 152,122 132,196"
+            stroke="#7a8ac8"
+            stroke-width="1"
+            opacity="0.5"
+          />
           <circle cx="70" cy="72" r="2.4" fill="#7a8ac8" opacity="0.6" />
           <circle cx="152" cy="122" r="3.2" fill="#9aa6d6" opacity="0.75" />
           <circle cx="132" cy="196" r="2" fill="#7a8ac8" opacity="0.7" />
           <!-- upper-right branch -->
-          <polyline points="560,80 484,124 590,205" stroke="#7a8ac8" stroke-width="1" opacity="0.5" />
+          <polyline
+            points="560,80 484,124 590,205"
+            stroke="#7a8ac8"
+            stroke-width="1"
+            opacity="0.5"
+          />
           <circle cx="560" cy="80" r="2.4" fill="#7a8ac8" opacity="0.6" />
           <circle cx="484" cy="124" r="3.2" fill="#9aa6d6" opacity="0.75" />
           <circle cx="590" cy="205" r="2.2" fill="#9aa6d6" opacity="0.6" />
@@ -140,10 +267,22 @@
 
       <div class="card">
         <div class="card__head"><span class="dot"></span>Doesn't open the first time?</div>
-        <div class="card__body">macOS blocks it because it isn't notarized. Do <b>either of these once</b>:</div>
+        <div class="card__body">
+          macOS blocks it because it isn't notarized. Do <b>either of these once</b>:
+        </div>
         <div class="steps">
-          <div class="step"><span class="num">1</span><span>System Settings › Privacy &amp; Security › <b>Open Anyway</b></span></div>
-          <div class="step"><span class="num">2</span><span>In Terminal:<span class="chip">xattr -cr "/Applications/Claude Total Recall.app"</span></span></div>
+          <div class="step">
+            <span class="num">1</span
+            ><span>System Settings › Privacy &amp; Security › <b>Open Anyway</b></span>
+          </div>
+          <div class="step">
+            <span class="num">2</span
+            ><span
+              >In Terminal:<span class="chip"
+                >xattr -cr "/Applications/Claude Total Recall.app"</span
+              ></span
+            >
+          </div>
         </div>
       </div>
     </div>

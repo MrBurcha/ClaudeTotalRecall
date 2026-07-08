@@ -57,14 +57,26 @@ function ActionRow({ action }: { action: PlanAction }): JSX.Element {
       </button>
       {open && hasDetails && (
         <div className="plan-row__details mono">
-          {action.from && <div>{t('planReview.from')}: {action.from}</div>}
-          {action.to && <div>{t('planReview.to')}: {action.to}</div>}
+          {action.from && (
+            <div>
+              {t('planReview.from')}: {action.from}
+            </div>
+          )}
+          {action.to && (
+            <div>
+              {t('planReview.to')}: {action.to}
+            </div>
+          )}
           {(action.hashFrom || action.hashTo) && (
             <div>
               hash: {short(action.hashFrom)} → {short(action.hashTo)}
             </div>
           )}
-          {action.transform && <div>{t('planReview.computed')} ({action.transform})</div>}
+          {action.transform && (
+            <div>
+              {t('planReview.computed')} ({action.transform})
+            </div>
+          )}
         </div>
       )}
     </li>

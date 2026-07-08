@@ -27,7 +27,11 @@ describe('groupActions', () => {
 
   it('counts by type and detects mutation', () => {
     const g = groupActions(
-      plan([act('user:CLAUDE.md', 'create'), act('user:x', 'noop'), act('project:d/m/y', 'delete')]),
+      plan([
+        act('user:CLAUDE.md', 'create'),
+        act('user:x', 'noop'),
+        act('project:d/m/y', 'delete'),
+      ]),
     )
     expect(g.counts.create).toBe(1)
     expect(g.counts.delete).toBe(1)

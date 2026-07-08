@@ -8,5 +8,10 @@ export function Skeleton({
   h?: number | string
   radius?: number
 }): JSX.Element {
-  return <span className="skeleton" style={{ display: 'block', width: w, height: h, borderRadius: radius }} />
+  return (
+    <span
+      className="skeleton"
+      style={{ display: 'block', width: w, height: h, borderRadius: radius }}
+    />
+  )
 }
