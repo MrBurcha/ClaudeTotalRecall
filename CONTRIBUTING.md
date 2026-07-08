@@ -15,12 +15,13 @@ npm install
 npm run dev
 ```
 
-Before opening a pull request, make sure the checks pass (the same three run in CI on every PR):
+Before opening a pull request, make sure the checks pass (CI runs these on every PR):
 
 ```bash
 npm run typecheck
 npm run lint
-npm test
+npm run format:check
+npm run test:coverage   # runs the suite + coverage (the core has a coverage threshold)
 ```
 
 ## Conventions
@@ -47,7 +48,7 @@ restart) and the `<html lang>` attribute follows the selection.
 ### Dogfooding
 
 The quickest way to exercise a change end-to-end is to sync this project's own memory. Create an
-**empty private** repo (e.g. `github.com/<you>/claude-memories` — *never* the code repo), then run
+**empty private** repo (e.g. `github.com/<you>/claude-memories` — _never_ the code repo), then run
 the onboarding wizard (or the CLI: `connect` → `register` → add a project → `outgoing`) against it,
 and confirm on GitHub that `memories/…` shows up with **no** credentials or transcripts.
 
