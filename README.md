@@ -1,99 +1,226 @@
-# Claude Total Recall
+<p align="center">
+  <img src="build/icons/256x256.png" width="96" alt="Claude Total Recall" />
+</p>
 
-Desktop app (Electron + TypeScript + React) — with a headless CLI sharing the same core —
-that syncs **Claude Code memory** (`~/.claude/…`) across machines through a **private GitHub
-repo**, using `git`/`gh` as transport. macOS and Linux; Windows is deliberately deferred.
+<h1 align="center">Claude Total Recall</h1>
 
-## How it works (in short)
+<p align="center">
+  Sync your <b>Claude Code memory</b> across machines — and keep a private, versioned
+  <b>backup</b> of it — through a GitHub repo you own.
+</p>
 
-- Your **memory** (user-level `CLAUDE.md`, `commands/`/`agents/`/`skills/`, `settings.json`, plus
-  the per-project memory folders you declare) is copied to/from a **working copy** of the repo
-  under logical names.
-- **Auto-sync runs while the app is open**: it pushes the moment a watched file changes and
-  pulls from the repo on a periodic poll. Manual `outgoing`/`incoming` live under **Advanced sync**.
-- Every mutating verb builds a **Plan (dry-run)** first, previewed before anything touches disk.
-- **Merge conflicts** are resolved per file: `ours` = local, `theirs` = remote.
-- **Secrets never travel**: a guard hard-excludes `.credentials.json`, `*.jsonl`, `.claude.json`.
-- `settings.json` = a shared base + `settings.local.json` per-key overrides (local wins on incoming).
-- The UI is **bilingual** — English and neutral Latin American Spanish (es-419). It defaults to the
-  host locale and can be switched in **Settings → Language**.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+  <a href="https://github.com/MrBurcha/ClaudeTotalRecall/releases/latest"><img src="https://img.shields.io/github/v/release/MrBurcha/ClaudeTotalRecall" alt="Latest release" /></a>
+  <a href="https://github.com/MrBurcha/ClaudeTotalRecall/actions/workflows/ci.yml"><img src="https://github.com/MrBurcha/ClaudeTotalRecall/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey" alt="Platform: macOS | Linux" />
+</p>
 
-## Requirements
+---
 
-`git` and `gh` (GitHub CLI) authenticated (`gh auth login && gh auth setup-git`). The
-`claude-total-recall check` command (or the Settings screen) verifies everything.
+## What it is
 
-## Development
+Claude Code keeps its **memory** in `~/.claude`: your `CLAUDE.md` house rules, your custom
+`commands/`, `agents/`, and `skills/`, and your `settings.json`. That state is valuable — and it
+lives on one machine. Switch laptops, reinstall, or lose the disk, and it's gone.
+
+**Claude Total Recall** gives you two things, backed by a **private GitHub repo you own**:
+
+- **Sync across machines** — your Claude Code memory stays identical on every computer you use, kept
+  up to date automatically while the app is open.
+- **A versioned backup** — even on a *single* machine, you get a full **git history** of your Claude
+  Code setup in your own private repo. Roll back a bad edit, audit what changed, restore after a
+  reinstall.
+
+**Secrets never travel.** A hard guard always excludes `.credentials.json`, `.claude.json`, and
+`*.jsonl` transcripts — regardless of configuration — with the memories repo's own `.gitignore` as a
+second layer.
+
+It's a desktop app (Electron) that auto-syncs in the background, plus a headless CLI that shares the
+same core. **macOS and Linux** (Windows is deliberately deferred).
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/sync-home.png" width="720" alt="Sync home — your machines orbiting the memories repo" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/wizard.png" width="360" alt="Onboarding wizard" />
+  <img src="docs/screenshots/projects.png" width="360" alt="Projects configuration" />
+</p>
+
+## Install
+
+Grab the latest build from the [**Releases**](https://github.com/MrBurcha/ClaudeTotalRecall/releases/latest)
+page. Builds are **unsigned** (no paid Apple/OS code-signing) — see the notes below.
+
+### macOS (Apple Silicon)
+
+1. Download `Claude-Total-Recall-<version>-arm64.dmg`, open it, and drag the app to **Applications**.
+2. First open, because the build isn't notarized (macOS 15 Sequoia and later — the old
+   *right-click → Open* was removed):
+   - Double-click the app → *"Apple could not verify…"* → **Done**.
+   - **System Settings → Privacy & Security**, scroll to **Security** → *"Claude Total Recall was
+     blocked…"* → **Open Anyway** → confirm with Touch ID / password.
+
+   Or clear the quarantine in one shot from a terminal:
+
+   ```bash
+   xattr -cr "/Applications/Claude Total Recall.app"
+   ```
+
+   > It's a one-time step. Opening with **no dialog at all** would require notarization with a paid
+   > Apple Developer account.
+
+### Linux
+
+Pick the package for your distro:
 
 ```bash
+# AppImage (portable — any distro)
+chmod +x Claude-Total-Recall-<version>.AppImage
+./Claude-Total-Recall-<version>.AppImage
+
+# Debian / Ubuntu
+sudo dpkg -i claude-total-recall_<version>_amd64.deb
+
+# Arch
+sudo pacman -U claude-total-recall-<version>.pacman
+```
+
+Prefer to build the binaries yourself? See [Build from source](#build-from-source).
+
+## Quickstart
+
+**You need:**
+
+- **`git`** and **`gh`** (the [GitHub CLI](https://cli.github.com)) on your `PATH`, with `gh`
+  authenticated: `gh auth login && gh auth setup-git`.
+- An **empty private GitHub repo** to hold your memories — *separate from any code repo*. You don't
+  have to initialize it; the app creates the structure on the first connect.
+
+**Then, in the app:** on first launch an **onboarding wizard** walks you through it — connect the
+memories repo, register this machine, and (optionally) add your first project. After that the
+**Sync** screen keeps everything up to date on its own; **Advanced sync** exposes the manual
+outgoing/incoming flow.
+
+Prefer the terminal? The same flow via the CLI:
+
+```bash
+claude-total-recall check                       # preflight: git / gh / auth
+claude-total-recall connect git@github.com:you/claude-memories.git
+claude-total-recall register --name my-laptop
+claude-total-recall outgoing                    # push this machine's memory to the repo
+# …on another machine, after connect + register:
+claude-total-recall incoming                    # pull the repo's memory onto this machine
+```
+
+**What syncs:** your user-level `~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, and
+`settings.json`, plus any **project memory folders** and **pinned files** you declare. Everything is
+stored under logical names in `memories/…` inside your repo.
+
+## CLI
+
+The CLI ships the same core as the app and is English-only. Every command prints its result and sets
+an exit code (`0` on success).
+
+| Command | What it does |
+| --- | --- |
+| `check` | Preflight: verifies `git` and `gh` are installed and `gh` is authenticated. Read-only. |
+| `connect <remote>` | Clone/initialize the memories repo into `~/.config/claudetr/repo` (accepts HTTPS, SSH, or `file://` remotes). On an empty repo it writes the initial structure and pushes it. |
+| `status` | Local repo status: branch, ahead/behind, dirty, conflicts. Read-only. |
+| `register [--name <id>]` | Register this machine in the repo config (defaults the id to your hostname). Mutates the repo. |
+| `outgoing [--dry-run] [--yes]` | **machine → repo**: build a Plan, then commit + pull + push your memory. |
+| `incoming [--dry-run] [--yes]` | **repo → machine**: pull first, build a Plan, then write the repo's memory onto this machine. Never touches the remote. |
+
+Notes:
+
+- `outgoing`/`incoming` build a **Plan (dry-run)** and ask for confirmation. `--dry-run` previews and
+  touches nothing; `--yes` skips the prompt (**required** when running non-interactively, e.g. in a
+  script).
+- There is no per-subcommand `--help` and no version flag — `claude-total-recall` with no args (or
+  `help`) prints the usage block.
+
+Running the CLI from source: `npm run build:cli` produces `dist-cli/index.js`, then
+`node dist-cli/index.js <command>`. The `check` shortcut is `npm run cli:check`.
+
+## How it works
+
+- **Every mutating action builds a Plan first** — a dry-run of typed actions (create / overwrite /
+  delete / noop / skip) with content hashes, previewed before anything touches disk. Source hashes
+  are re-validated at execution time (a TOCTOU guard).
+- **Auto-sync while the app is open** — it pushes the moment a watched file changes and pulls from
+  the repo on a periodic poll. The manual `outgoing`/`incoming` verbs live under **Advanced sync**.
+- **`settings.json` is merged, not copied** — a shared base plus per-key machine-local overrides in
+  `~/.config/claudetr/settings.local.json`. Local overrides win on incoming and never travel to the
+  repo.
+- **Conflicts are resolved per file** — `ours` (local) or `theirs` (remote), then finalize the merge.
+- **Secrets are hard-excluded** — `.credentials.json`, `.claude.json`, `*.jsonl`, always.
+
+## Build from source
+
+**Requirements:** [Node.js 20](https://nodejs.org), plus `git` and `gh` as above.
+
+```bash
+git clone https://github.com/MrBurcha/ClaudeTotalRecall.git
+cd ClaudeTotalRecall
 npm install
-npm run dev          # Electron app in dev mode
-npm test             # vitest suite (core + git + orchestration + i18n)
-npm run typecheck    # tsc --noEmit
-npm run lint         # eslint . --ext .ts,.tsx
+npm run dev          # run the Electron app in dev mode
 ```
 
-## First run
+| Script | Does |
+| --- | --- |
+| `npm run dev` | Run the app in dev mode (electron-vite). |
+| `npm test` | Run the test suite (vitest). |
+| `npm run typecheck` | `tsc --noEmit`. |
+| `npm run lint` | ESLint. |
+| `npm run build:cli` | Build the headless CLI → `dist-cli/index.js`. |
+| `npm run build:mac` | Unsigned `.dmg` → `release/` (**run on macOS**). |
+| `npm run build:linux` | AppImage + deb + pacman → `release/` (**run on Linux or CI**). |
 
-On first launch an **onboarding wizard** walks you through: connect the memories repo, register
-this machine, and (optionally) add your first project. After that, the **Sync** screen keeps
-everything up to date on its own; **Advanced sync** exposes the manual outgoing/incoming flow.
+**No cross-build:** `build:mac` must run on macOS and `build:linux` on Linux. Pushing a `v*.*.*` tag
+runs [`.github/workflows/release.yml`](.github/workflows/release.yml), which builds the artifacts on
+macOS + Linux runners and publishes a GitHub Release.
 
-## Headless CLI (same core as the UI)
+## Architecture
 
-```bash
-npm run build:cli
-node dist-cli/index.js check                    # preflight: git/gh/auth
-node dist-cli/index.js connect <remote-url>     # clone/initialize the repo
-node dist-cli/index.js status                   # repo status
-node dist-cli/index.js register --name <id>     # register this machine
-node dist-cli/index.js outgoing  [--dry-run] [--yes]   # machine → repo
-node dist-cli/index.js incoming [--dry-run] [--yes]   # repo → machine
+```
+src/core/       pure logic (config, plan, outgoing/incoming, git wrapper, service,
+                preflight, sync engine, conflict resolution, settings merge, typed errors).
+                No Electron imports — tests run directly under Node.
+src/platform/   the only OS-specific code (linux/macos adapter).
+src/cli/        headless entrypoint (English-only).
+src/main/       Electron bootstrap + IPC + preload + auto-sync scheduler + frameless window.
+src/renderer/   React UI (AppShell + screens/ + features/) with i18n/ for the bilingual catalog.
 ```
 
-## Packaging (ad-hoc signing, personal use)
+The renderer UI is **bilingual** — English (source) and neutral Latin American Spanish (es-419) —
+defaulting to your host locale and switchable in **Settings → Language**.
 
-```bash
-npm run build:mac    # release/Claude Total Recall-<v>-arm64.dmg   (verified)
-npm run build:linux  # AppImage + deb + pacman  (run on Linux or CI, no cross-build from macOS)
-```
+## Platform support
 
-### macOS: install and open
+**macOS and Linux.** Windows is deliberately deferred (the platform layer is the only OS-specific
+code, so adding it is one more adapter).
 
-Builds are **ad-hoc** (no Developer ID certificate, no Apple notarization). The ad-hoc signature
-(see `scripts/afterPack.cjs`) seals the bundle resources so macOS does **not** flag it as
-*"damaged"* on Apple Silicon. Because it isn't notarized, downloading the `.dmg` from a GitHub
-Release (which attaches the quarantine attribute) prompts for a manual OK on first open. On
-**macOS 15 (Sequoia) and later** the old *"right-click → Open"* was **removed**; the current flow is:
+## Roadmap
 
-1. Double-click → *"Apple could not verify…"* → **Done**.
-2. **System Settings → Privacy & Security**, scroll to the **Security** section: you'll see
-   *"Claude Total Recall was blocked…"* → **Open Anyway**.
-3. Confirm with Touch ID / password → **Open**. It's a one-time step; afterwards it opens normally.
+- Automatic project discovery
+- In-app 3-way merge editor
+- Per-project timestamps
+- Create the memories repo from the app
+- Windows support
 
-Terminal shortcut (clears quarantine in one shot):
+## Contributing
 
-```bash
-xattr -cr "/Applications/Claude Total Recall.app"
-```
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, testing, and
+release process.
 
-> To open with **no dialog at all** (like App Store apps) you need **notarization** with a paid
-> Apple Developer account; ad-hoc signing isn't enough.
+## Security
 
-## Layout
+The app is built around never syncing secrets. If you find a security issue, please see
+[SECURITY.md](SECURITY.md).
 
-- `src/core/` — pure logic (config, plan, outgoing/incoming, git, service, preflight, sync engine,
-  conflict resolution, settings merge, error codes). No Electron imports.
-- `src/platform/` — the only OS-specific code (linux/macos adapter).
-- `src/cli/` — headless entrypoint.
-- `src/main/` — Electron bootstrap + IPC + preload + the auto-sync scheduler + frameless window.
-- `src/renderer/` — React UI (`AppShell` + `screens/` + `features/`), with `i18n/` for the
-  bilingual catalog.
+## License
 
-## Pending / follow-ups
-
-- Validate the full cycle against a **real private GitHub repo** (tests use local `file://`
-  remotes; the mechanics are identical).
-- Build the **Linux** artifacts on a Linux machine or in CI.
-- v1.1+: automatic project discovery, in-app 3-way merge editor, per-project timestamps,
-  create the repo from the app, Windows.
+[MIT](LICENSE) © MrBurcha

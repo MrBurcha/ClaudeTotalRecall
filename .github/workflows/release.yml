@@ -5,7 +5,7 @@ on:
     tags:
       - 'v*.*.*'
 
-# Necesario para que electron-builder cree/edite el Release del tag.
+# Needed so electron-builder can create/edit the tag's Release.
 permissions:
   contents: write
 
@@ -20,11 +20,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:app
-      - name: Build & publish dmg (sin firmar)
+      - name: Build & publish dmg (unsigned)
         run: npx electron-builder --mac --config electron-builder.yml --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Uso personal: no firmar ni notarizar.
+          # Personal use: no signing or notarization.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
   linux:
@@ -37,26 +37,26 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:app
-      # fpm arma el target pacman con bsdtar (.MTREE); ubuntu no lo trae de fábrica.
-      - name: Instalar bsdtar (requerido por fpm para el target pacman)
+      # fpm builds the pacman target with bsdtar (.MTREE); ubuntu doesn't ship it by default.
+      - name: Install bsdtar (required by fpm for the pacman target)
         run: sudo apt-get update && sudo apt-get install -y libarchive-tools
       - name: Build & publish AppImage + deb + pacman
         run: npx electron-builder --linux --config electron-builder.yml --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Ambos jobs suben sus binarios al Release en estado draft; este job final
-  # arma las notas desde el CHANGELOG y lo publica una sola vez, ya con todos
-  # los assets (mac + linux) presentes.
+  # Both jobs upload their binaries to the Release as a draft; this final job
+  # assembles the notes from the CHANGELOG and publishes it once, with all the
+  # assets (mac + linux) present.
   publish:
     needs: [macos, linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Extrae la sección "## [x.y.z]" del CHANGELOG como cuerpo del Release. Si
-      # la versión no está documentada, deja que GitHub autogenere las notas
-      # (--generate-notes) para no publicar nunca un Release con cuerpo vacío.
-      - name: Armar notas del Release desde el CHANGELOG
+      # Extract the "## [x.y.z]" section of the CHANGELOG as the Release body. If
+      # the version isn't documented, let GitHub auto-generate the notes
+      # (--generate-notes) so a Release is never published with an empty body.
+      - name: Assemble release notes from the CHANGELOG
         id: notes
         run: |
           VERSION="${TAG#v}"
@@ -72,14 +72,14 @@ jobs:
           fi
         env:
           TAG: ${{ github.ref_name }}
-      - name: Publicar el Release con notas del CHANGELOG
+      - name: Publish the Release with CHANGELOG notes
         if: steps.notes.outputs.generate == 'false'
         run: gh release edit "$TAG" --draft=false --latest --notes-file release-notes.md -R "$REPO"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
-      - name: Publicar el Release con notas autogeneradas (fallback)
+      - name: Publish the Release with auto-generated notes (fallback)
         if: steps.notes.outputs.generate == 'true'
         run: gh release edit "$TAG" --draft=false --latest --generate-notes -R "$REPO"
         env:

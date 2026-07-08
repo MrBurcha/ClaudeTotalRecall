@@ -6,12 +6,14 @@ import { createPlatformAdapter } from '../platform'
 import { run } from './exec'
 import { Git } from './git'
 import { loadConfig } from './config'
+import { activityLogPath } from './activityLog'
 import {
   buildVerbPlan,
   configPath,
   connectRepo,
   createProject,
   deleteProject,
+  history,
   pullRepo,
   registerMachine,
   removePinnedFile,
@@ -151,6 +153,61 @@ describe('outgoing → incoming via the service (two machines, one remote)', () 
     // m2 status after the pull: clean and up to date.
     const st = await repoStatus(a2)
     expect(st.conflicted).toEqual([])
+  })
+})
+
+describe('incoming ledger (records real incoming, never touches the remote)', () => {
+  it('records an incoming entry attributed to the source machine', async () => {
+    const base = await newBase()
+    const remote = await bareRemote(base)
+
+    // m1 connects + registers with no memory yet.
+    const home1 = join(base, 'home1')
+    const a1 = adapterFor(home1)
+    await connectRepo(remote, a1)
+    await registerMachine(a1, 'm1')
+
+    // m2 connects + registers BEFORE m1 pushes memory, so its ledger HEAD anchor
+    // predates m1's outgoing → the pull below is a genuine "receive from m1".
+    const home2 = join(base, 'home2')
+    const a2 = adapterFor(home2)
+    await connectRepo(remote, a2)
+    await registerMachine(a2, 'm2')
+
+    // m1 seeds ~/.claude and pushes.
+    await mkdir(join(home1, '.claude'), { recursive: true })
+    await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'memoria de m1\n')
+    const gplan = await buildVerbPlan(a1, 'outgoing', { id: 'g', createdAt: '2026-07-01T00:00:00.000Z' })
+    expect((await syncOutgoing(a1, gplan)).pushed).toBe(true)
+
+    // m2 pulls, then applies incoming.
+    expect((await pullRepo(a2)).ok).toBe(true)
+
+    // Snapshot the remote log to prove an incoming leaves it untouched.
+    const remoteLogBefore = (await run('git', ['-C', remote, 'log', '--format=%H'])).stdout
+
+    const splan = await buildVerbPlan(a2, 'incoming', { id: 's1', createdAt: '2026-07-02T00:00:00.000Z' })
+    const sres = await syncIncoming(a2, splan)
+    expect(sres.exec.applied).toBeGreaterThan(0)
+    expect(await readFile(join(home2, '.claude', 'CLAUDE.md'), 'utf8')).toBe('memoria de m1\n')
+
+    // Invariant: the remote is byte-for-byte unchanged by an incoming.
+    const remoteLogAfter = (await run('git', ['-C', remote, 'log', '--format=%H'])).stdout
+    expect(remoteLogAfter).toBe(remoteLogBefore)
+
+    // The ledger file lives OUTSIDE the working copy (never synced).
+    const logPath = activityLogPath(a2)
+    expect(await exists(logPath)).toBe(true)
+    expect(logPath.startsWith(workingCopyDir(a2))).toBe(false)
+
+    // history() surfaces the incoming, attributed to m1, with the applied change.
+    const incoming = (await history(a2)).filter((e) => e.type === 'incoming')
+    expect(incoming).toHaveLength(1)
+    expect(incoming[0].hash).toBe('incoming:s1')
+    expect(incoming[0].at).toBe('2026-07-02T00:00:00.000Z')
+    expect(incoming[0].fromMachines).toContain('m1')
+    const claudeMd = incoming[0].changes.find((c) => c.path.endsWith('user/CLAUDE.md'))
+    expect(claudeMd?.status).toBe('added')
   })
 })
 

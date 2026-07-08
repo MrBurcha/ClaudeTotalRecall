@@ -133,6 +133,7 @@ export interface RepoStatus {
 
 export type HistoryType =
   | 'outgoing' // a machine pushed its memory (↑ local / ↓ from another machine)
+  | 'incoming' // this machine pulled shared memory in (recorded locally, not in git)
   | 'set-folder'
   | 'remove-folder'
   | 'new-project'
@@ -163,11 +164,44 @@ export interface HistoryEntry {
   from?: string
   to?: string
   pin?: string
+  /** source machine(s) an `incoming` entry received from (best-effort; distinct from `from`) */
+  fromMachines?: string[]
   /** number of files changed in the commit */
   files: number
   /** the files touched (added/modified/deleted), for the activity detail (#8) */
   changes: FileChange[]
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Local activity log (outside the repo). Incoming syncs never commit or touch
+// the remote, so their trace can't come from git; we record them locally here
+// and merge them into history() to complete the ledger. Never synced.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const FileChangeSchema = z.object({
+  status: z.enum(['added', 'modified', 'deleted', 'renamed', 'other']),
+  path: z.string(),
+})
+
+/** One recorded incoming sync: what landed on this machine, and from whom. */
+export const IncomingRecordSchema = z.object({
+  /** stable id (reuses the Plan id) — used as the React key */
+  id: z.string(),
+  /** ISO timestamp (reuses the Plan createdAt, injected — no internal Date.now) */
+  at: z.string(),
+  /** source machineId(s), best-effort from the pulled commits (may be empty) */
+  fromMachines: z.array(z.string()),
+  changes: z.array(FileChangeSchema),
+})
+export type IncomingRecord = z.infer<typeof IncomingRecordSchema>
+
+export const ActivityLogSchema = z.object({
+  version: z.literal(1),
+  /** working-copy HEAD when the last record was written; anchors `from` attribution */
+  lastHead: z.string().optional(),
+  incoming: z.array(IncomingRecordSchema),
+})
+export type ActivityLog = z.infer<typeof ActivityLogSchema>
 
 export interface PreflightCheck {
   name: 'git' | 'gh' | 'gh-auth'

@@ -57,6 +57,33 @@ function fileStatus(code: string): FileChange['status'] {
   }
 }
 
+// Formato de `git log` compartido por `log()` y `logRange()`. El separador de
+// registro (REC) va al INICIO así cada bloque queda "<header>\n<name-status…>";
+// los campos del header van separados por US (\x1f).
+const LOG_SEP = '\x1f'
+const LOG_REC = '\x1e'
+const LOG_FMT = `${LOG_REC}%H${LOG_SEP}%aI${LOG_SEP}%an${LOG_SEP}%s`
+
+/** Parsea la salida de `git log --name-status` con {@link LOG_FMT} en RawLogEntry[]. */
+function parseLog(stdout: string): RawLogEntry[] {
+  const out: RawLogEntry[] = []
+  for (const rec of stdout.split(LOG_REC)) {
+    if (!rec.trim()) continue
+    const lines = rec.split('\n')
+    const [hash, at, author, subject] = lines[0].split(LOG_SEP)
+    if (!hash) continue
+    // name-status rows: "<A|M|D|R###|C###>\t<path>[\t<newpath>]" — one per changed file.
+    const changes: FileChange[] = []
+    for (const line of lines.slice(1)) {
+      if (!line.includes('\t')) continue
+      const cols = line.split('\t')
+      changes.push({ status: fileStatus(cols[0]), path: cols[cols.length - 1] })
+    }
+    out.push({ hash, at, author, subject: subject ?? '', files: changes.length, changes })
+  }
+  return out
+}
+
 /**
  * Wrapper fino de git ligado a un working copy (cwd). Política de conflictos =
  * MERGE (no rebase): en un conflicto "ours" = local (HEAD) y "theirs" = remoto
@@ -127,32 +154,34 @@ export class Git {
 
   /**
    * Últimos `limit` commits con conteo de archivos. Usa `raw` (no tira) para
-   * tolerar un repo sin commits → []. El separador de registro va al INICIO del
-   * formato así cada bloque queda como "<header>\n<numstat…>" (header + sus líneas
-   * de --numstat juntas); los campos van separados por US (\x1f).
+   * tolerar un repo sin commits → [].
    */
   async log(limit = 50): Promise<RawLogEntry[]> {
-    const SEP = '\x1f'
-    const REC = '\x1e'
-    const fmt = `${REC}%H${SEP}%aI${SEP}%an${SEP}%s`
-    const r = await this.raw(['log', `-n${limit}`, '--name-status', `--pretty=format:${fmt}`])
+    const r = await this.raw(['log', `-n${limit}`, '--name-status', `--pretty=format:${LOG_FMT}`])
     if (r.code !== 0) return []
-    const out: RawLogEntry[] = []
-    for (const rec of r.stdout.split(REC)) {
-      if (!rec.trim()) continue
-      const lines = rec.split('\n')
-      const [hash, at, author, subject] = lines[0].split(SEP)
-      if (!hash) continue
-      // name-status rows: "<A|M|D|R###|C###>\t<path>[\t<newpath>]" — one per changed file.
-      const changes: FileChange[] = []
-      for (const line of lines.slice(1)) {
-        if (!line.includes('\t')) continue
-        const cols = line.split('\t')
-        changes.push({ status: fileStatus(cols[0]), path: cols[cols.length - 1] })
-      }
-      out.push({ hash, at, author, subject: subject ?? '', files: changes.length, changes })
-    }
-    return out
+    return parseLog(r.stdout)
+  }
+
+  /**
+   * Commits en el rango `(fromExclusive, toInclusive]`, mismo formato que `log()`.
+   * Se usa para atribuir un incoming: los commits que trajo el pull entre el
+   * último HEAD registrado y el actual. [] si el rango es inválido/vacío.
+   */
+  async logRange(fromExclusive: string, toInclusive: string): Promise<RawLogEntry[]> {
+    const r = await this.raw([
+      'log',
+      `${fromExclusive}..${toInclusive}`,
+      '--name-status',
+      `--pretty=format:${LOG_FMT}`,
+    ])
+    if (r.code !== 0) return []
+    return parseLog(r.stdout)
+  }
+
+  /** Resuelve un ref a su hash completo, o null (p.ej. un repo sin commits aún). */
+  async revParse(ref = 'HEAD'): Promise<string | null> {
+    const r = await this.raw(['rev-parse', ref])
+    return r.code === 0 ? r.stdout.trim() : null
   }
 
   async fetch(): Promise<void> {

@@ -418,6 +418,12 @@
     "empty": "Sin actividad todavía.",
     "outgoingLocal": "Sincronizado desde esta máquina",
     "outgoingRemote": "Sincronizado desde otra máquina",
+    "outgoingRemoteNamed": "Sincronizado desde {{machine}}",
+    "incomingReceived": "Se descargó a esta máquina",
+    "fromMachines": "desde {{machines}}",
+    "bucketUser": "Nivel de usuario",
+    "bucketPinned": "Archivos fijados",
+    "bucketUnknown": "Otros",
     "sourceUpdated": "Se actualizó el origen {{slot}} en {{project}}",
     "sourceRemoved": "Se quitó el origen {{slot}} de {{project}}",
     "projectCreated": "Se creó el proyecto {{name}}",
@@ -431,5 +437,12 @@
     "files_one": "{{count}} archivo",
     "files_other": "{{count}} archivos",
     "moreFiles": "+{{count}} más"
+  },
+  "fileTag": {
+    "added": "Agregado",
+    "modified": "Actualizado",
+    "deleted": "Eliminado",
+    "renamed": "Renombrado",
+    "other": "Cambiado"
   }
 }

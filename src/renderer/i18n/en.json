@@ -418,6 +418,12 @@
     "empty": "No activity yet.",
     "outgoingLocal": "Synced from this machine",
     "outgoingRemote": "Synced from another machine",
+    "outgoingRemoteNamed": "Synced from {{machine}}",
+    "incomingReceived": "Downloaded to this machine",
+    "fromMachines": "from {{machines}}",
+    "bucketUser": "User level",
+    "bucketPinned": "Pinned files",
+    "bucketUnknown": "Other",
     "sourceUpdated": "Updated source {{slot}} in {{project}}",
     "sourceRemoved": "Removed source {{slot}} from {{project}}",
     "projectCreated": "Created project {{name}}",
@@ -431,5 +437,12 @@
     "files_one": "{{count}} file",
     "files_other": "{{count}} files",
     "moreFiles": "+{{count}} more"
+  },
+  "fileTag": {
+    "added": "Added",
+    "modified": "Updated",
+    "deleted": "Removed",
+    "renamed": "Renamed",
+    "other": "Changed"
   }
 }

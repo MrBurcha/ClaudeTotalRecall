@@ -2,16 +2,24 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import type { FileChange, HistoryEntry } from '../../../core/types'
+import { parseMemoryPath } from '../../../core/memoryPath'
+import { FileTag } from '../../components/Badge'
 import { Icon, type IconName } from '../../components/Icon'
 import { api } from '../../state/api'
 import { useAppState } from '../../state/store'
 import { relativeParts } from './relativeTime'
 
-/** Direction/kind icon for an entry; outgoing points ↑ if it came from THIS machine, ↓ otherwise. */
+/**
+ * Direction/kind icon. Since the feed is now an honest ledger, outgoing means "a
+ * machine contributed to shared memory" (↑ from you, ↓ from another) and incoming
+ * means "you received into this machine" (↙).
+ */
 function iconFor(e: HistoryEntry, currentMachine: string | null): IconName {
   switch (e.type) {
     case 'outgoing':
       return e.machineId && e.machineId === currentMachine ? 'arrow-up' : 'arrow-down'
+    case 'incoming':
+      return 'arrow-down-left'
     case 'set-folder':
       return 'file-diff'
     case 'remove-folder':
@@ -37,9 +45,16 @@ function iconFor(e: HistoryEntry, currentMachine: string | null): IconName {
 function labelFor(e: HistoryEntry, currentMachine: string | null, t: TFunction): string {
   switch (e.type) {
     case 'outgoing':
-      return e.machineId && e.machineId === currentMachine
-        ? t('activity.outgoingLocal')
+      if (e.machineId && e.machineId === currentMachine) return t('activity.outgoingLocal')
+      // Name the source machine when we have it; fall back to the generic label
+      // for legacy commits (pre-rename `gather`) that carry no machine id. The
+      // machineId is the user-chosen slug ("laptop"), friendlier than the raw
+      // OS hostname, so we show it directly.
+      return e.machineId
+        ? t('activity.outgoingRemoteNamed', { machine: e.machineId })
         : t('activity.outgoingRemote')
+    case 'incoming':
+      return t('activity.incomingReceived')
     case 'set-folder':
       return t('activity.sourceUpdated', { slot: e.slot, project: e.project })
     case 'remove-folder':
@@ -70,33 +85,79 @@ function timeText(at: string, now: number, t: TFunction): string {
   return p.key === 'now' ? t('relativeTime.now') : t(`relativeTime.${p.key}`, { count: p.count })
 }
 
-function metaBits(e: HistoryEntry, t: TFunction): string {
+/** Secondary line: who it came from (incoming) / which other machine (outgoing) + file count. */
+function metaBits(e: HistoryEntry, currentMachine: string | null, t: TFunction): string {
   const bits: string[] = []
-  if (e.machineId) bits.push(e.machineId)
-  if (e.type === 'outgoing' && e.files > 0) bits.push(t('activity.files', { count: e.files }))
+  if (e.type === 'incoming') {
+    const from = e.fromMachines ?? []
+    if (from.length) bits.push(t('activity.fromMachines', { machines: from.join(', ') }))
+    if (e.files > 0) bits.push(t('activity.files', { count: e.files }))
+  } else if (e.type === 'outgoing') {
+    if (e.machineId && e.machineId !== currentMachine) bits.push(e.machineId)
+    if (e.files > 0) bits.push(t('activity.files', { count: e.files }))
+  } else if (e.machineId) {
+    bits.push(e.machineId)
+  }
   return bits.join(' · ')
 }
 
 /** How many files to list before collapsing the rest into a "+N more" line. */
 const FILE_CAP = 8
 
-const CHANGE_GLYPH: Record<FileChange['status'], string> = {
-  added: '+',
-  modified: '~',
-  deleted: '−',
-  renamed: '→',
-  other: '·',
-}
-
-/** Drops the repo's `memories/` prefix so the path reads cleanly in the list. */
-function trimPath(p: string): string {
-  return p.replace(/^memories\//, '')
+interface FileGroup {
+  key: string
+  heading: string
+  files: { status: FileChange['status']; leaf: string }[]
 }
 
 /**
- * "Recent activity" (#8): a collapsible timeline on the Sync home, derived from
- * the memories repo's git log. Refetches when a sync cycle settles (the engine's
- * push doesn't carry the log, so we re-read on lastSyncedAt/status change).
+ * Groups a commit/record's file changes into the app's buckets (a project slot,
+ * user level, pinned files) with friendly headings, showing only the leaf name —
+ * so the list reads in the user's vocabulary instead of the raw repo layout.
+ */
+function groupChanges(changes: FileChange[], t: TFunction): FileGroup[] {
+  const groups = new Map<string, FileGroup>()
+  for (const c of changes) {
+    const loc = parseMemoryPath(c.path)
+    let key: string
+    let heading: string
+    let leaf: string
+    switch (loc.bucket) {
+      case 'project':
+        key = `project:${loc.project}/${loc.slot}`
+        heading = `${loc.project} › ${loc.slot}`
+        leaf = loc.rest || loc.slot
+        break
+      case 'user':
+        key = 'user'
+        heading = t('activity.bucketUser')
+        leaf = loc.rest ? `${loc.slot}/${loc.rest}` : loc.slot
+        break
+      case 'pinned':
+        key = 'pinned'
+        heading = t('activity.bucketPinned')
+        leaf = loc.pin
+        break
+      default:
+        key = 'unknown'
+        heading = t('activity.bucketUnknown')
+        leaf = loc.path
+    }
+    let g = groups.get(key)
+    if (!g) {
+      g = { key, heading, files: [] }
+      groups.set(key, g)
+    }
+    g.files.push({ status: c.status, leaf })
+  }
+  return [...groups.values()]
+}
+
+/**
+ * "Recent activity" (#8): a collapsible timeline on the Sync home. It merges the
+ * memories repo's git log (outgoing + admin events) with the local incoming
+ * ledger, so it's an honest record of who contributed to shared memory and what
+ * this machine received. Refetches when a sync cycle settles.
  */
 export function RecentActivity(): JSX.Element {
   const { t } = useTranslation()
@@ -140,33 +201,45 @@ export function RecentActivity(): JSX.Element {
             <p className="muted">{t('activity.empty')}</p>
           ) : (
             <ul className="folder-list">
-              {entries.map((e) => (
-                <li key={e.hash} className="folder-row">
-                  <div className="folder-row__main">
-                    <Icon name={iconFor(e, machineId)} size={15} />
-                    <span className="grow">{labelFor(e, machineId, t)}</span>
-                    <span className="muted mono">{timeText(e.at, now, t)}</span>
-                  </div>
-                  {metaBits(e, t) && (
-                    <div className="muted mono folder-row__others">{metaBits(e, t)}</div>
-                  )}
-                  {e.type === 'outgoing' && e.changes.length > 0 && (
-                    <ul className="activity-files">
-                      {e.changes.slice(0, FILE_CAP).map((c) => (
-                        <li key={c.path} className={`activity-file activity-file--${c.status}`}>
-                          <span className="activity-file__glyph mono">{CHANGE_GLYPH[c.status]}</span>
-                          <span className="mono truncate">{trimPath(c.path)}</span>
-                        </li>
-                      ))}
-                      {e.changes.length > FILE_CAP && (
-                        <li className="muted mono">
-                          {t('activity.moreFiles', { count: e.changes.length - FILE_CAP })}
-                        </li>
-                      )}
-                    </ul>
-                  )}
-                </li>
-              ))}
+              {entries.map((e) => {
+                // File details only for the sync verbs: config commits also touch
+                // claudetr.json, which would be noise here.
+                const showFiles =
+                  (e.type === 'outgoing' || e.type === 'incoming') && e.changes.length > 0
+                const shown = e.changes.slice(0, FILE_CAP)
+                const overflow = e.changes.length - shown.length
+                const meta = metaBits(e, machineId, t)
+                return (
+                  <li key={e.hash} className="folder-row">
+                    <div className="folder-row__main">
+                      <Icon name={iconFor(e, machineId)} size={15} />
+                      <span className="grow">{labelFor(e, machineId, t)}</span>
+                      <span className="muted mono">{timeText(e.at, now, t)}</span>
+                    </div>
+                    {meta && <div className="muted mono folder-row__others">{meta}</div>}
+                    {showFiles && (
+                      <ul className="activity-files">
+                        {groupChanges(shown, t).map((g) => (
+                          <li key={g.key} className="activity-group">
+                            <div className="activity-group__head">{g.heading}</div>
+                            <ul className="activity-group__files">
+                              {g.files.map((f, i) => (
+                                <li key={`${f.leaf}:${i}`} className="activity-file">
+                                  <FileTag status={f.status} />
+                                  <span className="mono truncate">{f.leaf}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                        {overflow > 0 && (
+                          <li className="muted mono">{t('activity.moreFiles', { count: overflow })}</li>
+                        )}
+                      </ul>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

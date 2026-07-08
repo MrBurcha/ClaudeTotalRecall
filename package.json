@@ -1,9 +1,17 @@
 {
   "name": "claude-total-recall",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Claude Total Recall — sync Claude Code memory across machines via a private GitHub repo",
   "author": "MrBurcha",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrBurcha/ClaudeTotalRecall.git"
+  },
+  "homepage": "https://github.com/MrBurcha/ClaudeTotalRecall#readme",
+  "bugs": {
+    "url": "https://github.com/MrBurcha/ClaudeTotalRecall/issues"
+  },
   "main": "./out/main/main.js",
   "bin": {
     "claude-total-recall": "./dist-cli/index.js"

@@ -2,6 +2,7 @@ import { mkdir, rename, stat, writeFile } from 'node:fs/promises'
 import { hostname } from 'node:os'
 import { join } from 'node:path'
 import type { PlatformAdapter } from '../platform'
+import { loadActivityLog, recordIncoming, seedActivityHead } from './activityLog'
 import { loadConfig, saveConfig } from './config'
 import { AppError } from './errors'
 import { Git } from './git'
@@ -12,9 +13,11 @@ import { machineSyncedPaths, pathsCollide } from './resolve'
 import {
   emptyConfig,
   type Config,
+  type FileChange,
   type HistoryEntry,
   type Machine,
   type Plan,
+  type PlanActionType,
   type RepoStatus,
   type Verb,
 } from './types'
@@ -158,6 +161,8 @@ export async function registerMachine(
 
   await saveLocalState(adapter, { machineId })
   await ensureSettingsLocal(adapter)
+  // Anchor the activity ledger's HEAD so the first incoming can attribute its source.
+  await seedActivityHead(adapter, await git.revParse('HEAD'))
   return { machineId, machine, alreadyRegistered }
 }
 
@@ -421,8 +426,10 @@ export function repoStatus(adapter: PlatformAdapter): Promise<RepoStatus> {
 }
 
 /**
- * Activity history (#8): the repo's git log classified into typed entries.
- * Merges, the initial-structure seed and external commits are filtered out.
+ * Activity history (#8): the repo's git log classified into typed entries, MERGED
+ * with the local incoming ledger (incoming never commits, so it isn't in git).
+ * Merges, the initial-structure seed and external commits are filtered out; the
+ * combined list is sorted newest-first and capped to `limit`.
  */
 export async function history(adapter: PlatformAdapter, limit = 50): Promise<HistoryEntry[]> {
   const raw = await new Git(workingCopyDir(adapter)).log(limit)
@@ -432,7 +439,18 @@ export async function history(adapter: PlatformAdapter, limit = 50): Promise<His
     if (!c) continue
     out.push({ hash: r.hash, at: r.at, files: r.files, changes: r.changes, ...c })
   }
-  return out
+  const log = await loadActivityLog(adapter)
+  for (const r of log.incoming) {
+    out.push({
+      hash: `incoming:${r.id}`, // synthetic key; git hashes are 40-hex, never collide
+      at: r.at,
+      type: 'incoming',
+      fromMachines: r.fromMachines,
+      files: r.changes.length,
+      changes: r.changes,
+    })
+  }
+  return out.sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, limit)
 }
 
 export async function pullRepo(
@@ -509,6 +527,64 @@ export interface IncomingResult {
   exec: ExecResult
 }
 
+/** Plan action type → friendly file-change status (incoming perspective); null = nothing changed. */
+function actionStatus(type: PlanActionType): FileChange['status'] | null {
+  switch (type) {
+    case 'create':
+      return 'added'
+    case 'overwrite':
+      return 'modified'
+    case 'delete':
+      return 'deleted'
+    default:
+      return null // noop / skip
+  }
+}
+
+/** Distinct outgoing-commit authors pulled in `(lastHead, head]`, excluding this machine. */
+async function incomingSources(
+  git: Git,
+  lastHead: string | undefined,
+  head: string | null,
+  self: string,
+): Promise<string[]> {
+  if (!lastHead || !head || lastHead === head) return []
+  const seen = new Set<string>()
+  for (const r of await git.logRange(lastHead, head)) {
+    const c = classifyCommit(r.subject)
+    if (c?.type === 'outgoing' && c.machineId && c.machineId !== self) seen.add(c.machineId)
+  }
+  return [...seen]
+}
+
+/**
+ * Records an incoming sync in the local ledger. Per-file changes come from the
+ * executed Plan's actions (a successful executePlan means every create/overwrite/
+ * delete applied); the source machine(s) from the commits pulled since the last
+ * recorded HEAD. Only reads git + writes a local file — never touches the remote.
+ * Reuses the Plan's injected `id`/`createdAt` (no internal Date.now/randomUUID).
+ */
+async function recordIncomingFromPlan(
+  adapter: PlatformAdapter,
+  ctx: SyncContext,
+  plan: Plan,
+  exec: ExecResult,
+): Promise<void> {
+  if (exec.applied === 0) return // nothing landed → nothing to record
+  const changes: FileChange[] = []
+  for (const a of plan.actions) {
+    const status = actionStatus(a.type)
+    if (status) changes.push({ status, path: a.logicalPath })
+  }
+  if (changes.length === 0) return
+
+  const git = new Git(workingCopyDir(adapter))
+  const head = await git.revParse('HEAD')
+  const { lastHead } = await loadActivityLog(adapter)
+  const fromMachines = await incomingSources(git, lastHead, head, ctx.machineId)
+  await recordIncoming(adapter, { id: plan.id, at: plan.createdAt, fromMachines, changes }, head)
+}
+
 /** Runs the incoming sync (working copy → machine). Does not modify the repo. */
 export async function syncIncoming(
   adapter: PlatformAdapter,
@@ -517,5 +593,11 @@ export async function syncIncoming(
 ): Promise<IncomingResult> {
   const ctx = await buildContext(adapter)
   const exec = await executePlan(plan, ctx, opts)
+  try {
+    await recordIncomingFromPlan(adapter, ctx, plan, exec)
+  } catch {
+    // Best-effort ledger: the machine's files are already applied, so never let a
+    // logging hiccup surface as a sync failure.
+  }
   return { exec }
 }

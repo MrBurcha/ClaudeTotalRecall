@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { PlanActionType } from '../../core/types'
+import type { FileChange, PlanActionType } from '../../core/types'
 
 export function Pill({
   children,
@@ -30,4 +30,15 @@ export function StatusDot({ tone = 'muted' }: { tone?: 'ok' | 'warn' | 'danger' 
 export function Tag({ type }: { type: PlanActionType }): JSX.Element {
   const { t } = useTranslation()
   return <span className={`tag tag--${type}`}>{t(`tag.${type}`)}</span>
+}
+
+/** Colored dot + word for a file-change status in the activity feed (Added / Updated / Removed). */
+export function FileTag({ status }: { status: FileChange['status'] }): JSX.Element {
+  const { t } = useTranslation()
+  return (
+    <span className={`file-tag file-tag--${status}`}>
+      <span className="file-tag__dot" aria-hidden="true" />
+      {t(`fileTag.${status}`)}
+    </span>
+  )
 }
