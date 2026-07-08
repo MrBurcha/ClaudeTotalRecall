@@ -118,7 +118,9 @@ claude-total-recall incoming                    # pull the repo's memory onto th
 
 **What syncs:** your user-level `~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, and
 `settings.json`, plus any **project memory folders** and **pinned files** you declare. Everything is
-stored under logical names in `memories/…` inside your repo.
+stored under logical names in `memories/…` inside your repo. For the full picture — what's **never**
+synced, what's skipped on purpose, and how to back up a git-ignored `.env` — see
+[**What gets synced (and what to back up)**](#what-gets-synced-and-what-to-back-up).
 
 ## CLI
 
@@ -157,6 +159,91 @@ Running the CLI from source: `npm run build:cli` produces `dist-cli/index.js`, t
   repo.
 - **Conflicts are resolved per file** — `ours` (local) or `theirs` (remote), then finalize the merge.
 - **Secrets are hard-excluded** — `.credentials.json`, `.claude.json`, `*.jsonl`, always.
+
+## What gets synced (and what to back up)
+
+Claude Total Recall does **not** mirror all of `~/.claude`. It syncs a **curated allowlist** — the
+config and memory that's portable and worth carrying between machines — and deliberately leaves
+behind everything that's machine-local, disposable, or secret. This section is the full picture:
+what travels, what never does, and how to back up the odd file (like a git-ignored `.env`) you want
+kept but out of your product repo.
+
+> [!WARNING]
+> **Keep your own local backups too — Claude Total Recall is a safety net, not your only copy.**
+> Claude Code's internal file layout belongs to Anthropic and can change without notice: a future
+> update could reshape, rename, or move these files in ways we can't anticipate or immediately
+> support. The app syncs what it sees — it can't guarantee forward-compatibility with a third-party
+> product's internals.
+>
+> The upside: because everything lives in a **private, versioned GitHub repo**, you always have git
+> history to roll back to a known-good state if something breaks — that's your recovery hatch. Even
+> so, a periodic local copy of `~/.claude` (a plain `cp -r`, a Time Machine / Timeshift snapshot, an
+> archive) is cheap insurance, and the two together beat either one alone.
+
+### Synced by default
+
+| What                | Where it lives on disk                   | How it syncs                                                        |
+| ------------------- | ---------------------------------------- | ------------------------------------------------------------------- |
+| **House rules**     | `~/.claude/CLAUDE.md`                    | single file → `memories/user/CLAUDE.md`                             |
+| **Custom commands** | `~/.claude/commands/`                    | folder, mirrored → `memories/user/commands/`                        |
+| **Subagents**       | `~/.claude/agents/`                      | folder, mirrored → `memories/user/agents/`                          |
+| **Skills**          | `~/.claude/skills/`                      | folder, mirrored → `memories/user/skills/`                          |
+| **Settings**        | `~/.claude/settings.json`                | **merged**, not copied — machine-local keys stay local (see below)  |
+| **Project memory**  | any folder(s) you declare, per project   | folder mirror _or_ single file → `memories/projects/<name>/<slot>/` |
+| **Pinned files**    | any single file, anywhere on the machine | **Settings → Pinned files** → `memories/pinned/<name>`              |
+
+`settings.json` is the one exception to plain copying: a shared base is merged with per-key
+machine-local overrides you declare in `~/.config/claudetr/settings.local.json`. Those local keys
+(paths, per-machine toggles) **never travel to the repo**, and win on the way back in.
+
+**Recommended project source:** point a project at `~/.claude/projects/<project-slug>/memory/` — the
+auto-memory Claude writes per project. The session transcripts sitting next to it
+(`~/.claude/projects/<slug>/*.jsonl`) are excluded automatically (see below), so only the memory
+travels.
+
+### Never synced — hard-excluded
+
+These are blocked in **every** Plan and can't be re-enabled by any configuration:
+
+| Pattern             | Why it's blocked                                              |
+| ------------------- | ------------------------------------------------------------- |
+| `.credentials.json` | your Claude auth tokens                                       |
+| `.claude.json`      | local Claude config — can carry MCP tokens and other secrets  |
+| `*.jsonl`           | session transcripts — large, per-machine, and often sensitive |
+
+Defense in depth: a guard runs before anything enters a Plan **and** the memories repo ships a
+`.gitignore` covering the same patterns, so a stray file can't slip in even by accident.
+
+### Local state we skip on purpose
+
+Everything else under `~/.claude` is machine-local runtime state, caches, and history — there's no
+value (and sometimes real risk) in syncing it, so the app never touches it. That includes
+`sessions/`, `history.jsonl`, the per-project `projects/<slug>/` transcripts, `security/`,
+`daemon/`, `shell-snapshots/`, `file-history/`, `downloads/`, `session-env/`, `tasks/`, and the
+various `*-cache/` directories. If you want a full-disk safety copy of these anyway, that's what the
+**local backup** above is for — not this app.
+
+### Backing up secrets you keep out of a repo (e.g. `.env`)
+
+A common case: a `.env` that's **git-ignored in your product repo**, but that you still want backed
+up and mirrored to your other machines. Two ways to opt it in:
+
+- **Pin it** — **Settings → Pinned files** → choose the `.env`. It syncs globally to
+  `memories/pinned/<name>`, independent of any project.
+- **Add it as a project _file_ source** — when adding a source, pick **file** (not folder) and point
+  it at the `.env`.
+
+Unlike credentials, `.env` is **not** on the hard-excluded list — that's deliberate, so you _can_
+choose to back it up. But it also means the app won't stop you, and the responsibility is yours:
+
+> [!CAUTION]
+>
+> - Your memories repo **must be private** — anyone with read access sees the file in the clear.
+> - The secret lands in **git history in plaintext**; removing it later does **not** erase it from
+>   past commits (you'd need a history rewrite).
+> - **Rotate** the secret if the repo is ever exposed.
+> - For teams or production, prefer a real secrets manager (1Password, Vault, a cloud secret store)
+>   over versioning secrets at all.
 
 ## Build from source
 
