@@ -7,6 +7,8 @@ import { Modal } from '../components/Modal'
 import { PlanDriftDialog } from '../features/plan-review/PlanDriftDialog'
 import { PlanReview } from '../features/plan-review/PlanReview'
 import { FilePreviewModal } from '../features/preview/FilePreviewModal'
+import { ProjectAdoptModal } from '../features/projects/ProjectAdoptModal'
+import { ProjectDiscoverModal } from '../features/projects/ProjectDiscoverModal'
 import { ProjectFormModal } from '../features/projects/ProjectFormModal'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
@@ -53,6 +55,10 @@ export function ModalHost(): JSX.Element | null {
       return <PlanDriftDialog modal={top} />
     case 'project-create':
       return <ProjectFormModal />
+    case 'project-discover':
+      return <ProjectDiscoverModal />
+    case 'project-adopt':
+      return <ProjectAdoptModal name={top.name} />
     case 'about':
       return <AboutModal />
     case 'file-preview':

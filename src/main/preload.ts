@@ -11,12 +11,16 @@ import type {
   Verb,
 } from '../core/types'
 import type {
+  ApplyDiscoveryInput,
+  ApplyDiscoveryResult,
+  ApplyMachineMappingInput,
   ConnectResult,
   CreateProjectResult,
   OutgoingResult,
   RegisterResult,
   IncomingResult,
 } from '../core/service'
+import type { DiscoveryProposal, MachineMappingProposal } from '../core/discovery'
 
 /**
  * Resultado de ejecutar un Plan. Si el disco cambió desde el preview, el core
@@ -59,6 +63,16 @@ const api = {
     ipcRenderer.invoke('project:rename', { oldName, newName }) as Promise<void>,
   projectPickFolder: () => ipcRenderer.invoke('project:pickFolder') as Promise<string | null>,
   pickFile: () => ipcRenderer.invoke('path:pickFile') as Promise<string | null>,
+
+  // Auto-discovery (Flow A) + OS-aware cross-machine adoption (Flow B).
+  projectDiscover: (dir: string) =>
+    ipcRenderer.invoke('project:discover', dir) as Promise<DiscoveryProposal>,
+  projectApplyDiscovery: (input: ApplyDiscoveryInput) =>
+    ipcRenderer.invoke('project:applyDiscovery', input) as Promise<ApplyDiscoveryResult>,
+  projectProposeAdoption: (name: string) =>
+    ipcRenderer.invoke('project:proposeAdoption', name) as Promise<MachineMappingProposal>,
+  projectApplyMapping: (input: ApplyMachineMappingInput) =>
+    ipcRenderer.invoke('project:applyMapping', input) as Promise<{ slots: number }>,
 
   filePreview: (repoRelPath: string) =>
     ipcRenderer.invoke('file:preview', repoRelPath) as Promise<FilePreview>,

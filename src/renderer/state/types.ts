@@ -37,6 +37,8 @@ export type ModalDescriptor =
   | { kind: 'plan-review'; verb: Verb; plan: Plan }
   | { kind: 'plan-drift'; verb: Verb; planId: string; drifted: PlanAction[] }
   | { kind: 'project-create' }
+  | { kind: 'project-discover' }
+  | { kind: 'project-adopt'; name: string }
   | { kind: 'about' }
   | { kind: 'file-preview'; path: string; name: string }
 

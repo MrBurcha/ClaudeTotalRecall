@@ -115,6 +115,16 @@ export function registerIpc(scheduler: SyncScheduler): void {
     return r.canceled || r.filePaths.length === 0 ? null : r.filePaths[0]
   })
 
+  // Auto-discovery of project sources + OS-aware cross-machine adoption.
+  handle('project:discover', (_e, dir: string) => svc.discoverProject(adapter(), dir))
+  handle('project:applyDiscovery', (_e, input: svc.ApplyDiscoveryInput) =>
+    svc.applyDiscovery(adapter(), input),
+  )
+  handle('project:proposeAdoption', (_e, name: string) => svc.proposeAdoption(adapter(), name))
+  handle('project:applyMapping', (_e, input: svc.ApplyMachineMappingInput) =>
+    svc.applyMachineMapping(adapter(), input),
+  )
+
   // File preview (Recent activity → open a file's content in a modal, #43).
   handle('file:preview', (_e, repoRelPath: string) => svc.filePreview(adapter(), repoRelPath))
   // Reveal the file's real source in the OS file manager. The path is re-derived

@@ -5,7 +5,7 @@ updates:
   # npm dependencies (app + CLI + toolchain). Minor/patch updates are grouped into
   # a single weekly PR to keep the noise down; majors come as their own PRs.
   - package-ecosystem: npm
-    directory: "/"
+    directory: '/'
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -17,6 +17,6 @@ updates:
 
   # Keep the GitHub Actions used by CI and the release workflow up to date.
   - package-ecosystem: github-actions
-    directory: "/"
+    directory: '/'
     schedule:
       interval: weekly

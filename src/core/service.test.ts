@@ -8,12 +8,16 @@ import { Git } from './git'
 import { loadConfig } from './config'
 import { activityLogPath } from './activityLog'
 import {
+  applyDiscovery,
+  applyMachineMapping,
   buildVerbPlan,
   configPath,
   connectRepo,
   createProject,
   deleteProject,
+  discoverProject,
   history,
+  proposeAdoption,
   pullRepo,
   registerMachine,
   removePinnedFile,
@@ -410,5 +414,149 @@ describe('file slots and pinned files (#11)', () => {
     await expect(setPinnedFile(a, 'rules', '/tmp/a/rules.md')).rejects.toMatchObject({
       code: 'pin.folderNested',
     })
+  })
+})
+
+describe('project discovery + cross-machine adoption', () => {
+  async function oneMachine() {
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a = adapterFor(join(base, 'home1'))
+    await connectRepo(remote, a)
+    await registerMachine(a, 'm1')
+    return { base, a }
+  }
+  async function twoMachines() {
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a1 = adapterFor(join(base, 'home1'))
+    await connectRepo(remote, a1)
+    await registerMachine(a1, 'm1')
+    const a2 = adapterFor(join(base, 'home2'))
+    await connectRepo(remote, a2)
+    await registerMachine(a2, 'm2')
+    return { base, a1, a2 }
+  }
+  const cfg = (a: ReturnType<typeof adapterFor>) => loadConfig(configPath(a))
+  const commitsBetween = async (a: ReturnType<typeof adapterFor>, from: string, to: string) =>
+    (
+      await run('git', ['rev-list', '--count', `${from}..${to}`], { cwd: workingCopyDir(a) })
+    ).stdout.trim()
+
+  it('applyDiscovery creates the project and writes every slot in a single commit', async () => {
+    const { a } = await oneMachine()
+    const g = new Git(workingCopyDir(a))
+    const before = await g.revParse('HEAD')
+
+    const res = await applyDiscovery(a, {
+      projectName: 'eager-church',
+      slots: [
+        { slot: 'memory', path: '/home/x/eager-church/memory', kind: 'dir' },
+        { slot: 'commands', path: '/home/x/eager-church/commands', kind: 'dir' },
+        { slot: 'CLAUDE.md', path: '/home/x/eager-church/CLAUDE.md', kind: 'file' },
+      ],
+    })
+    expect(res).toEqual({ created: true, slots: 3 })
+
+    const c = await cfg(a)
+    const folders = c.projects['eager-church'].folders
+    expect(folders.memory.m1).toBe('/home/x/eager-church/memory')
+    expect(folders.commands.m1).toBe('/home/x/eager-church/commands')
+    expect(folders['CLAUDE.md'].m1).toBe('/home/x/eager-church/CLAUDE.md')
+    expect(c.projects['eager-church'].slotKinds).toMatchObject({
+      memory: 'dir',
+      commands: 'dir',
+      'CLAUDE.md': 'file',
+    })
+
+    const after = await g.revParse('HEAD')
+    expect(await commitsBetween(a, before!, after!)).toBe('1')
+  })
+
+  it('rejects a batch whose slots nest in one another and persists nothing', async () => {
+    const { a } = await oneMachine()
+    await expect(
+      applyDiscovery(a, {
+        projectName: 'nested',
+        slots: [
+          { slot: 'root', path: '/home/x/proj', kind: 'dir' },
+          { slot: 'child', path: '/home/x/proj/sub', kind: 'dir' },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'project.folderNested' })
+
+    expect((await cfg(a)).projects.nested).toBeUndefined()
+  })
+
+  it('applyDiscovery upserts into an existing project without clobbering another machine', async () => {
+    const { a1, a2 } = await twoMachines()
+    await applyDiscovery(a1, {
+      projectName: 'shared',
+      slots: [{ slot: 'memory', path: '/home/m1/shared/memory', kind: 'dir' }],
+    })
+    const res2 = await applyDiscovery(a2, {
+      projectName: 'shared',
+      slots: [{ slot: 'memory', path: '/home/m2/shared/memory', kind: 'dir' }],
+    })
+    expect(res2.created).toBe(false)
+
+    expect((await cfg(a2)).projects.shared.folders.memory).toEqual({
+      m1: '/home/m1/shared/memory',
+      m2: '/home/m2/shared/memory',
+    })
+  })
+
+  it('applyMachineMapping writes the target paths, leaves the reference intact, and rejects an unknown project', async () => {
+    const { a1, a2 } = await twoMachines()
+    await applyDiscovery(a1, {
+      projectName: 'demo',
+      slots: [{ slot: 'memory', path: '/home/m1/demo/memory', kind: 'dir' }],
+    })
+
+    const res = await applyMachineMapping(a2, {
+      projectName: 'demo',
+      slots: [{ slot: 'memory', path: '/home/m2/demo/memory', kind: 'dir' }],
+    })
+    expect(res).toEqual({ slots: 1 })
+
+    expect((await cfg(a2)).projects.demo.folders.memory).toEqual({
+      m1: '/home/m1/demo/memory',
+      m2: '/home/m2/demo/memory',
+    })
+
+    await expect(
+      applyMachineMapping(a2, {
+        projectName: 'ghost',
+        slots: [{ slot: 'memory', path: '/home/m2/ghost/memory', kind: 'dir' }],
+      }),
+    ).rejects.toMatchObject({ code: 'project.notFound' })
+  })
+
+  it('discoverProject reads this machine config and recognizes memory in a selected dir', async () => {
+    const { base, a } = await oneMachine()
+    const proj = join(base, 'src', 'my-app')
+    await mkdir(join(proj, 'memory'), { recursive: true })
+
+    const proposal = await discoverProject(a, proj)
+    expect(proposal.projectName).toBe('my-app')
+    expect(proposal.slots.map((s) => s.slot)).toEqual(['memory'])
+  })
+
+  it('proposeAdoption remaps a reference machine path to this machine home', async () => {
+    const { a1, a2 } = await twoMachines()
+    const m1mem = join(a1.home(), '.claude/projects/demo/memory')
+    await applyDiscovery(a1, {
+      projectName: 'demo',
+      slots: [{ slot: 'memory', path: m1mem, kind: 'dir' }],
+    })
+
+    // Read-only proposeAdoption reads THIS machine's working copy (like the UI's
+    // project list), so m2 must pull m1's config commit before it can adopt.
+    await pullRepo(a2)
+    const proposal = await proposeAdoption(a2, 'demo')
+    expect(proposal.targetMachine).toBe('m2')
+    const mem = proposal.slots.find((s) => s.slot === 'memory')!
+    expect(mem.referenceMachine).toBe('m1')
+    expect(mem.proposedPath).toBe(join(a2.home(), '.claude/projects/demo/memory'))
   })
 })

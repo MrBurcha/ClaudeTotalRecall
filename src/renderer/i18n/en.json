@@ -341,6 +341,35 @@
     "slot": {
       "nameEmpty": "The slot name can't be empty.",
       "nameInvalid": "Invalid slot name. Use only letters, numbers, dot, hyphen and underscore."
+    },
+    "discover": {
+      "title": "Add a project from a folder",
+      "scanning": "Scanning…",
+      "nothingFound": "No Claude memory found in this folder.",
+      "rechoose": "Choose a different folder",
+      "createEmpty": "Create an empty project instead",
+      "projectName": "Project name",
+      "sourcesFound": "Sources found",
+      "include": "Include",
+      "collides": "Overlaps {{where}}, already synced here",
+      "selectOne": "Select at least one source.",
+      "confirm": "Create project",
+      "done_one": "Created \"{{name}}\" with {{count}} source.",
+      "done_other": "Created \"{{name}}\" with {{count}} sources."
+    },
+    "adopt": {
+      "button": "Configure on this machine",
+      "title": "Configure \"{{name}}\" on this machine",
+      "already": "Already configured here",
+      "exists": "Found on disk",
+      "missing": "Not found on disk",
+      "manual": "Couldn't map automatically — pick a path",
+      "noReference": "No other machine has this source",
+      "selectOne": "Select at least one source with a path.",
+      "confirm": "Configure",
+      "empty": "Nothing to configure — every source already has a path here.",
+      "done_one": "Configured {{count}} source on this machine.",
+      "done_other": "Configured {{count}} sources on this machine."
     }
   },
   "conflicts": {
