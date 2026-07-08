@@ -7,6 +7,20 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-08
+
+### Added
+
+- **Preview a file's content from Recent activity** (#43): every file in the feed is now a link
+  (underlined, no color change, pointer on hover). Clicking it opens a scrollable modal that previews
+  the file, formatted by type — rendered **markdown** (GFM tables, code blocks, blockquotes),
+  pretty-printed **JSON**, **`.properties`/`.env`** key–value, or **plain text** — auto-detected by
+  extension, with a manual renderer switcher. An **"Open location"** button reveals the file's real
+  source on this machine (its configured path, not the app's internal repo) in Finder / the default
+  Linux file manager. Content is read from the synced working copy — so hard-excluded secrets can't
+  be surfaced — and guarded against path traversal, oversized files (1 MiB cap), and binary blobs;
+  the reveal path is re-derived server-side, never trusted from the UI.
+
 ## [0.5.0] - 2026-07-08
 
 ### Added
@@ -217,7 +231,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.6.0
 [0.5.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.5.0
 [0.4.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.3
 [0.4.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.2
