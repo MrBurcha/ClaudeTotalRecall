@@ -37,6 +37,8 @@ describe('filterCommands', () => {
     ])
   })
   it('searches by keyword', () => {
-    expect(filterCommands('incoming', items).map((x) => x.title)).toEqual(['Traer cambios (incoming)'])
+    expect(filterCommands('incoming', items).map((x) => x.title)).toEqual([
+      'Traer cambios (incoming)',
+    ])
   })
 })

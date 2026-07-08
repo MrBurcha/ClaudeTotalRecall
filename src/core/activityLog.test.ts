@@ -60,7 +60,10 @@ describe('loadActivityLog', () => {
 
   it('falls back to the empty log on a schema-invalid file', async () => {
     await mkdir(adapter.configHome(), { recursive: true })
-    await writeFile(activityLogPath(adapter), JSON.stringify({ version: 1, incoming: [{ bad: 1 }] }))
+    await writeFile(
+      activityLogPath(adapter),
+      JSON.stringify({ version: 1, incoming: [{ bad: 1 }] }),
+    )
     expect(await loadActivityLog(adapter)).toEqual({ version: 1, incoming: [] })
   })
 })

@@ -119,7 +119,8 @@ async function settingsAction(ctx: SyncContext, verb: Verb): Promise<PlanAction>
       from: null,
       to: null,
       type: 'skip',
-      reason: verb === 'outgoing' ? 'no local ~/.claude/settings.json' : 'no settings.json in the repo',
+      reason:
+        verb === 'outgoing' ? 'no local ~/.claude/settings.json' : 'no settings.json in the repo',
       reasonCode: verb === 'outgoing' ? 'noLocalSettings' : 'noRepoSettings',
     }
   }
@@ -244,8 +245,7 @@ export async function buildPlan(
   for (const item of userLevelItems(ctx.adapter)) {
     if (item.slot === 'settings.json') continue // handled separately
     const repoPath = join(ctx.repoDir, item.logicalPath)
-    const [src, dest] =
-      verb === 'outgoing' ? [item.realPath, repoPath] : [repoPath, item.realPath]
+    const [src, dest] = verb === 'outgoing' ? [item.realPath, repoPath] : [repoPath, item.realPath]
     if (item.kind === 'file') {
       actions.push(await planFileSync(`user:${item.slot}`, src, dest, item.logicalPath))
     } else {
@@ -318,7 +318,10 @@ export interface ExecResult {
 /** Recomputes the hash of the content the action would write, for revalidation. */
 async function currentSourceHash(action: PlanAction, ctx: SyncContext): Promise<string | null> {
   if (action.transform) {
-    const w = await settingsWrite(ctx, action.transform === 'settings-outgoing' ? 'outgoing' : 'incoming')
+    const w = await settingsWrite(
+      ctx,
+      action.transform === 'settings-outgoing' ? 'outgoing' : 'incoming',
+    )
     return w ? hashString(w.content) : null
   }
   if (!action.from) return null
@@ -360,7 +363,10 @@ export async function executePlan(
     if (!a.to) continue
     await mkdir(dirname(a.to), { recursive: true })
     if (a.transform) {
-      const w = await settingsWrite(ctx, a.transform === 'settings-outgoing' ? 'outgoing' : 'incoming')
+      const w = await settingsWrite(
+        ctx,
+        a.transform === 'settings-outgoing' ? 'outgoing' : 'incoming',
+      )
       if (w) await writeFile(a.to, w.content)
     } else if (a.from) {
       await copyFile(a.from, a.to)

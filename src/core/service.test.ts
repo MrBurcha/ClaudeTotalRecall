@@ -145,7 +145,9 @@ describe('outgoing → incoming via the service (two machines, one remote)', () 
     await syncIncoming(a2, splan)
 
     expect(await readFile(join(home2, '.claude', 'CLAUDE.md'), 'utf8')).toBe('memoria de m1\n')
-    expect(await readFile(join(home2, '.claude', 'commands', 'deploy.md'), 'utf8')).toBe('deploy cmd\n')
+    expect(await readFile(join(home2, '.claude', 'commands', 'deploy.md'), 'utf8')).toBe(
+      'deploy cmd\n',
+    )
     expect(JSON.parse(await readFile(join(home2, '.claude', 'settings.json'), 'utf8'))).toEqual({
       theme: 'dark',
     })
@@ -177,7 +179,10 @@ describe('incoming ledger (records real incoming, never touches the remote)', ()
     // m1 seeds ~/.claude and pushes.
     await mkdir(join(home1, '.claude'), { recursive: true })
     await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'memoria de m1\n')
-    const gplan = await buildVerbPlan(a1, 'outgoing', { id: 'g', createdAt: '2026-07-01T00:00:00.000Z' })
+    const gplan = await buildVerbPlan(a1, 'outgoing', {
+      id: 'g',
+      createdAt: '2026-07-01T00:00:00.000Z',
+    })
     expect((await syncOutgoing(a1, gplan)).pushed).toBe(true)
 
     // m2 pulls, then applies incoming.
@@ -186,7 +191,10 @@ describe('incoming ledger (records real incoming, never touches the remote)', ()
     // Snapshot the remote log to prove an incoming leaves it untouched.
     const remoteLogBefore = (await run('git', ['-C', remote, 'log', '--format=%H'])).stdout
 
-    const splan = await buildVerbPlan(a2, 'incoming', { id: 's1', createdAt: '2026-07-02T00:00:00.000Z' })
+    const splan = await buildVerbPlan(a2, 'incoming', {
+      id: 's1',
+      createdAt: '2026-07-02T00:00:00.000Z',
+    })
     const sres = await syncIncoming(a2, splan)
     expect(sres.exec.applied).toBeGreaterThan(0)
     expect(await readFile(join(home2, '.claude', 'CLAUDE.md'), 'utf8')).toBe('memoria de m1\n')
@@ -335,7 +343,9 @@ describe('project operations (CRUD)', () => {
     await createProject(a, 'alpha')
     await createProject(a, 'beta')
 
-    await expect(renameProject(a, 'alpha', 'beta')).rejects.toMatchObject({ code: 'project.exists' })
+    await expect(renameProject(a, 'alpha', 'beta')).rejects.toMatchObject({
+      code: 'project.exists',
+    })
     await expect(renameProject(a, 'ghost', 'x')).rejects.toMatchObject({ code: 'project.notFound' })
     await expect(renameProject(a, 'alpha', '../x')).rejects.toMatchObject({
       code: 'project.invalidName',

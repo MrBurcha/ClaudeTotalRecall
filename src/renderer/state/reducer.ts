@@ -1,5 +1,14 @@
 import type { Config, RepoStatus, SyncEngineState } from '../../core/types'
-import type { ActiveOp, AppState, ModalDescriptor, PaletteState, Route, Snapshot, Theme, ToastItem } from './types'
+import type {
+  ActiveOp,
+  AppState,
+  ModalDescriptor,
+  PaletteState,
+  Route,
+  Snapshot,
+  Theme,
+  ToastItem,
+} from './types'
 
 /** Reducer actions. Everything is pure and synchronous; I/O lives in useActions. */
 export type Action =

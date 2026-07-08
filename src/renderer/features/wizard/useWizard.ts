@@ -27,7 +27,8 @@ export function useWizard(): { step: OnboardingStep; index: number; steps: Wizar
   const { t } = useTranslation()
   const state = useAppState()
   const step = onboardingStep(state)
-  const index = step === 'done' ? WIZARD_STEPS.length : WIZARD_STEPS.findIndex((s) => s.key === step)
+  const index =
+    step === 'done' ? WIZARD_STEPS.length : WIZARD_STEPS.findIndex((s) => s.key === step)
   const steps = WIZARD_STEPS.map((s) => ({ key: s.key, label: t(s.labelKey) }))
   return { step, index, steps }
 }

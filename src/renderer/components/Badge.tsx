@@ -12,17 +12,15 @@ export function Pill({
   return <span className={className ? `pill ${className}` : 'pill'}>{children}</span>
 }
 
-export function Badge({
-  children,
-  muted,
-}: {
-  children: ReactNode
-  muted?: boolean
-}): JSX.Element {
+export function Badge({ children, muted }: { children: ReactNode; muted?: boolean }): JSX.Element {
   return <span className={muted ? 'badge badge--muted' : 'badge'}>{children}</span>
 }
 
-export function StatusDot({ tone = 'muted' }: { tone?: 'ok' | 'warn' | 'danger' | 'muted' }): JSX.Element {
+export function StatusDot({
+  tone = 'muted',
+}: {
+  tone?: 'ok' | 'warn' | 'danger' | 'muted'
+}): JSX.Element {
   return <span className={tone === 'muted' ? 'status-dot' : `status-dot status-dot--${tone}`} />
 }
 

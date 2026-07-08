@@ -26,7 +26,13 @@ export function Toast({
     <div className={`toast toast--${toast.kind}`} role="status">
       <Icon name={ICON[toast.kind]} size={17} className="toast__icon" />
       <span className="toast__msg">{toast.msg}</span>
-      <IconButton icon="x" label="Cerrar" size={15} onClick={() => onDismiss(toast.id)} className="toast__close" />
+      <IconButton
+        icon="x"
+        label="Cerrar"
+        size={15}
+        onClick={() => onDismiss(toast.id)}
+        className="toast__close"
+      />
     </div>
   )
 }

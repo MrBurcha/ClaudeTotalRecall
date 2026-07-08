@@ -86,7 +86,15 @@ export function computeConstellation(
     const y1 = node.y + uy * node.r
     const x2 = vault.x - ux * vault.r
     const y2 = vault.y - uy * vault.r
-    return { id: node.id, x1, y1, x2, y2, length: Math.hypot(x2 - x1, y2 - y1), isCurrent: node.isCurrent }
+    return {
+      id: node.id,
+      x1,
+      y1,
+      x2,
+      y2,
+      length: Math.hypot(x2 - x1, y2 - y1),
+      isCurrent: node.isCurrent,
+    }
   })
 
   return { vault, nodes, links }

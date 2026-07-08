@@ -36,7 +36,13 @@ function Glyph({
   className: string
 }): JSX.Element {
   return (
-    <foreignObject x={x - size / 2} y={y - size / 2} width={size} height={size} className={className}>
+    <foreignObject
+      x={x - size / 2}
+      y={y - size / 2}
+      width={size}
+      height={size}
+      className={className}
+    >
       <Icon name={name} size={size} />
     </foreignObject>
   )
@@ -93,7 +99,7 @@ export function Constellation({
   useConstellationMotion(particlesRef, currentLink, direction, enabled, active ? 1.8 : 1)
 
   const pending =
-    direction === 'up' ? status?.ahead ?? 0 : direction === 'down' ? status?.behind ?? 0 : 0
+    direction === 'up' ? (status?.ahead ?? 0) : direction === 'down' ? (status?.behind ?? 0) : 0
 
   return (
     <div className={cx('constellation', tone !== 'ok' && `constellation--${tone}`)}>
@@ -128,7 +134,9 @@ export function Constellation({
             {Array.from({ length: PARTICLES }).map((_, i) => (
               <circle
                 key={i}
-                className={direction === 'down' ? 'const-particle const-particle--down' : 'const-particle'}
+                className={
+                  direction === 'down' ? 'const-particle const-particle--down' : 'const-particle'
+                }
                 r={2.6}
                 cx={vault.x}
                 cy={vault.y}
@@ -174,7 +182,9 @@ export function Constellation({
             />
             <text
               className={
-                node.isCurrent ? 'const-node__label const-node__label--current' : 'const-node__label'
+                node.isCurrent
+                  ? 'const-node__label const-node__label--current'
+                  : 'const-node__label'
               }
               x={node.x}
               y={node.y + node.r + 15}

@@ -60,27 +60,19 @@ describe('userLevelItems', () => {
       expect(item.realPath.startsWith(a.claudeHome())).toBe(true)
     }
     const byLogical = new Map(items.map((i) => [i.logicalPath, i]))
-    expect(byLogical.get('memories/user/CLAUDE.md')?.realPath).toBe(
-      `${HOME}/.claude/CLAUDE.md`,
-    )
+    expect(byLogical.get('memories/user/CLAUDE.md')?.realPath).toBe(`${HOME}/.claude/CLAUDE.md`)
     expect(byLogical.get('memories/user/settings.json')?.realPath).toBe(
       `${HOME}/.claude/settings.json`,
     )
-    expect(byLogical.get('memories/user/commands')?.realPath).toBe(
-      `${HOME}/.claude/commands`,
-    )
+    expect(byLogical.get('memories/user/commands')?.realPath).toBe(`${HOME}/.claude/commands`)
   })
 })
 
 describe('projectSlotPath', () => {
   it('returns the literal path for a mapped machineId', () => {
     const config = sampleConfig()
-    expect(projectSlotPath(config, 'demo', 'memory', 'laptop')).toBe(
-      '/home/me/code/demo/.claude',
-    )
-    expect(projectSlotPath(config, 'demo', 'memory', 'desktop')).toBe(
-      '/Users/me/code/demo/.claude',
-    )
+    expect(projectSlotPath(config, 'demo', 'memory', 'laptop')).toBe('/home/me/code/demo/.claude')
+    expect(projectSlotPath(config, 'demo', 'memory', 'desktop')).toBe('/Users/me/code/demo/.claude')
   })
 
   it('returns null for an unmapped machineId', () => {
@@ -109,12 +101,8 @@ describe('projectSlots', () => {
 
 describe('projectSlotLogicalPath', () => {
   it('builds memories/projects/<project>/<slot>', () => {
-    expect(projectSlotLogicalPath('x', 'memory')).toBe(
-      'memories/projects/x/memory',
-    )
-    expect(projectSlotLogicalPath('demo', 'docs')).toBe(
-      'memories/projects/demo/docs',
-    )
+    expect(projectSlotLogicalPath('x', 'memory')).toBe('memories/projects/x/memory')
+    expect(projectSlotLogicalPath('demo', 'docs')).toBe('memories/projects/demo/docs')
   })
 })
 

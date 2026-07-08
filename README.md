@@ -28,7 +28,7 @@ lives on one machine. Switch laptops, reinstall, or lose the disk, and it's gone
 
 - **Sync across machines** — your Claude Code memory stays identical on every computer you use, kept
   up to date automatically while the app is open.
-- **A versioned backup** — even on a *single* machine, you get a full **git history** of your Claude
+- **A versioned backup** — even on a _single_ machine, you get a full **git history** of your Claude
   Code setup in your own private repo. Roll back a bad edit, audit what changed, restore after a
   reinstall.
 
@@ -59,10 +59,10 @@ page. Builds are **unsigned** (no paid Apple/OS code-signing) — see the notes 
 
 1. Download `Claude-Total-Recall-<version>-arm64.dmg`, open it, and drag the app to **Applications**.
 2. First open, because the build isn't notarized (macOS 15 Sequoia and later — the old
-   *right-click → Open* was removed):
-   - Double-click the app → *"Apple could not verify…"* → **Done**.
-   - **System Settings → Privacy & Security**, scroll to **Security** → *"Claude Total Recall was
-     blocked…"* → **Open Anyway** → confirm with Touch ID / password.
+   _right-click → Open_ was removed):
+   - Double-click the app → _"Apple could not verify…"_ → **Done**.
+   - **System Settings → Privacy & Security**, scroll to **Security** → _"Claude Total Recall was
+     blocked…"_ → **Open Anyway** → confirm with Touch ID / password.
 
    Or clear the quarantine in one shot from a terminal:
 
@@ -97,7 +97,7 @@ Prefer to build the binaries yourself? See [Build from source](#build-from-sourc
 
 - **`git`** and **`gh`** (the [GitHub CLI](https://cli.github.com)) on your `PATH`, with `gh`
   authenticated: `gh auth login && gh auth setup-git`.
-- An **empty private GitHub repo** to hold your memories — *separate from any code repo*. You don't
+- An **empty private GitHub repo** to hold your memories — _separate from any code repo_. You don't
   have to initialize it; the app creates the structure on the first connect.
 
 **Then, in the app:** on first launch an **onboarding wizard** walks you through it — connect the
@@ -125,14 +125,14 @@ stored under logical names in `memories/…` inside your repo.
 The CLI ships the same core as the app and is English-only. Every command prints its result and sets
 an exit code (`0` on success).
 
-| Command | What it does |
-| --- | --- |
-| `check` | Preflight: verifies `git` and `gh` are installed and `gh` is authenticated. Read-only. |
-| `connect <remote>` | Clone/initialize the memories repo into `~/.config/claudetr/repo` (accepts HTTPS, SSH, or `file://` remotes). On an empty repo it writes the initial structure and pushes it. |
-| `status` | Local repo status: branch, ahead/behind, dirty, conflicts. Read-only. |
-| `register [--name <id>]` | Register this machine in the repo config (defaults the id to your hostname). Mutates the repo. |
-| `outgoing [--dry-run] [--yes]` | **machine → repo**: build a Plan, then commit + pull + push your memory. |
-| `incoming [--dry-run] [--yes]` | **repo → machine**: pull first, build a Plan, then write the repo's memory onto this machine. Never touches the remote. |
+| Command                        | What it does                                                                                                                                                                  |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check`                        | Preflight: verifies `git` and `gh` are installed and `gh` is authenticated. Read-only.                                                                                        |
+| `connect <remote>`             | Clone/initialize the memories repo into `~/.config/claudetr/repo` (accepts HTTPS, SSH, or `file://` remotes). On an empty repo it writes the initial structure and pushes it. |
+| `status`                       | Local repo status: branch, ahead/behind, dirty, conflicts. Read-only.                                                                                                         |
+| `register [--name <id>]`       | Register this machine in the repo config (defaults the id to your hostname). Mutates the repo.                                                                                |
+| `outgoing [--dry-run] [--yes]` | **machine → repo**: build a Plan, then commit + pull + push your memory.                                                                                                      |
+| `incoming [--dry-run] [--yes]` | **repo → machine**: pull first, build a Plan, then write the repo's memory onto this machine. Never touches the remote.                                                       |
 
 Notes:
 
@@ -169,14 +169,14 @@ npm install
 npm run dev          # run the Electron app in dev mode
 ```
 
-| Script | Does |
-| --- | --- |
-| `npm run dev` | Run the app in dev mode (electron-vite). |
-| `npm test` | Run the test suite (vitest). |
-| `npm run typecheck` | `tsc --noEmit`. |
-| `npm run lint` | ESLint. |
-| `npm run build:cli` | Build the headless CLI → `dist-cli/index.js`. |
-| `npm run build:mac` | Unsigned `.dmg` → `release/` (**run on macOS**). |
+| Script                | Does                                                           |
+| --------------------- | -------------------------------------------------------------- |
+| `npm run dev`         | Run the app in dev mode (electron-vite).                       |
+| `npm test`            | Run the test suite (vitest).                                   |
+| `npm run typecheck`   | `tsc --noEmit`.                                                |
+| `npm run lint`        | ESLint.                                                        |
+| `npm run build:cli`   | Build the headless CLI → `dist-cli/index.js`.                  |
+| `npm run build:mac`   | Unsigned `.dmg` → `release/` (**run on macOS**).               |
 | `npm run build:linux` | AppImage + deb + pacman → `release/` (**run on Linux or CI**). |
 
 **No cross-build:** `build:mac` must run on macOS and `build:linux` on Linux. Pushing a `v*.*.*` tag

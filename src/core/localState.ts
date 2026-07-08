@@ -2,12 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import { AppError } from './errors'
-import {
-  LocalStateSchema,
-  type AutoSyncPrefs,
-  type LocalState,
-  type SettingsObject,
-} from './types'
+import { LocalStateSchema, type AutoSyncPrefs, type LocalState, type SettingsObject } from './types'
 import type { PlatformAdapter } from '../platform'
 
 /** Auto-sync default: enabled, poll the remote every 2 min (see plan). */

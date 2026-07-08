@@ -98,8 +98,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     dispatch({ t: 'theme', theme })
     applyTheme(theme)
   }
-  const toggleTheme = (): void =>
-    setTheme(stateRef.current.theme === 'dark' ? 'light' : 'dark')
+  const toggleTheme = (): void => setTheme(stateRef.current.theme === 'dark' ? 'light' : 'dark')
 
   const openModal = (modal: ModalDescriptor): void => dispatch({ t: 'pushModal', modal })
   const closeModal = (): void => dispatch({ t: 'popModal' })

@@ -58,8 +58,9 @@ export function registerIpc(scheduler: SyncScheduler): void {
     return !!w?.isMaximized()
   })
   ipcMain.handle('window:close', (_e) => BrowserWindow.fromWebContents(_e.sender)?.close())
-  ipcMain.handle('window:isMaximized', (_e) =>
-    !!BrowserWindow.fromWebContents(_e.sender)?.isMaximized(),
+  ipcMain.handle(
+    'window:isMaximized',
+    (_e) => !!BrowserWindow.fromWebContents(_e.sender)?.isMaximized(),
   )
 
   // Auto-sync engine (real-time state via webContents.send('sync:state'))
@@ -129,7 +130,10 @@ export function registerIpc(scheduler: SyncScheduler): void {
   handle('plan:execute', async (_e, args: { verb: Verb; planId: string; force?: boolean }) => {
     const plan = planCache.get(args.planId)
     if (!plan) {
-      throw new AppError('plan.expired', 'Plan expired; rebuild it (the preview is no longer valid).')
+      throw new AppError(
+        'plan.expired',
+        'Plan expired; rebuild it (the preview is no longer valid).',
+      )
     }
     const opts = { force: args.force }
     try {

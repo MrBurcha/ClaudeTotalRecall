@@ -9,5 +9,7 @@ import brandIcon from '@build/icons/256x256.png'
  * CSS (`.brand-mark`), so the source image itself never needs editing.
  */
 export function BrandMark({ size = 22 }: { size?: number }): JSX.Element {
-  return <img src={brandIcon} width={size} height={size} className="brand-mark" alt="" aria-hidden />
+  return (
+    <img src={brandIcon} width={size} height={size} className="brand-mark" alt="" aria-hidden />
+  )
 }

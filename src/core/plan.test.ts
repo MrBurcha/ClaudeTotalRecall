@@ -114,7 +114,9 @@ describe('outgoing → incoming round-trip', () => {
       'project note\n',
     )
     // shared settings = real without the local key.
-    expect(JSON.parse(await read(join(sb.repoDir, 'memories/user/settings.json')))).toEqual({ a: 1 })
+    expect(JSON.parse(await read(join(sb.repoDir, 'memories/user/settings.json')))).toEqual({
+      a: 1,
+    })
 
     // Secrets absent from the repo.
     expect(await exists(join(sb.repoDir, 'memories/user/commands/.credentials.json'))).toBe(false)
@@ -181,7 +183,10 @@ describe('file slots and pinned files (#11)', () => {
     await writeFile(pinSrc, 'pinned file\n')
     await writeFile(secretSrc, '{"x":1}')
 
-    sb.config.projects.proj.folders.single = { m1: singleSrc, m2: join(sb.home2, '.claude', 'SINGLE.md') }
+    sb.config.projects.proj.folders.single = {
+      m1: singleSrc,
+      m2: join(sb.home2, '.claude', 'SINGLE.md'),
+    }
     sb.config.projects.proj.folders.missing = { m1: join(sb.home1, '.claude', 'NOPE.md') }
     sb.config.projects.proj.folders.secret = { m1: secretSrc }
     sb.config.projects.proj.slotKinds = { single: 'file', missing: 'file', secret: 'file' }
@@ -204,8 +209,14 @@ describe('file slots and pinned files (#11)', () => {
       logicalPath: 'memories/pinned/rules',
     })
     // Missing source → skip (NOT delete), secret source → skip.
-    expect(bySlot.get('project:proj/missing')).toMatchObject({ type: 'skip', reasonCode: 'sourceMissing' })
-    expect(bySlot.get('project:proj/secret')).toMatchObject({ type: 'skip', reasonCode: 'secretExcluded' })
+    expect(bySlot.get('project:proj/missing')).toMatchObject({
+      type: 'skip',
+      reasonCode: 'sourceMissing',
+    })
+    expect(bySlot.get('project:proj/secret')).toMatchObject({
+      type: 'skip',
+      reasonCode: 'secretExcluded',
+    })
 
     await executeOutgoing(plan, ctx1)
     expect(await read(join(sb.repoDir, 'memories/projects/proj/single'))).toBe('single file\n')

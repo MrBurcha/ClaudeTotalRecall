@@ -49,7 +49,12 @@ export function ProjectFormModal(): JSX.Element {
           <Button variant="ghost" onClick={actions.closeModal}>
             {t('common.cancel')}
           </Button>
-          <Button variant="primary" icon="plus" disabled={submitting || !name.trim()} onClick={submit}>
+          <Button
+            variant="primary"
+            icon="plus"
+            disabled={submitting || !name.trim()}
+            onClick={submit}
+          >
             {t('common.create')}
           </Button>
         </>
