@@ -63,6 +63,6 @@ Key invariants (preserve these when changing core):
 
 ## Testing note
 
-The memories destination is a **separate private repo**, never this code repo. `TESTING.md` documents the manual dogfooding flow end-to-end.
+The memories destination is a **separate private repo**, never this code repo. `CONTRIBUTING.md` covers the dev/test workflow and the dogfooding flow.
 
 **vitest gotcha**: the suite runs under the `node` environment and only includes `src/**/*.test.ts` (no `.tsx` render tests). So pure modules that need translation take `t` as a parameter (tested with an identity stub), never via the DOM. `i18n/parity.test.ts` and `i18n/keysExist.test.ts` guard en/es key parity and that every static `t()` key exists in the catalog; `state/api.test.ts` guards the sentinel → localized-error pipeline.

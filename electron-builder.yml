@@ -6,22 +6,22 @@ directories:
 files:
   - out/**/*
   - package.json
-# El PNG del ícono no viaja en `files` (el bundle es out/ + package.json); lo
-# copiamos a resources/ para que la ventana lo use en runtime vía
-# process.resourcesPath (la barra de tareas/overview de Linux lo toman de ahí).
+# The icon PNG doesn't travel in `files` (the bundle is out/ + package.json); we
+# copy it to resources/ so the window uses it at runtime via process.resourcesPath
+# (Linux's taskbar/overview read it from there).
 extraResources:
   - from: build/icon.png
     to: icon.png
-# Uso personal: sin certificado Developer ID ni notarización (decisión del
-# usuario). El bundle se firma ad-hoc en `afterPack` (ver abajo) para que macOS
-# en Apple Silicon no lo marque como "dañado".
+# Personal use: no Developer ID certificate, no notarization. The bundle is
+# ad-hoc-signed in `afterPack` (below) so Apple Silicon macOS doesn't flag it as
+# "damaged".
 mac:
   target:
     - dmg
   category: public.app-category.developer-tools
   identity: null
-# El bundle sale sin cert; este hook lo firma ad-hoc tras empaquetarlo (antes
-# de armar el dmg) para sellar los recursos y evitar el veredicto "dañado".
+# The bundle ships without a cert; this hook ad-hoc-signs it after packaging
+# (before building the dmg) to seal the resources and avoid the "damaged" verdict.
 afterPack: scripts/afterPack.cjs
 dmg:
   # Volume icon (#18): explicit `null` → electron-builder passes no `--icon` to dmgbuild,
@@ -30,18 +30,18 @@ dmg:
   # from `undefined` (which would re-default to the app icon). Stopgap until #18 ships a
   # branded drive icon aligned with the app's visual identity (#9).
   icon: null
-  # Nombre de volumen versionado (default de electron-builder): cada versión monta
-  # con un nombre distinto, así Finder lee el .DS_Store fresco sin arrastrar estado.
+  # Versioned volume name (electron-builder default): each version mounts under a
+  # distinct name, so Finder reads a fresh .DS_Store without carrying over state.
   title: Claude Total Recall ${version}
-  # Fondo con las instrucciones de instalación/apertura (build/background.png +
-  # background@2x.png para retina). Coords en px desde arriba-izquierda, al centro
-  # del ícono: la app a la izquierda, el alias a Aplicaciones a la derecha.
+  # Background with the install/open instructions (build/background.png +
+  # background@2x.png for retina). Coords in px from the top-left, at the icon
+  # center: the app on the left, the Applications alias on the right.
   background: build/background.png
   window:
     width: 640
-    # El alto es el de la ventana TOTAL (incluye la barra de título ~28px); el
-    # fondo (640x500) va en el área de contenido, así que sumamos la barra para
-    # que se vea completo sin recorte.
+    # This is the TOTAL window height (includes the ~28px title bar); the
+    # background (640x500) sits in the content area, so we add the bar height so
+    # it shows in full without clipping.
     height: 528
   iconSize: 120
   iconTextSize: 13
@@ -77,9 +77,9 @@ linux:
   # it won't match and the DE shows a generic icon. Force it to the real WM_CLASS.
   desktop:
     StartupWMClass: claude-total-recall
-# Deps con nombres de Arch: el default de electron-builder usa nomenclatura
-# Debian (p.ej. http-parser), que no existe en los repos de Arch. El .deb
-# conserva sus defaults; solo el pacman necesita este override.
+# Deps with Arch names: electron-builder's default uses Debian naming (e.g.
+# http-parser), which doesn't exist in the Arch repos. The .deb keeps its
+# defaults; only the pacman package needs this override.
 pacman:
   depends:
     - c-ares
@@ -94,7 +94,7 @@ pacman:
     - re2
     - snappy
     - libnotify
-# El CI (release en tag) publica los artefactos en el Release de este repo.
+# CI (release on tag) publishes the artifacts to this repo's Release.
 publish:
   provider: github
   owner: MrBurcha

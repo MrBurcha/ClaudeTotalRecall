@@ -1,10 +1,10 @@
 const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 
-// Firma ad-hoc del bundle en macOS. electron-builder corre sin certificado
-// (uso personal), así que el bundle sale sin sellar y en Apple Silicon macOS
-// lo marca como "dañado". La firma ad-hoc sella los recursos y evita ese
-// error; no notariza, pero habilita el flujo "desarrollador no identificado".
+// Ad-hoc-sign the bundle on macOS. electron-builder runs without a certificate
+// (personal use), so the bundle ships unsealed and Apple Silicon macOS flags it
+// as "damaged". The ad-hoc signature seals the resources and avoids that error;
+// it does not notarize, but it enables the "unidentified developer" open flow.
 exports.default = async function afterPack(context) {
   if (context.electronPlatformName !== 'darwin') return;
   const appName = context.packager.appInfo.productFilename;
