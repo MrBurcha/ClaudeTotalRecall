@@ -7,6 +7,27 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-07-08
+
+### Changed
+
+- **electron-builder 25 → 26** (+ `tar` 7) (#63): the macOS DMG-background workaround for the
+  macOS 26.2+ regression (Finder no longer resolving the `pBBk` bookmark, #9072) moves from our
+  hand-maintained `patch-package` patch to **upstream**: electron-builder 26 bundles `dmgbuild`
+  v1.6.7, which drops the `pBBk` write itself. The patch is removed as redundant, and DMGs now
+  also build as APFS on Apple Silicon (avoiding the Tahoe HFS+ mount bug). No app-runtime change.
+
+### Fixed
+
+- **Release pipeline no longer drops a platform's artifact** (#60): the macOS and Linux jobs each
+  ran `electron-builder --publish always` in parallel and both tried to create the GitHub Release,
+  a race that left two drafts for one tag and stranded the macOS `.dmg` (seen on v0.7.0). A new
+  `create-release` job now creates the draft once, up front, and both builds upload into it.
+
+### Documentation
+
+- **CONTRIBUTING**: documented the PR-based workflow and the `main` branch protections (#62).
+
 ## [0.7.0] - 2026-07-08
 
 ### Added
@@ -272,7 +293,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.7.1
 [0.7.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.7.0
 [0.6.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.6.0
 [0.5.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.5.0
