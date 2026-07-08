@@ -14,6 +14,13 @@ import {
   loadSettingsLocal,
   saveLocalState,
 } from './localState'
+import {
+  discoverProjectSources,
+  proposeMachineMapping,
+  slug,
+  type DiscoveryProposal,
+  type MachineMappingProposal,
+} from './discovery'
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
 import { machinePathForLogical, machineSyncedPaths, pathsCollide } from './resolve'
 import {
@@ -108,13 +115,6 @@ export async function connectRepo(
 }
 
 // ── machine registration (fetch+reset+reapply: no JSON merge conflicts) ─────
-function slug(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
 export interface RegisterResult {
   machineId: string
   machine: Machine
@@ -402,6 +402,158 @@ export async function renameProject(
       if (exists) await rename(src, join(base, to))
     },
   )
+}
+
+// ── discovery & cross-machine adoption (batch writes, one commit) ───────────
+interface SlotWrite {
+  slot: string
+  path: string
+  kind: 'file' | 'dir'
+}
+
+/**
+ * Writes N slot paths for one machine in a SINGLE commit, with a whole-batch
+ * nesting guard. Generalizes `setProjectFolder`'s single-slot logic: it first
+ * neutralizes each batch slot's own prior value on this machine (so re-adopting a
+ * slot doesn't collide with itself), then checks every write against the paths
+ * already synced here PLUS the earlier writes in the same batch (so siblings added
+ * together can't nest in one another). A throw aborts the commit ⇒ nothing persists.
+ */
+async function batchSetProjectFolders(
+  adapter: PlatformAdapter,
+  projectName: string,
+  writes: SlotWrite[],
+  id: string,
+  message: string,
+  opts: { createIfMissing: boolean },
+): Promise<{ created: boolean; slots: number }> {
+  const proj = assertSafeName('project', projectName)
+  const normalized = writes.map((w) => {
+    const path = adapter.expandHome(w.path.trim())
+    if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
+    return { slot: assertSafeName('slot', w.slot), path, kind: w.kind }
+  })
+  let created = false
+  await commitConfigChange(adapter, message, (config) => {
+    const existing = config.projects[proj]
+    created = !existing
+    if (!existing && !opts.createIfMissing) {
+      throw new AppError('project.notFound', `Project "${projectName}" not found.`, {
+        name: projectName,
+      })
+    }
+    const project = existing ?? { folders: {} }
+    // Drop this machine's prior paths for the batch's slots BEFORE snapshotting the
+    // claimed set, so a re-adopt doesn't collide with its own previous value.
+    for (const w of normalized) {
+      const folder = project.folders[w.slot]
+      if (folder) delete folder[id]
+    }
+    const claimed = machineSyncedPaths(config, adapter, id)
+    for (const w of normalized) {
+      for (const other of claimed) {
+        if (pathsCollide(w.path, other.path)) {
+          throw new AppError(
+            'project.folderNested',
+            `This folder overlaps "${other.path}" (${other.where}), already synced on this machine. Nesting would sync the same files twice.`,
+            { conflict: other.path, where: other.where },
+          )
+        }
+      }
+      const folder = project.folders[w.slot] ?? {}
+      folder[id] = w.path
+      project.folders[w.slot] = folder
+      project.slotKinds = { ...(project.slotKinds ?? {}), [w.slot]: w.kind }
+      claimed.push({ path: w.path, where: `${proj}/${w.slot}` })
+    }
+    config.projects[proj] = project
+  })
+  return { created, slots: normalized.length }
+}
+
+export interface ApplyDiscoveryInput {
+  projectName: string
+  slots: SlotWrite[]
+}
+export interface ApplyDiscoveryResult {
+  created: boolean
+  slots: number
+}
+
+/** Applies a reviewed discovery proposal: creates the project if needed and writes every slot for THIS machine in one commit. */
+export async function applyDiscovery(
+  adapter: PlatformAdapter,
+  input: ApplyDiscoveryInput,
+  machineId?: string,
+): Promise<ApplyDiscoveryResult> {
+  const id = machineId ?? (await currentMachineId(adapter))
+  if (!id) {
+    throw new AppError(
+      'machine.notRegisteredAddProject',
+      'Machine not registered; register before adding projects.',
+    )
+  }
+  const proj = assertSafeName('project', input.projectName)
+  return batchSetProjectFolders(
+    adapter,
+    proj,
+    input.slots,
+    id,
+    `Claude Total Recall: discover ${proj} on ${id}`,
+    { createIfMissing: true },
+  )
+}
+
+export interface ApplyMachineMappingInput {
+  projectName: string
+  slots: SlotWrite[]
+}
+
+/** Applies a reviewed cross-machine mapping: writes the (existing) project's slot paths for THIS machine in one commit. */
+export async function applyMachineMapping(
+  adapter: PlatformAdapter,
+  input: ApplyMachineMappingInput,
+  machineId?: string,
+): Promise<{ slots: number }> {
+  const id = machineId ?? (await currentMachineId(adapter))
+  if (!id) throw new AppError('machine.notRegistered', 'Machine not registered.')
+  const proj = assertSafeName('project', input.projectName)
+  const { slots } = await batchSetProjectFolders(
+    adapter,
+    proj,
+    input.slots,
+    id,
+    `Claude Total Recall: adopt ${proj} on ${id}`,
+    { createIfMissing: false },
+  )
+  return { slots }
+}
+
+/** Read-only: scans a selected directory on THIS machine and returns a discovery proposal for the UI to review. */
+export async function discoverProject(
+  adapter: PlatformAdapter,
+  selectedDir: string,
+): Promise<DiscoveryProposal> {
+  const machineId = await currentMachineId(adapter)
+  if (!machineId) {
+    throw new AppError(
+      'machine.notRegisteredAddProject',
+      'Machine not registered; register before adding projects.',
+    )
+  }
+  const config = await loadRepoConfig(adapter)
+  return discoverProjectSources(selectedDir, config, adapter, machineId)
+}
+
+/** Read-only: builds the cross-machine adoption proposal for a project on THIS machine. */
+export async function proposeAdoption(
+  adapter: PlatformAdapter,
+  projectName: string,
+): Promise<MachineMappingProposal> {
+  const machineId = await currentMachineId(adapter)
+  if (!machineId) throw new AppError('machine.notRegistered', 'Machine not registered.')
+  const config = await loadRepoConfig(adapter)
+  return proposeMachineMapping(projectName, machineId, config, adapter)
 }
 
 // ── pinned files (global pinpoint files, outside any project) ────────────────

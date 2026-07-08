@@ -341,6 +341,35 @@
     "slot": {
       "nameEmpty": "El nombre de ranura no puede estar vacío.",
       "nameInvalid": "Nombre de ranura inválido. Usa solo letras, números, punto, guion y guion bajo."
+    },
+    "discover": {
+      "title": "Agregar un proyecto desde una carpeta",
+      "scanning": "Escaneando…",
+      "nothingFound": "No se encontró memoria de Claude en esta carpeta.",
+      "rechoose": "Elegir otra carpeta",
+      "createEmpty": "Crear un proyecto vacío",
+      "projectName": "Nombre del proyecto",
+      "sourcesFound": "Fuentes encontradas",
+      "include": "Incluir",
+      "collides": "Se superpone con {{where}}, ya sincronizado acá",
+      "selectOne": "Elegí al menos una fuente.",
+      "confirm": "Crear proyecto",
+      "done_one": "Se creó \"{{name}}\" con {{count}} fuente.",
+      "done_other": "Se creó \"{{name}}\" con {{count}} fuentes."
+    },
+    "adopt": {
+      "button": "Configurar en esta máquina",
+      "title": "Configurar \"{{name}}\" en esta máquina",
+      "already": "Ya está configurada acá",
+      "exists": "Encontrada en el disco",
+      "missing": "No se encontró en el disco",
+      "manual": "No se pudo mapear automáticamente — elegí una ruta",
+      "noReference": "Ninguna otra máquina tiene esta fuente",
+      "selectOne": "Elegí al menos una fuente con una ruta.",
+      "confirm": "Configurar",
+      "empty": "No hay nada para configurar — cada fuente ya tiene una ruta acá.",
+      "done_one": "Se configuró {{count}} fuente en esta máquina.",
+      "done_other": "Se configuraron {{count}} fuentes en esta máquina."
     }
   },
   "conflicts": {

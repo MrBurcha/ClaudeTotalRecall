@@ -30,6 +30,8 @@ export function ProjectItem({
   const { busy } = useAppState()
   const actions = useActions()
   const folders = Object.entries(project.folders)
+  // This machine is missing a path for at least one slot → offer bulk adoption.
+  const needsAdoption = !!machineId && folders.some(([, byMachine]) => !byMachine[machineId])
 
   const [open, setOpen] = useState(false)
   const [editingName, setEditingName] = useState(false)
@@ -163,6 +165,19 @@ export function ProjectItem({
               </div>
             )}
           </div>
+
+          {needsAdoption && (
+            <div className="row">
+              <Button
+                size="sm"
+                icon="monitor"
+                disabled={busy}
+                onClick={() => actions.openModal({ kind: 'project-adopt', name })}
+              >
+                {t('projects.adopt.button')}
+              </Button>
+            </div>
+          )}
 
           <div className="row">
             <Button size="sm" variant="danger" icon="trash" disabled={busy} onClick={del}>
