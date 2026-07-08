@@ -7,6 +7,24 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-07
+
+### Added
+- **Recent activity records real incoming syncs** (#8): pulling shared memory onto this machine now
+  leaves a trace. Incoming never commits or touches the remote, so it is logged locally
+  (`~/.config/claudetr/activity.local.json`, outside the repo, never synced) and merged into the
+  history. The feed shows "Downloaded to this machine · from `<machine>`", attributed by classifying
+  the commits the pull brought in — so you finally see what this machine *received*, not only what
+  each machine pushed.
+
+### Changed
+- **Recent activity reads in the user's vocabulary** (#8): file changes are grouped by project /
+  user level / pinned files with friendly names and just the file name, instead of the internal repo
+  path (`projects/<name>/<slot>/…`). The Git-style `+` / `~` / `−` glyphs are replaced by colored
+  status labels (Added / Updated / Removed). Each entry is attributed to its machine by name, and the
+  direction is honest — a machine *contributed to shared memory* (↓ from another machine) vs this
+  machine *downloaded* it (↙) — instead of a misleading up/down arrow relative to this machine.
+
 ## [0.3.0] - 2026-07-07
 
 ### Fixed
@@ -129,7 +147,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.0
 [0.3.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.3.0
 [0.2.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.2.0
 [0.1.5]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.1.5

@@ -70,6 +70,35 @@ describe('Git status / commit', () => {
   })
 })
 
+describe('revParse / logRange', () => {
+  it('revParse resolves HEAD to a 40-hex hash and returns null for a bogus ref', async () => {
+    const remote = await freshRemote('rev')
+    const a = await cloneConfigured(remote, join(root, 'rev-A'))
+    const head = await a.revParse('HEAD')
+    expect(head).toMatch(/^[0-9a-f]{40}$/)
+    expect(await a.revParse('no-such-ref')).toBeNull()
+  })
+
+  it('logRange returns commits in (from, to], excluding the base', async () => {
+    const remote = await freshRemote('range')
+    const a = await cloneConfigured(remote, join(root, 'range-A'))
+    const base = await a.revParse('HEAD')
+
+    await writeFile(join(a.cwd, 'b.txt'), 'b\n')
+    await a.add()
+    await a.commit('second commit')
+    const head = await a.revParse('HEAD')
+
+    const range = await a.logRange(base as string, head as string)
+    expect(range).toHaveLength(1) // the base commit is excluded
+    expect(range[0].subject).toBe('second commit')
+    expect(range[0].changes).toEqual([{ status: 'added', path: 'b.txt' }])
+
+    // An empty range (from === to) yields nothing.
+    expect(await a.logRange(head as string, head as string)).toEqual([])
+  })
+})
+
 describe('push rejected → pull(merge) → retry', () => {
   it('B is rejected, merges without conflict and retries', async () => {
     const remote = await freshRemote('reject')
