@@ -23,7 +23,7 @@ export function Projects(): JSX.Element {
             variant="primary"
             icon="plus"
             disabled={!machineId}
-            onClick={() => actions.openModal({ kind: 'project-discover' })}
+            onClick={() => actions.openModal({ kind: 'project-new' })}
           >
             {t('projects.newProject')}
           </Button>

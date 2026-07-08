@@ -1,14 +1,16 @@
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createPlatformAdapter } from '../platform'
 import type { Config } from './types'
 import {
+  decodeClaudeProjectDir,
   discoverProjectSources,
   pickReference,
   proposeMachineMapping,
   remapPath,
+  scanClaudeProjects,
   slug,
 } from './discovery'
 
@@ -289,5 +291,88 @@ describe('proposeMachineMapping', () => {
     const proposal = await proposeMachineMapping('demo', 'lin', config, linuxAdapter(home))
     const mem = proposal.slots.find((s) => s.slot === 'memory')!
     expect(mem.alreadyConfigured).toBe(true)
+  })
+})
+
+describe('decodeClaudeProjectDir', () => {
+  // A real-ish tree: only these paths "exist".
+  const tree = new Set([
+    '/home',
+    '/home/mburcheri',
+    '/home/mburcheri/Development',
+    '/home/mburcheri/Development/zimbify-core',
+    '/home/mburcheri/Development/ClaudeTotalRecall',
+  ])
+  const exists = (p: string): boolean => tree.has(p)
+
+  it('recovers a hyphenated last segment via filesystem probing', () => {
+    expect(decodeClaudeProjectDir('-home-mburcheri-Development-zimbify-core', exists)).toBe(
+      'zimbify-core',
+    )
+  })
+
+  it('recovers a non-hyphenated last segment', () => {
+    expect(decodeClaudeProjectDir('-home-mburcheri-Development-ClaudeTotalRecall', exists)).toBe(
+      'ClaudeTotalRecall',
+    )
+  })
+
+  it('falls back to the last token when the encoded path no longer exists', () => {
+    expect(decodeClaudeProjectDir('-home-ghost-Projects-whatever', () => false)).toBe('whatever')
+  })
+})
+
+describe('scanClaudeProjects', () => {
+  it('lists project dirs and flags memory vs empty', async () => {
+    const base = await tmp()
+    const root = join(base, 'projects')
+    await mkdir(join(root, '-x-Development-ClaudeTotalRecall', 'memory'), { recursive: true })
+    await mkdir(join(root, '-x-Development-empty-proj'), { recursive: true })
+    await writeFile(join(root, '-x-Development-empty-proj', 'a.jsonl'), '{}')
+
+    const res = await scanClaudeProjects(root, emptyConfig(), linuxAdapter(), 'this')
+    const byDir = new Map(res.map((r) => [basename(r.dir), r]))
+
+    const ready = byDir.get('-x-Development-ClaudeTotalRecall')!
+    expect(ready.hasMemory).toBe(true)
+    expect(ready.proposal.slots.map((s) => s.slot)).toEqual(['memory'])
+
+    const empty = byDir.get('-x-Development-empty-proj')!
+    expect(empty.hasMemory).toBe(false)
+    expect(empty.proposal.slots).toEqual([])
+    expect(empty.memoryPath).toBe(join(root, '-x-Development-empty-proj', 'memory'))
+  })
+
+  it('returns [] for a missing projects root (no throw)', async () => {
+    const base = await tmp()
+    expect(
+      await scanClaudeProjects(join(base, 'nope'), emptyConfig(), linuxAdapter(), 'this'),
+    ).toEqual([])
+  })
+
+  it('flags alreadySyncedHere when the memory path is already synced on this machine', async () => {
+    const base = await tmp()
+    const root = join(base, 'projects')
+    const mem = join(root, '-x-app', 'memory')
+    await mkdir(mem, { recursive: true })
+    const config: Config = {
+      version: 1,
+      repo: { remote: 'r' },
+      machines: {},
+      projects: { other: { folders: { m: { this: mem } }, slotKinds: { m: 'dir' } } },
+    }
+    const res = await scanClaudeProjects(root, config, linuxAdapter(), 'this')
+    expect(res[0].alreadySyncedHere).toBe(true)
+  })
+
+  it('dedupes suggested names that collide within the scan', async () => {
+    const base = await tmp()
+    const root = join(base, 'projects')
+    // Both decode-fallback to the same last token "api".
+    await mkdir(join(root, '-a-svc-api', 'memory'), { recursive: true })
+    await mkdir(join(root, '-b-svc-api', 'memory'), { recursive: true })
+    const res = await scanClaudeProjects(root, emptyConfig(), linuxAdapter(), 'this')
+    const names = res.map((r) => r.suggestedName)
+    expect(new Set(names).size).toBe(names.length) // all unique
   })
 })

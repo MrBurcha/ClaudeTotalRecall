@@ -370,6 +370,36 @@
       "empty": "Nothing to configure — every source already has a path here.",
       "done_one": "Configured {{count}} source on this machine.",
       "done_other": "Configured {{count}} sources on this machine."
+    },
+    "new": {
+      "title": "Add a project",
+      "scan": "Scan my Claude projects",
+      "scanHint": "Find projects under ~/.claude/projects and create them in bulk.",
+      "folder": "Pick a folder",
+      "folderHint": "Choose one folder and discover its memory sources.",
+      "empty": "Create empty",
+      "emptyHint": "Create a project with no sources and configure it later."
+    },
+    "scan": {
+      "title": "Scan Claude projects",
+      "scanning": "Scanning ~/.claude/projects…",
+      "none": "No projects found under ~/.claude/projects.",
+      "ready": "Ready to sync",
+      "activate": "No memory yet",
+      "activateHint": "Checking these creates a memory/ folder and starts syncing it.",
+      "synced": "Already synced here",
+      "alreadySynced": "already synced",
+      "willActivate": "will create memory/",
+      "existsInConfig": "adds to existing project",
+      "create": "Create projects",
+      "created_one": "Created {{count}} project.",
+      "created_other": "Created {{count}} projects.",
+      "nameLabel": "Project name",
+      "include": "Include",
+      "selectOne": "Select at least one project.",
+      "dupeName": "Two selected projects share the name \"{{name}}\".",
+      "pickInstead": "Pick a folder",
+      "createEmptyInstead": "Create empty"
     }
   },
   "conflicts": {

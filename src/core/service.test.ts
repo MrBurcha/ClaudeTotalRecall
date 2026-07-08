@@ -8,8 +8,10 @@ import { Git } from './git'
 import { loadConfig } from './config'
 import { activityLogPath } from './activityLog'
 import {
+  applyDiscoveries,
   applyDiscovery,
   applyMachineMapping,
+  applyScan,
   buildVerbPlan,
   configPath,
   connectRepo,
@@ -18,6 +20,7 @@ import {
   discoverProject,
   history,
   proposeAdoption,
+  scanProjects,
   pullRepo,
   registerMachine,
   removePinnedFile,
@@ -558,5 +561,91 @@ describe('project discovery + cross-machine adoption', () => {
     const mem = proposal.slots.find((s) => s.slot === 'memory')!
     expect(mem.referenceMachine).toBe('m1')
     expect(mem.proposedPath).toBe(join(a2.home(), '.claude/projects/demo/memory'))
+  })
+})
+
+describe('bulk scan (multi-project, one commit)', () => {
+  async function oneMachine() {
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a = adapterFor(join(base, 'home1'))
+    await connectRepo(remote, a)
+    await registerMachine(a, 'm1')
+    return { base, a }
+  }
+  const cfg = (a: ReturnType<typeof adapterFor>) => loadConfig(configPath(a))
+  const commitsBetween = async (a: ReturnType<typeof adapterFor>, from: string, to: string) =>
+    (
+      await run('git', ['rev-list', '--count', `${from}..${to}`], { cwd: workingCopyDir(a) })
+    ).stdout.trim()
+
+  it('applyDiscoveries creates N projects in a single commit', async () => {
+    const { a } = await oneMachine()
+    const g = new Git(workingCopyDir(a))
+    const before = await g.revParse('HEAD')
+
+    const res = await applyDiscoveries(a, [
+      {
+        projectName: 'alpha',
+        slots: [{ slot: 'memory', path: '/home/x/alpha/memory', kind: 'dir' }],
+      },
+      {
+        projectName: 'beta',
+        slots: [{ slot: 'memory', path: '/home/x/beta/memory', kind: 'dir' }],
+      },
+    ])
+    expect(res).toMatchObject({ projects: 2, slots: 2, created: 2 })
+
+    const c = await cfg(a)
+    expect(c.projects.alpha.folders.memory.m1).toBe('/home/x/alpha/memory')
+    expect(c.projects.beta.folders.memory.m1).toBe('/home/x/beta/memory')
+
+    const after = await g.revParse('HEAD')
+    expect(await commitsBetween(a, before!, after!)).toBe('1')
+  })
+
+  it('rejects a multi-project batch whose paths nest across projects and persists nothing', async () => {
+    const { a } = await oneMachine()
+    await expect(
+      applyDiscoveries(a, [
+        { projectName: 'p1', slots: [{ slot: 'memory', path: '/home/x/shared', kind: 'dir' }] },
+        { projectName: 'p2', slots: [{ slot: 'memory', path: '/home/x/shared/sub', kind: 'dir' }] },
+      ]),
+    ).rejects.toMatchObject({ code: 'project.folderNested' })
+
+    const c = await cfg(a)
+    expect(c.projects.p1).toBeUndefined()
+    expect(c.projects.p2).toBeUndefined()
+  })
+
+  it('applyScan creates a missing memory dir under the projects root and registers it', async () => {
+    const { base, a } = await oneMachine()
+    const projectsRoot = join(a.claudeHome(), 'projects')
+    const insideMemory = join(projectsRoot, 'newproj', 'memory') // does not exist yet
+    const outsideMemory = join(base, 'outside', 'memory') // outside the projects root, missing
+
+    await applyScan(a, [
+      { projectName: 'newproj', slots: [{ slot: 'memory', path: insideMemory, kind: 'dir' }] },
+      { projectName: 'outside', slots: [{ slot: 'memory', path: outsideMemory, kind: 'dir' }] },
+    ])
+
+    // The inside-root dir was created; the outside one was NOT (hardening bound).
+    expect(await exists(insideMemory)).toBe(true)
+    expect(await exists(outsideMemory)).toBe(false)
+
+    const c = await cfg(a)
+    expect(c.projects.newproj.folders.memory.m1).toBe(insideMemory)
+    expect(c.projects.outside.folders.memory.m1).toBe(outsideMemory)
+  })
+
+  it('scanProjects reads ~/.claude/projects on this machine and recognizes memory', async () => {
+    const { a } = await oneMachine()
+    const dir = join(a.claudeHome(), 'projects', '-x-Development-demo')
+    await mkdir(join(dir, 'memory'), { recursive: true })
+
+    const scanned = await scanProjects(a)
+    const one = scanned.find((s) => s.slug === '-x-Development-demo')!
+    expect(one.hasMemory).toBe(true)
+    expect(one.proposal.slots.map((s) => s.slot)).toEqual(['memory'])
   })
 })

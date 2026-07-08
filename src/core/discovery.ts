@@ -1,4 +1,5 @@
-import { stat } from 'node:fs/promises'
+import { statSync } from 'node:fs'
+import { readdir, stat } from 'node:fs/promises'
 import { basename, dirname, join, sep } from 'node:path'
 import type { PlatformAdapter } from '../platform'
 import { isSecretExcluded } from './plan'
@@ -122,6 +123,119 @@ export async function discoverProjectSources(
     slots.push(makeSlot(item, path, kind))
   }
   return { projectName: slug(basename(root)) || 'memory', root, rootIsMemory: false, slots }
+}
+
+// ── Bulk scan of ~/.claude/projects ─────────────────────────────────────────
+
+const SAFE_NAME = /^[A-Za-z0-9._-]+$/
+
+/**
+ * Recovers a human-friendly project name from a Claude project-dir slug. Claude
+ * encodes the cwd by replacing every `/` with `-`, which is lossy (a literal `-`
+ * in a path segment is indistinguishable from a separator). So we reconstruct the
+ * real path by probing the filesystem: greedily take the shortest prefix of the
+ * remaining tokens that names an existing directory, appending the next token with
+ * `-` when it doesn't. Returns the last real path segment (e.g. `zimbify-core`,
+ * not `core`). `dirExists` is injected for testing; the caller passes a `statSync`
+ * probe. Falls back to the last `-`-token when the encoded path no longer exists.
+ */
+export function decodeClaudeProjectDir(slug: string, dirExists: (path: string) => boolean): string {
+  const tokens = slug.replace(/^-+/, '').split('-').filter(Boolean)
+  if (tokens.length === 0) return slug
+  const segments: string[] = []
+  let base = ''
+  let i = 0
+  let ok = true
+  while (i < tokens.length) {
+    let seg = tokens[i]
+    let j = i
+    while (!dirExists(`${base}/${seg}`)) {
+      if (j + 1 < tokens.length) {
+        j++
+        seg = `${seg}-${tokens[j]}`
+      } else {
+        ok = false
+        break
+      }
+    }
+    if (!ok) break
+    base = `${base}/${seg}`
+    segments.push(seg)
+    i = j + 1
+  }
+  if (ok && segments.length > 0) return segments[segments.length - 1]
+  return tokens[tokens.length - 1] // fallback: the cwd no longer exists on disk
+}
+
+export interface ScannedProject {
+  /** ~/.claude/projects/<slug> */
+  dir: string
+  /** the encoded basename of `dir` */
+  slug: string
+  /** decoded + deduped + safe project name (an editable seed) */
+  suggestedName: string
+  /** true when the recognizer found at least one source under `dir` */
+  hasMemory: boolean
+  /** join(dir, 'memory') — the folder an "activate memory" action would create */
+  memoryPath: string
+  proposal: DiscoveryProposal
+  /** every recognized slot already has a path synced on this machine */
+  alreadySyncedHere: boolean
+  /** a project with `suggestedName` already exists in the config */
+  existsInConfig: boolean
+}
+
+/**
+ * Scans `projectsRoot` (typically ~/.claude/projects), running the per-dir
+ * recognizer on each immediate subdirectory. Read-only: returns a proposal list
+ * the UI turns into a bulk-create checklist. Tolerant — a missing root yields [].
+ */
+export async function scanClaudeProjects(
+  projectsRoot: string,
+  config: Config,
+  adapter: PlatformAdapter,
+  machineId: string,
+): Promise<ScannedProject[]> {
+  let dirNames: string[]
+  try {
+    const entries = await readdir(projectsRoot, { withFileTypes: true })
+    dirNames = entries
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort()
+  } catch {
+    return []
+  }
+  const dirExists = (p: string): boolean => {
+    try {
+      return statSync(p).isDirectory()
+    } catch {
+      return false
+    }
+  }
+  const used = new Set<string>()
+  const out: ScannedProject[] = []
+  for (const dirName of dirNames) {
+    const dir = join(projectsRoot, dirName)
+    const proposal = await discoverProjectSources(dir, config, adapter, machineId)
+    const hasMemory = proposal.slots.length > 0
+    let name = decodeClaudeProjectDir(dirName, dirExists)
+    if (!SAFE_NAME.test(name)) name = slug(name) || slug(dirName) || 'project'
+    let unique = name
+    for (let n = 2; used.has(unique); n++) unique = `${name}-${n}`
+    used.add(unique)
+    out.push({
+      dir,
+      slug: dirName,
+      suggestedName: unique,
+      hasMemory,
+      memoryPath: join(dir, 'memory'),
+      proposal,
+      alreadySyncedHere: hasMemory && proposal.slots.every((s) => !!s.collision),
+      existsInConfig: Boolean(config.projects[unique]),
+    })
+  }
+  return out
 }
 
 // ── Flow B: OS-aware cross-machine mapping ──────────────────────────────────

@@ -1,6 +1,6 @@
 import { mkdir, rename, stat, writeFile } from 'node:fs/promises'
 import { hostname } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import type { PlatformAdapter } from '../platform'
 import { loadActivityLog, recordIncoming, seedActivityHead } from './activityLog'
 import { loadConfig, saveConfig } from './config'
@@ -17,9 +17,11 @@ import {
 import {
   discoverProjectSources,
   proposeMachineMapping,
+  scanClaudeProjects,
   slug,
   type DiscoveryProposal,
   type MachineMappingProposal,
+  type ScannedProject,
 } from './discovery'
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
 import { machinePathForLogical, machineSyncedPaths, pathsCollide } from './resolve'
@@ -411,13 +413,68 @@ interface SlotWrite {
   kind: 'file' | 'dir'
 }
 
+interface NormalizedProject {
+  proj: string
+  writes: Array<{ slot: string; path: string; kind: 'file' | 'dir' }>
+}
+
+/** Validates a project name + its slot writes and expands/trims each path. */
+function normalizeProject(adapter: PlatformAdapter, input: ApplyDiscoveryInput): NormalizedProject {
+  const proj = assertSafeName('project', input.projectName)
+  const writes = input.slots.map((w) => {
+    const path = adapter.expandHome(w.path.trim())
+    if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
+    return { slot: assertSafeName('slot', w.slot), path, kind: w.kind }
+  })
+  return { proj, writes }
+}
+
+/**
+ * Writes one project's slots for `id` into `config`, checking every path against
+ * the shared `claimed` set (already-synced paths PLUS earlier writes in the same
+ * batch, so siblings — even across projects — can't nest). Mutates `config` and
+ * appends each accepted path to `claimed`. Assumes self-overlap was already
+ * neutralized by the caller before `claimed` was snapshotted.
+ */
+function writeProjectSlots(
+  config: Config,
+  np: NormalizedProject,
+  id: string,
+  claimed: ReturnType<typeof machineSyncedPaths>,
+): void {
+  const project = config.projects[np.proj] ?? { folders: {} }
+  for (const w of np.writes) {
+    for (const other of claimed) {
+      if (pathsCollide(w.path, other.path)) {
+        throw new AppError(
+          'project.folderNested',
+          `This folder overlaps "${other.path}" (${other.where}), already synced on this machine. Nesting would sync the same files twice.`,
+          { conflict: other.path, where: other.where },
+        )
+      }
+    }
+    const folder = project.folders[w.slot] ?? {}
+    folder[id] = w.path
+    project.folders[w.slot] = folder
+    project.slotKinds = { ...(project.slotKinds ?? {}), [w.slot]: w.kind }
+    claimed.push({ path: w.path, where: `${np.proj}/${w.slot}` })
+  }
+  config.projects[np.proj] = project
+}
+
+/** Deletes `id`'s prior paths for a batch's slots, so a re-write doesn't collide with its own old value. */
+function neutralizeSelfOverlap(config: Config, np: NormalizedProject, id: string): void {
+  const project = config.projects[np.proj]
+  if (!project) return
+  for (const w of np.writes) {
+    const folder = project.folders[w.slot]
+    if (folder) delete folder[id]
+  }
+}
+
 /**
  * Writes N slot paths for one machine in a SINGLE commit, with a whole-batch
- * nesting guard. Generalizes `setProjectFolder`'s single-slot logic: it first
- * neutralizes each batch slot's own prior value on this machine (so re-adopting a
- * slot doesn't collide with itself), then checks every write against the paths
- * already synced here PLUS the earlier writes in the same batch (so siblings added
- * together can't nest in one another). A throw aborts the commit ⇒ nothing persists.
+ * nesting guard. A throw aborts the commit ⇒ nothing persists.
  */
 async function batchSetProjectFolders(
   adapter: PlatformAdapter,
@@ -427,48 +484,20 @@ async function batchSetProjectFolders(
   message: string,
   opts: { createIfMissing: boolean },
 ): Promise<{ created: boolean; slots: number }> {
-  const proj = assertSafeName('project', projectName)
-  const normalized = writes.map((w) => {
-    const path = adapter.expandHome(w.path.trim())
-    if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
-    return { slot: assertSafeName('slot', w.slot), path, kind: w.kind }
-  })
+  const np = normalizeProject(adapter, { projectName, slots: writes })
   let created = false
   await commitConfigChange(adapter, message, (config) => {
-    const existing = config.projects[proj]
+    const existing = config.projects[np.proj]
     created = !existing
     if (!existing && !opts.createIfMissing) {
       throw new AppError('project.notFound', `Project "${projectName}" not found.`, {
         name: projectName,
       })
     }
-    const project = existing ?? { folders: {} }
-    // Drop this machine's prior paths for the batch's slots BEFORE snapshotting the
-    // claimed set, so a re-adopt doesn't collide with its own previous value.
-    for (const w of normalized) {
-      const folder = project.folders[w.slot]
-      if (folder) delete folder[id]
-    }
-    const claimed = machineSyncedPaths(config, adapter, id)
-    for (const w of normalized) {
-      for (const other of claimed) {
-        if (pathsCollide(w.path, other.path)) {
-          throw new AppError(
-            'project.folderNested',
-            `This folder overlaps "${other.path}" (${other.where}), already synced on this machine. Nesting would sync the same files twice.`,
-            { conflict: other.path, where: other.where },
-          )
-        }
-      }
-      const folder = project.folders[w.slot] ?? {}
-      folder[id] = w.path
-      project.folders[w.slot] = folder
-      project.slotKinds = { ...(project.slotKinds ?? {}), [w.slot]: w.kind }
-      claimed.push({ path: w.path, where: `${proj}/${w.slot}` })
-    }
-    config.projects[proj] = project
+    neutralizeSelfOverlap(config, np, id)
+    writeProjectSlots(config, np, id, machineSyncedPaths(config, adapter, id))
   })
-  return { created, slots: normalized.length }
+  return { created, slots: np.writes.length }
 }
 
 export interface ApplyDiscoveryInput {
@@ -527,6 +556,83 @@ export async function applyMachineMapping(
     { createIfMissing: false },
   )
   return { slots }
+}
+
+/** Applies several reviewed discovery proposals in ONE commit (bulk create/upsert for this machine). */
+export async function applyDiscoveries(
+  adapter: PlatformAdapter,
+  inputs: ApplyDiscoveryInput[],
+  machineId?: string,
+): Promise<{ projects: number; slots: number; created: number }> {
+  const id = machineId ?? (await currentMachineId(adapter))
+  if (!id) {
+    throw new AppError(
+      'machine.notRegisteredAddProject',
+      'Machine not registered; register before adding projects.',
+    )
+  }
+  const prepared = inputs.map((inp) => normalizeProject(adapter, inp))
+  const slots = prepared.reduce((n, p) => n + p.writes.length, 0)
+  let created = 0
+  await commitConfigChange(
+    adapter,
+    `Claude Total Recall: scan ${prepared.length} projects on ${id}`,
+    (config) => {
+      created = 0
+      // Phase 1: neutralize self-overlap across ALL projects before snapshotting.
+      for (const np of prepared) neutralizeSelfOverlap(config, np, id)
+      // Phase 2: one shared claimed set; Phase 3: write each project against it.
+      const claimed = machineSyncedPaths(config, adapter, id)
+      for (const np of prepared) {
+        if (!config.projects[np.proj]) created++
+        writeProjectSlots(config, np, id, claimed)
+      }
+    },
+  )
+  return { projects: prepared.length, slots, created }
+}
+
+/** True when `p` is `root` itself or nested under it (boundary-aware). */
+function isUnder(root: string, p: string): boolean {
+  const r = resolve(root)
+  const q = resolve(p)
+  return q === r || q.startsWith(r + sep)
+}
+
+/**
+ * Bulk scan apply: for any dir-slot whose path is missing AND lives under
+ * ~/.claude/projects, create the folder first (the "activate memory" onboarding),
+ * then write every project in one commit. The projects-root bound keeps the
+ * renderer from asking the app to create arbitrary directories.
+ */
+export async function applyScan(
+  adapter: PlatformAdapter,
+  inputs: ApplyDiscoveryInput[],
+  machineId?: string,
+): Promise<{ projects: number; slots: number; created: number }> {
+  const projectsRoot = join(adapter.claudeHome(), 'projects')
+  for (const inp of inputs) {
+    for (const s of inp.slots) {
+      if (s.kind !== 'dir') continue
+      const path = adapter.expandHome(s.path.trim())
+      if (!isUnder(projectsRoot, path) || (await pathExists(path))) continue
+      await mkdir(path, { recursive: true })
+    }
+  }
+  return applyDiscoveries(adapter, inputs, machineId)
+}
+
+/** Read-only: scans ~/.claude/projects on THIS machine into a bulk-create checklist. */
+export async function scanProjects(adapter: PlatformAdapter): Promise<ScannedProject[]> {
+  const machineId = await currentMachineId(adapter)
+  if (!machineId) {
+    throw new AppError(
+      'machine.notRegisteredAddProject',
+      'Machine not registered; register before adding projects.',
+    )
+  }
+  const config = await loadRepoConfig(adapter)
+  return scanClaudeProjects(join(adapter.claudeHome(), 'projects'), config, adapter, machineId)
 }
 
 /** Read-only: scans a selected directory on THIS machine and returns a discovery proposal for the UI to review. */
