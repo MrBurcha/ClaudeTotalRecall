@@ -7,6 +7,33 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-08
+
+### Added
+
+- **"Last change" summary in Recent activity** (#39): when the panel is collapsed, a one-line peek
+  under the header — "last change {time} · {N} files · {where}" — shows the last time real memory
+  actually moved (how many files, and which project / user level / pinned bucket), derived from the
+  newest sync entry that changed something (structural `.gitkeep` noise ignored). It lets you tell at
+  a glance whether it's worth expanding, and hides once the timeline is open.
+
+### Changed
+
+- **Honest "last checked" on the Sync home** (#39): the status card's sub-line read "last synced",
+  but that timestamp bumps on _every_ successful poll even when nothing changed — being up to date
+  isn't the same as having just changed something. It now reads **"last checked"**, which is what it
+  always measured. The real "last change" story moved to Recent activity (above).
+
+### Documentation
+
+- **"What gets synced (and what to back up)" README guide** (#40): a user-manual section documenting
+  the sync allowlist (user-level items, project sources, pinned files), the hard-excluded secrets
+  (`.credentials.json`, `.claude.json`, `*.jsonl`), the machine-local state the app deliberately
+  skips, and how to back up a git-ignored `.env` via pinned files or a project file source — with
+  strong caveats. It opens with a prominent reminder to keep your own local backups too: Claude
+  Code's internal layout is Anthropic's and can change in ways the app can't anticipate, and the
+  private, versioned repo is your rollback hatch if it does.
+
 ## [0.4.3] - 2026-07-07
 
 ### Changed
@@ -190,7 +217,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.5.0
 [0.4.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.3
 [0.4.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.2
 [0.4.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.1
