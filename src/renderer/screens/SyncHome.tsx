@@ -25,11 +25,17 @@ function statusLabel(state: ReturnType<typeof useAppState>, t: TFunction): strin
   return t('home.status.upToDate')
 }
 
-function lastSyncedText(at: number, now: number, t: TFunction): string {
+/**
+ * The sub-line reads "last checked", not "last synced": `lastSyncedAt` bumps on
+ * every successful poll even when nothing changed, so it's really the last time
+ * we verified the repo — being up to date isn't the same as having just changed
+ * something. The "last change" story lives in Recent activity instead (#39).
+ */
+function lastCheckedText(at: number, now: number, t: TFunction): string {
   const p = relativeParts(at, now)
   const time =
     p.key === 'now' ? t('relativeTime.now') : t(`relativeTime.${p.key}`, { count: p.count })
-  return t('home.meta.lastSynced', { time })
+  return t('home.meta.lastChecked', { time })
 }
 
 function statusMeta(state: ReturnType<typeof useAppState>, now: number, t: TFunction): string {
@@ -39,7 +45,7 @@ function statusMeta(state: ReturnType<typeof useAppState>, now: number, t: TFunc
   if (eng.status === 'syncing') return t('home.meta.syncing')
   if (eng.status === 'offline') return t('home.meta.offline')
   const bits: string[] = []
-  if (eng.lastSyncedAt) bits.push(lastSyncedText(eng.lastSyncedAt, now, t))
+  if (eng.lastSyncedAt) bits.push(lastCheckedText(eng.lastSyncedAt, now, t))
   bits.push(eng.auto ? t('home.meta.autoOn') : t('home.meta.autoOff'))
   return bits.join(' · ')
 }
