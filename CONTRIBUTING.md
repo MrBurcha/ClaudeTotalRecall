@@ -15,6 +15,11 @@ npm install
 npm run dev
 ```
 
+`npm install` also enables a Git **pre-commit hook** (via the `prepare` script, which points
+`core.hooksPath` at `.githooks/`). It runs Prettier on your staged files and blocks the commit
+if any are unformatted — a fast local mirror of the CI `format:check` job, so a formatting slip
+can't reach `main`. Run `npm run format` to fix, or `git commit --no-verify` to bypass it.
+
 Before opening a pull request, make sure the checks pass (CI runs these on every PR):
 
 ```bash
