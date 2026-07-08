@@ -10,7 +10,26 @@ permissions:
   contents: write
 
 jobs:
+  # Pre-create the tag's draft Release ONCE, up front. Otherwise the parallel
+  # macos/linux `electron-builder --publish always` jobs each see "release doesn't
+  # exist" and both create one — a race that leaves two drafts for the same tag and
+  # drops one platform's assets (v0.7.0 lost its macOS .dmg this way). With the draft
+  # already present, both build jobs just upload into it. Idempotent (safe on re-run).
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure a draft Release exists for the tag
+        run: |
+          gh release view "$TAG" -R "$REPO" >/dev/null 2>&1 \
+            || gh release create "$TAG" -R "$REPO" --draft --title "${TAG#v}" \
+                 --notes "Release notes are being assembled…"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+
   macos:
+    needs: create-release
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v7
@@ -28,6 +47,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
   linux:
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
