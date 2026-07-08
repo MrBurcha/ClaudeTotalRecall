@@ -7,6 +7,47 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-08
+
+### Added
+
+- **Auto-discover project sources + cross-machine adoption** (#54): configuring a project no longer
+  means adding each slot by hand, per machine. Pick a folder and an opinionated recognizer proposes a
+  project name and slots from the Claude-memory vocabulary (`memory/`, `commands/`, `agents/`,
+  `skills/`, `CLAUDE.md`, `settings.json`) — review, then confirm. When the project already exists on
+  another machine, adopting it there is one click → review the mapping → confirm (OS-aware paths),
+  instead of "no path on this machine" and re-picking slot by slot.
+- **Bulk-scan `~/.claude/projects`** (#55): "New project" now opens a chooser — **Scan** / **Pick a
+  folder** / **Create empty**. Scan runs the recognizer over every `~/.claude/projects/*` subdir and
+  shows a checklist grouped into **Ready to sync** (already has `memory/`, pre-checked) and **No
+  memory yet** (checking one creates its `memory/` folder and starts syncing) — so you can set up many
+  projects at once instead of one folder at a time.
+
+### Changed
+
+- **Electron 33 → 43** (#58): the app's runtime jumps ten majors to a current Chromium and Node. The
+  app's Electron API usage type-checks against the new types, and the built app boots and renders with
+  no console errors.
+
+### Dependencies
+
+- **Build toolchain**: Vite 5 → 7, electron-vite 2 → 5 (drops the deprecated `externalizeDepsPlugin`,
+  now the default), @vitejs/plugin-react 4 → 5 (#57). Vite 8 was held back — no stable electron-vite
+  supports it yet, so 7 is the furthest-forward stable target.
+- **Test toolchain**: Vitest 2 → 4 (#56), migrating the removed `environmentMatchGlobs` to per-file
+  `@vitest-environment` docblocks on the component tests.
+- `i18next` 26.3.4 → 26.3.5 and `@typescript-eslint/*` 8.62 → 8.63 (#50); CI actions `setup-node`
+  4 → 6 (#45) and `checkout` 4 → 7 (#46).
+- **Held**: electron-builder 26 / tar 7 (#48). electron-builder 26 rewrote dmg-builder to download a
+  prebuilt binary, which drops the vendored source our macOS DMG-background workaround (#9072) patches
+  — so we stay on electron-builder 25 until the background can be preserved another way.
+
+### Internal
+
+- **Prettier pre-commit hook** (#59): `npm install` now enables a versioned `.githooks/pre-commit`
+  (via a `prepare` script that sets `core.hooksPath`) that runs Prettier on staged files, so a
+  formatting slip can't reach `main` and break the CI `format:check` job. No new dependencies.
+
 ## [0.6.0] - 2026-07-08
 
 ### Added
@@ -231,7 +272,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.7.0
 [0.6.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.6.0
 [0.5.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.5.0
 [0.4.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.4.3
