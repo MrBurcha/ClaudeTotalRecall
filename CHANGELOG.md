@@ -7,6 +7,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The "project configured on another machine" notice now makes clear which
+  project needs attention** (#71): on the Projects screen the banner is a
+  persistent accent card with an alert icon and lists the affected project(s) as
+  clickable chips that expand and scroll to the project; each project that isn't
+  set up on this machine carries a "Configure here" badge on its collapsed row so
+  you can spot it without expanding; and inside a project, every source with no
+  local path on this machine is highlighted in accent instead of muted gray.
+  Presentation only — no change to sync, config, or the data model.
+
 ## [0.8.1] - 2026-07-09
 
 ### Fixed
