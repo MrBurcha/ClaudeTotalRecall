@@ -20,7 +20,12 @@ import type {
   RegisterResult,
   IncomingResult,
 } from '../core/service'
-import type { DiscoveryProposal, MachineMappingProposal, ScannedProject } from '../core/discovery'
+import type {
+  DiscoveryProposal,
+  FolderPickCorrection,
+  MachineMappingProposal,
+  ScannedProject,
+} from '../core/discovery'
 
 /**
  * Resultado de ejecutar un Plan. Si el disco cambió desde el preview, el core
@@ -63,6 +68,18 @@ const api = {
     ipcRenderer.invoke('project:rename', { oldName, newName }) as Promise<void>,
   projectPickFolder: () => ipcRenderer.invoke('project:pickFolder') as Promise<string | null>,
   pickFile: () => ipcRenderer.invoke('path:pickFile') as Promise<string | null>,
+  projectSuggestFolderCorrection: (
+    name: string,
+    slot: string,
+    path: string,
+    kind: 'file' | 'dir',
+  ) =>
+    ipcRenderer.invoke('project:suggestFolderCorrection', {
+      name,
+      slot,
+      path,
+      kind,
+    }) as Promise<FolderPickCorrection>,
 
   // Auto-discovery (Flow A) + OS-aware cross-machine adoption (Flow B).
   projectDiscover: (dir: string) =>

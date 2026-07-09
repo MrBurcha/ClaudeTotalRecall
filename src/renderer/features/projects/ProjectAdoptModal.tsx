@@ -23,6 +23,8 @@ interface Row {
   exists: boolean
   alreadyConfigured: boolean
   claudeManaged: boolean
+  /** A pending "redirected your pick to <leaf>/" suggestion, with the raw pick to undo to. */
+  notice?: { leaf: string; original: string }
 }
 
 function toRows(slots: RemapSlot[]): Row[] {
@@ -107,9 +109,22 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
 
   const pickFor = async (slot: string, kind: SlotKind): Promise<void> => {
     const chosen = kind === 'file' ? await api.pickFile() : await api.projectPickFolder()
-    if (chosen) {
-      setRow(slot, { path: chosen, include: true })
-      setError(null)
+    if (!chosen) return
+    setError(null)
+    if (kind === 'file') {
+      setRow(slot, { path: chosen, include: true, notice: undefined })
+      return
+    }
+    // Redirect a picked project root to its <slot> child so it maps flat, not nested.
+    try {
+      const c = await api.projectSuggestFolderCorrection(name, slot, chosen, kind)
+      setRow(slot, {
+        path: c.path,
+        include: true,
+        notice: c.redirected ? { leaf: c.expectedLeaf, original: chosen } : undefined,
+      })
+    } catch {
+      setRow(slot, { path: chosen, include: true, notice: undefined })
     }
   }
 
@@ -174,6 +189,7 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
           <ul className="folder-list">
             {rows.map((r) => {
               const candidates = r.claudeManaged ? candidatesForSlot(scanned, name, r.slot) : []
+              const nt = r.notice
               return (
                 <li key={r.slot} className="stack stack-1">
                   <div className="row row-nowrap">
@@ -196,7 +212,7 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
                       )}
                       value={r.path}
                       onChange={(e) => {
-                        setRow(r.slot, { path: e.target.value })
+                        setRow(r.slot, { path: e.target.value, notice: undefined })
                         setError(null)
                       }}
                     />
@@ -212,6 +228,19 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
                     )}
                     {statusBadge(r)}
                   </div>
+                  {nt && (
+                    <div className="folder-editor__notice field__hint field__hint--accent">
+                      <span>{t('projects.folderRedirect.adjusted', { leaf: nt.leaf })}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={submitting}
+                        onClick={() => setRow(r.slot, { path: nt.original, notice: undefined })}
+                      >
+                        {t('projects.folderRedirect.revert')}
+                      </Button>
+                    </div>
+                  )}
                   {r.claudeManaged && candidates.length > 0 && (
                     <div className="stack stack-1">
                       <span className="muted">{t('projects.adopt.candidates')}</span>
@@ -223,7 +252,7 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
                           icon="folder"
                           disabled={submitting}
                           onClick={() => {
-                            setRow(r.slot, { path: c.path, include: true })
+                            setRow(r.slot, { path: c.path, include: true, notice: undefined })
                             setError(null)
                           }}
                         >

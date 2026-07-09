@@ -15,11 +15,13 @@ import {
   saveLocalState,
 } from './localState'
 import {
+  correctProjectFolderPick,
   discoverProjectSources,
   proposeMachineMapping,
   scanClaudeProjects,
   slug,
   type DiscoveryProposal,
+  type FolderPickCorrection,
   type MachineMappingProposal,
   type ScannedProject,
 } from './discovery'
@@ -683,6 +685,29 @@ export async function discoverProject(
   }
   const config = await loadRepoConfig(adapter)
   return discoverProjectSources(selectedDir, config, adapter, machineId)
+}
+
+/**
+ * Read-only: given a directory the user just picked for a project `dir` slot,
+ * returns the corrected path (redirecting a project root to its `<slot>` child so
+ * it maps flat, not nested). Resilient by design — the picker must never break, so
+ * a missing machine id or unreadable repo config degrades to a name-only decision.
+ */
+export async function suggestFolderCorrection(
+  adapter: PlatformAdapter,
+  projectName: string,
+  slot: string,
+  pickedPath: string,
+  kind: 'file' | 'dir',
+): Promise<FolderPickCorrection> {
+  const machineId = (await currentMachineId(adapter)) ?? ''
+  let config: Config
+  try {
+    config = await loadRepoConfig(adapter)
+  } catch {
+    config = emptyConfig('')
+  }
+  return correctProjectFolderPick(pickedPath, projectName, slot, kind, config, adapter, machineId)
 }
 
 /** Read-only: builds the cross-machine adoption proposal for a project on THIS machine. */

@@ -34,12 +34,30 @@ export function FolderEditor({
   const [path, setPath] = useState(initialPath ?? '')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  // A pending "we redirected your pick to <leaf>/" suggestion, and whether the
+  // user insisted on their literal path (so we stop re-suggesting).
+  const [notice, setNotice] = useState<{ leaf: string; original: string } | null>(null)
+  const [override, setOverride] = useState(false)
 
   const pick = async (): Promise<void> => {
     const chosen = kind === 'file' ? await api.pickFile() : await api.projectPickFolder()
-    if (chosen) {
+    if (!chosen) return
+    setError(null)
+    setOverride(false)
+    if (kind === 'file') {
       setPath(chosen)
-      setError(null)
+      setNotice(null)
+      return
+    }
+    // Redirect a picked project root to its <slot> child so it maps flat, not
+    // nested (memories/…/memory/memory/…). Falls back to the raw pick on error.
+    try {
+      const c = await api.projectSuggestFolderCorrection(project, slot.trim(), chosen, kind)
+      setPath(c.path)
+      setNotice(c.redirected ? { leaf: c.expectedLeaf, original: chosen } : null)
+    } catch {
+      setPath(chosen)
+      setNotice(null)
     }
   }
 
@@ -55,6 +73,20 @@ export function FolderEditor({
     if (!path.trim()) {
       setError(t('projects.pickOrPastePath'))
       return
+    }
+    // A typed/pasted dir path never went through pick(): offer the same redirect
+    // once. `notice`/`override` guard against re-suggesting (and any revert loop).
+    if (kind === 'dir' && !notice && !override) {
+      try {
+        const c = await api.projectSuggestFolderCorrection(project, s, path.trim(), kind)
+        if (c.redirected) {
+          setPath(c.path)
+          setNotice({ leaf: c.expectedLeaf, original: path.trim() })
+          return
+        }
+      } catch {
+        /* non-fatal — fall through and save the path as-is */
+      }
     }
     setSubmitting(true)
     setError(null)
@@ -93,6 +125,8 @@ export function FolderEditor({
             onChange={(k) => {
               setKind(k)
               setError(null)
+              setNotice(null)
+              setOverride(false)
             }}
             options={[
               { value: 'dir', label: t('projects.folder') },
@@ -109,6 +143,8 @@ export function FolderEditor({
           onChange={(e) => {
             setPath(e.target.value)
             setError(null)
+            setNotice(null)
+            setOverride(false)
           }}
         />
         <Button
@@ -127,6 +163,23 @@ export function FolderEditor({
         />
         <IconButton icon="x" label={t('common.cancel')} disabled={submitting} onClick={onDone} />
       </div>
+      {notice && (
+        <div className="folder-editor__notice field__hint field__hint--accent">
+          <span>{t('projects.folderRedirect.adjusted', { leaf: notice.leaf })}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={submitting}
+            onClick={() => {
+              setPath(notice.original)
+              setNotice(null)
+              setOverride(true)
+            }}
+          >
+            {t('projects.folderRedirect.revert')}
+          </Button>
+        </div>
+      )}
       {error && <div className="field__error folder-editor__err">{error}</div>}
     </div>
   )

@@ -338,6 +338,10 @@
     "filePathPlaceholder": "/path/to/file",
     "chooseFolder": "Choose folder",
     "chooseFile": "Choose file",
+    "folderRedirect": {
+      "adjusted": "Adjusted to the {{leaf}}/ subfolder — this looks like a project root that contains it.",
+      "revert": "Use the folder I picked"
+    },
     "project": {
       "nameEmpty": "The project name can't be empty.",
       "nameInvalid": "Invalid project name. Use only letters, numbers, dot, hyphen and underscore."
