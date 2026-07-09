@@ -41,18 +41,25 @@ dmg:
   # (confirmed in node_modules/dmg-builder/out/dmgUtil.js — it measures the
   # background file with `sips` and uses THAT as the window's total size,
   # title bar included). The background PNG's own pixel dimensions are the
-  # real source of truth for the window size — see scripts/background.html
-  # and scripts/make-background.sh, which generate it at 640×528 precisely so
-  # the ~28px title bar doesn't clip the bottom of the design (#67).
+  # real source of truth for the window size. #67 sized it at 640×528 to clear
+  # just the ~28px title bar, but #70 showed that's not enough: dmgbuild's
+  # .DS_Store also asks Finder to hide the path bar and status bar for this
+  # window, and on macOS 26.2 Finder ignores that whenever the user has those
+  # View-menu toggles on globally — both bars render stacked at the BOTTOM of
+  # the window on that Finder version. scripts/background.html/make-background.sh
+  # now generate the background at 640×604, with most of the extra headroom
+  # below the design (a small top cushion is just breathing room under the
+  # title bar). These coordinates must stay in sync with the glow positions in
+  # background.html.
   background: build/background.png
   iconSize: 120
   iconTextSize: 13
   contents:
     - x: 165
-      y: 195
+      y: 217
       type: file
     - x: 475
-      y: 195
+      y: 217
       type: link
       path: /Applications
 linux:

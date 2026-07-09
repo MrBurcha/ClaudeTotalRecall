@@ -18,6 +18,26 @@ and the project uses [Semantic Versioning](https://semver.org/).
   local path on this machine is highlighted in accent instead of muted gray.
   Presentation only — no change to sync, config, or the data model.
 
+### Fixed
+
+- **macOS DMG: window still clipped the background** (#70): #67/#69 sized the background at
+  640×528 to clear the ~28px title bar, but that wasn't the whole story. `dmgbuild`'s `.DS_Store`
+  also asks Finder to hide the path bar and status bar for this window, and on macOS 26.2 Finder
+  ignores that whenever the user has those View-menu toggles on globally — confirmed against a
+  real machine with both enabled, where they render stacked at the bottom of the window, clipping
+  the "doesn't open the first time?" card regardless of the title-bar-only math. The background is
+  now generated at 640×604, with most of the added headroom below the design (plus a small cushion
+  under the title bar) so the full card survives that extra chrome either way.
+- **macOS DMG: internal resource file still visible with "Show Hidden Files" on** (#70, follow-up
+  to #67): `harden-dmg.sh` hid `.background.tiff`/`.DS_Store` via the classic Finder invisible bit
+  (`SetFile -a V`), on the assumption that bit survives Finder's "Show Hidden Files" toggle
+  (Cmd+Shift+.) — that stopped being true after Sierra; the toggle reveals it just like a
+  dot-prefix or `chflags hidden` file. As a second layer, the script now also asks Finder (via
+  AppleScript) to move each hidden item far outside the background's visible canvas while the
+  volume is still mounted read-write, so forcing hidden files on shows it off-screen instead of
+  overlapping the design. Non-fatal if Finder scripting isn't permitted in a given environment —
+  falls back to the invisible bit alone, same as before.
+
 ## [0.8.1] - 2026-07-09
 
 ### Fixed

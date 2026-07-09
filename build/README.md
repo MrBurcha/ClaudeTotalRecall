@@ -26,21 +26,24 @@ generated from a self-contained HTML source, so copy/design tweaks are one edit
 away (no hand-painting pixels).
 
 1. Edit the design/copy in **`scripts/background.html`** (inline CSS + SVG, no
-   external assets). Coordinates are 1x (640×528); the two glows sit at the icon
-   centers electron-builder uses — `(165,195)` app · `(475,195)` Applications alias.
-   The visible design occupies the top ~472px; the remaining ~28px of blank canvas
-   at the bottom are load-bearing, not spare margin — see below.
+   external assets). Coordinates are 1x (640×604); the two glows sit at the icon
+   centers electron-builder uses — `(165,217)` app · `(475,217)` Applications alias.
+   The blank canvas below the design is load-bearing, not spare margin — see below.
 2. Run **`npm run background`** → renders via headless Chromium at 2x and downscales:
-   - `build/background@2x.png` (1280×1056, retina — auto-picked by name)
-   - `build/background.png` (640×528, 1x — referenced by `dmg.background`)
+   - `build/background@2x.png` (1280×1208, retina — auto-picked by name)
+   - `build/background.png` (640×604, 1x — referenced by `dmg.background`)
 
 Cross-platform (Chromium + ImageMagick), unlike the `sips`-based icon script, so it
 runs on Linux/CI too. Override the browser with `CHROME=/path/to/chrome npm run background`.
 
-**Why 528, not 500** (#67): `dmg-builder` (electron-builder's DMG target) ignores
+**Why 604, not 528** (#67, #70): `dmg-builder` (electron-builder's DMG target) ignores
 `dmg.window` entirely whenever `dmg.background` is set — it measures the background
 file with `sips` and uses that as the DMG window's total size, title bar included.
-A 640×500 background under a ~28px title bar clips the bottom of the design; 528
-reserves exactly that title-bar height so the full design shows without resizing.
+528 (#67) reserved just the ~28px title bar, but that's not the whole story: dmgbuild's
+`.DS_Store` also tells Finder to hide the path bar and status bar for this window, and
+on macOS 26.2 Finder shows them anyway whenever the user has those View-menu toggles on
+globally — clipping the bottom of the design regardless of title-bar math (#70). On that
+Finder version both bars render stacked at the bottom (not under the title bar), so 604
+adds most of its extra headroom below the design, with just a small cushion up top.
 
 Both PNGs are committed (the release CI uses them). Single-language: English only.

@@ -1,15 +1,23 @@
 <!doctype html>
 <!--
   Source for the macOS DMG installer background (build/background.png + @2x).
-  Rendered by scripts/make-background.sh via headless Chromium at 2x → 1280×1056,
-  downscaled to 640×528. Design coords are 1x (640×528): the visible design occupies
-  the top ~472px (matching electron-builder's dmg.window when it worked pre-EB26),
-  the extra 28px of blank canvas at the bottom are load-bearing — dmg-builder derives
-  the DMG's total window size directly from this file's own pixel dimensions (it
-  ignores dmg.window whenever dmg.background is set), and that total size must
-  include the ~28px title bar or the bottom of the design gets clipped. The two
-  glows sit at the icon centers electron-builder uses (165,195) app · (475,195)
-  Applications alias. Edit copy/design here and re-run `npm run background`.
+  Rendered by scripts/make-background.sh via headless Chromium at 2x → 1280×1208,
+  downscaled to 640×604. dmg-builder derives the DMG's total window size directly
+  from this file's own pixel dimensions (it ignores dmg.window whenever
+  dmg.background is set), so the canvas reserves headroom beyond just the ~28px
+  title bar: dmgbuild's .DS_Store asks Finder to hide the path bar and status bar
+  for this window (ShowPathbar/ShowStatusBar: false), but on macOS 26.2 Finder
+  keeps showing them anyway whenever the user has those View-menu toggles on
+  globally — confirmed empirically (#70) against a machine with both enabled.
+  Both bars render stacked at the BOTTOM of the window on that Finder version (no
+  extra chrome shows up under the title bar), so most of the reserved headroom
+  sits below the card; a small 22px cushion up top is just breathing room under
+  the title bar, not sized for anything specific. The design itself
+  (eyebrow/title/icons/card) is unchanged from the 640×528 version, just shifted
+  down 22px, with ~110px of blank canvas below the card absorbing the path/status
+  bars. The two glows sit at the icon centers electron-builder uses (165,217) app
+  · (475,217) Applications alias. Edit copy/design here and re-run
+  `npm run background`.
 -->
 <html lang="en">
   <head>
@@ -33,7 +41,7 @@
       html,
       body {
         width: 640px;
-        height: 528px;
+        height: 604px;
         overflow: hidden;
         font-family:
           -apple-system, 'SF Pro Display', system-ui, 'Segoe UI', Roboto, 'DejaVu Sans', sans-serif;
@@ -43,7 +51,7 @@
       .stage {
         position: relative;
         width: 640px;
-        height: 528px;
+        height: 604px;
         background: radial-gradient(
           120% 90% at 50% -10%,
           #10162b 0%,
@@ -74,17 +82,17 @@
       }
       .glow--app {
         left: 165px;
-        top: 195px;
+        top: 217px;
       }
       .glow--apps {
         left: 475px;
-        top: 195px;
+        top: 217px;
       }
 
       /* header */
       .eyebrow {
         position: absolute;
-        top: 34px;
+        top: 56px;
         left: 0;
         right: 0;
         display: flex;
@@ -104,7 +112,7 @@
       }
       .title {
         position: absolute;
-        top: 62px;
+        top: 84px;
         left: 0;
         right: 0;
         text-align: center;
@@ -120,7 +128,7 @@
       /* the sync path: a trail of round dots from the app icon toward Applications */
       .path {
         position: absolute;
-        top: 195px;
+        top: 217px;
         left: 230px;
         width: 152px;
         height: 6px;
@@ -133,7 +141,7 @@
       }
       .chev {
         position: absolute;
-        top: 195px;
+        top: 217px;
         left: 398px;
         transform: translate(-50%, -50%);
         width: 30px;
@@ -153,7 +161,7 @@
         position: absolute;
         left: 40px;
         right: 40px;
-        top: 306px;
+        top: 328px;
         height: 166px;
         border-radius: 18px;
         padding: 22px 26px;
@@ -235,30 +243,30 @@
   <body>
     <div class="stage">
       <div class="field">
-        <svg width="640" height="528" viewBox="0 0 640 528" fill="none">
+        <svg width="640" height="604" viewBox="0 0 640 604" fill="none">
           <!-- upper-left branch -->
           <polyline
-            points="70,72 152,122 132,196"
+            points="70,94 152,144 132,218"
             stroke="#7a8ac8"
             stroke-width="1"
             opacity="0.5"
           />
-          <circle cx="70" cy="72" r="2.4" fill="#7a8ac8" opacity="0.6" />
-          <circle cx="152" cy="122" r="3.2" fill="#9aa6d6" opacity="0.75" />
-          <circle cx="132" cy="196" r="2" fill="#7a8ac8" opacity="0.7" />
+          <circle cx="70" cy="94" r="2.4" fill="#7a8ac8" opacity="0.6" />
+          <circle cx="152" cy="144" r="3.2" fill="#9aa6d6" opacity="0.75" />
+          <circle cx="132" cy="218" r="2" fill="#7a8ac8" opacity="0.7" />
           <!-- upper-right branch -->
           <polyline
-            points="560,80 484,124 590,205"
+            points="560,102 484,146 590,227"
             stroke="#7a8ac8"
             stroke-width="1"
             opacity="0.5"
           />
-          <circle cx="560" cy="80" r="2.4" fill="#7a8ac8" opacity="0.6" />
-          <circle cx="484" cy="124" r="3.2" fill="#9aa6d6" opacity="0.75" />
-          <circle cx="590" cy="205" r="2.2" fill="#9aa6d6" opacity="0.6" />
+          <circle cx="560" cy="102" r="2.4" fill="#7a8ac8" opacity="0.6" />
+          <circle cx="484" cy="146" r="3.2" fill="#9aa6d6" opacity="0.75" />
+          <circle cx="590" cy="227" r="2.2" fill="#9aa6d6" opacity="0.6" />
           <!-- scattered stars -->
-          <circle cx="44" cy="232" r="1.8" fill="#7a8ac8" opacity="0.55" />
-          <circle cx="610" cy="300" r="1.6" fill="#7a8ac8" opacity="0.5" />
+          <circle cx="44" cy="254" r="1.8" fill="#7a8ac8" opacity="0.55" />
+          <circle cx="610" cy="322" r="1.6" fill="#7a8ac8" opacity="0.5" />
         </svg>
         <div class="glow glow--app"></div>
         <div class="glow glow--apps"></div>

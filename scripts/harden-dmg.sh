@@ -2,13 +2,15 @@
 # Applies the real macOS Finder "invisible" attribute (SetFile -a V) to every
 # top-level item in a built .dmg EXCEPT the .app bundle and the /Applications
 # alias, so no internal dmg-builder resource (background image, .DS_Store,
-# .VolumeIcon.icns, etc.) shows up as a stray icon when a user has Finder's
-# "Show Hidden Files" (Cmd+Shift+.) toggled on.
+# .VolumeIcon.icns, etc.) shows up as a stray icon in the common case.
 #
-# SetFile -a V sets the classic FinderInfo "kIsInvisible" bit. Unlike a
-# leading-dot filename or the UF_HIDDEN chflag (both of which Finder reveals
-# when "Show Hidden Files" is on), the FinderInfo invisible bit is NOT
-# affected by that toggle — it's the mechanism that actually survives it.
+# SetFile -a V sets the classic FinderInfo "kIsInvisible" bit — but on current
+# macOS, Finder's "Show Hidden Files" toggle (Cmd+Shift+.) reveals it too, same
+# as a leading-dot filename or the UF_HIDDEN chflag (confirmed empirically,
+# #70 — this used to not be the case, pre-Sierra). So as a second layer, this
+# script also asks Finder (via AppleScript) to reposition every hidden item
+# far outside the DMG window's visible canvas — if a user does force hidden
+# files on, the item shows up off-screen instead of overlapping the design.
 #
 # electron-builder's dmg target ships a read-only compressed image (UDZO by
 # default — confirmed against node_modules/dmg-builder/out/dmg.js), so this
@@ -85,6 +87,49 @@ detach_mount() {
   fi
 }
 
+# Second line of defense for the items already hidden via SetFile above (#70):
+# ask Finder to move each one to a spot far outside the background canvas
+# (640x604 — scripts/background.html), while the volume is still mounted
+# read-write. If a user forces "Show Hidden Files", the item becomes visible
+# but sits off-screen — at most a scrollbar appears, the design stays clean.
+# Non-fatal: Finder scripting needs macOS Automation permission, which may
+# not be pre-granted in every environment (e.g. a fresh CI runner) — if it
+# fails, we fall back to relying solely on the invisible bit, same as before.
+reposition_off_canvas() {
+  local mnt="$1"
+  shift
+  [ "$#" -gt 0 ] || return 0
+
+  local applescript_list="" name escaped
+  for name in "$@"; do
+    escaped="${name//\\/\\\\}"
+    escaped="${escaped//\"/\\\"}"
+    [ -n "$applescript_list" ] && applescript_list+=", "
+    applescript_list+="\"$escaped\""
+  done
+
+  if osascript <<APPLESCRIPT >/dev/null 2>&1
+tell application "Finder"
+  open (POSIX file "$mnt" as alias)
+  set targetWindow to front window
+  repeat with itemName in {$applescript_list}
+    try
+      set position of item (itemName as string) of targetWindow to {2000, 2000}
+    end try
+  end repeat
+  -- Setting an item's position selects it; clear that before closing so the
+  -- shipped .DS_Store doesn't open with an item pre-selected.
+  set selection to {}
+  close targetWindow
+end tell
+APPLESCRIPT
+  then
+    echo "  Repositioned $# item(s) off-canvas: $*"
+  else
+    echo "  ⚠ Could not reposition hidden items off-canvas (Finder Automation permission?) — relying on the invisible bit only." >&2
+  fi
+}
+
 TOTAL_HIDDEN=0
 i=0
 
@@ -157,6 +202,7 @@ for dmg in "$@"; do
     echo "  (nothing else at the volume root — nothing to hide)"
   else
     echo "  Hid ${#hidden[@]} item(s): ${hidden[*]}"
+    reposition_off_canvas "$mount_dir" "${hidden[@]}"
   fi
   TOTAL_HIDDEN=$((TOTAL_HIDDEN + ${#hidden[@]}))
 
