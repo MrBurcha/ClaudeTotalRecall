@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createPlatformAdapter } from '../platform'
 import type { Config } from './types'
 import {
+  correctProjectFolderPick,
   decodeClaudeProjectDir,
   discoverProjectSources,
   pickReference,
@@ -34,6 +35,10 @@ function emptyConfig(): Config {
 
 function linuxAdapter(home = FAKE_HOME) {
   return createPlatformAdapter('linux', home)
+}
+
+function macosAdapter(home = FAKE_HOME) {
+  return createPlatformAdapter('darwin', home)
 }
 
 describe('slug', () => {
@@ -161,6 +166,252 @@ describe('discoverProjectSources', () => {
       'this',
     )
     expect(p.slots).toEqual([])
+  })
+})
+
+describe('correctProjectFolderPick', () => {
+  it('redirects a picked project root to its <slot> child (the reported bug)', async () => {
+    const base = await tmp()
+    const proj = join(base, 'PWA-Santino')
+    await mkdir(join(proj, 'memory'), { recursive: true })
+
+    const c = await correctProjectFolderPick(
+      proj,
+      'PWA-Santino',
+      'memory',
+      'dir',
+      emptyConfig(),
+      linuxAdapter(),
+      'this',
+    )
+
+    expect(c.redirected).toBe(true)
+    expect(c.path).toBe(join(proj, 'memory'))
+    expect(c.expectedLeaf).toBe('memory')
+    expect(c.reason).toBe('redirectedToChild')
+  })
+
+  it('keeps a pick that already IS the leaf folder', async () => {
+    const base = await tmp()
+    const memory = join(base, 'PWA-Santino', 'memory')
+    await mkdir(memory, { recursive: true })
+
+    const c = await correctProjectFolderPick(
+      memory,
+      'PWA-Santino',
+      'memory',
+      'dir',
+      emptyConfig(),
+      linuxAdapter(),
+      'this',
+    )
+
+    expect(c.redirected).toBe(false)
+    expect(c.path).toBe(memory)
+    expect(c.reason).toBe('alreadyLeaf')
+  })
+
+  it('keeps a plain folder with no <slot> subfolder', async () => {
+    const base = await tmp()
+    const proj = join(base, 'plain')
+    await mkdir(proj, { recursive: true })
+
+    const c = await correctProjectFolderPick(
+      proj,
+      'p',
+      'memory',
+      'dir',
+      emptyConfig(),
+      linuxAdapter(),
+      'this',
+    )
+
+    expect(c.redirected).toBe(false)
+    expect(c.path).toBe(proj)
+    expect(c.reason).toBe('noChild')
+  })
+
+  it('uses another machine’s unanimous leaf when it differs from the slot name', async () => {
+    const base = await tmp()
+    const proj = join(base, 'root')
+    await mkdir(join(proj, 'journal'), { recursive: true })
+    const config: Config = {
+      version: 1,
+      repo: { remote: 'r' },
+      machines: {},
+      projects: {
+        demo: { folders: { notes: { mac: '/elsewhere/journal' } }, slotKinds: { notes: 'dir' } },
+      },
+    }
+
+    const redirected = await correctProjectFolderPick(
+      proj,
+      'demo',
+      'notes',
+      'dir',
+      config,
+      linuxAdapter(),
+      'this',
+    )
+    expect(redirected.expectedLeaf).toBe('journal')
+    expect(redirected.redirected).toBe(true)
+    expect(redirected.path).toBe(join(proj, 'journal'))
+
+    // Picking that leaf directly is kept.
+    const kept = await correctProjectFolderPick(
+      join(proj, 'journal'),
+      'demo',
+      'notes',
+      'dir',
+      config,
+      linuxAdapter(),
+      'this',
+    )
+    expect(kept.reason).toBe('alreadyLeaf')
+  })
+
+  it('falls back to the slot name when other machines disagree on the leaf', async () => {
+    const base = await tmp()
+    const proj = join(base, 'root')
+    await mkdir(join(proj, 'notes'), { recursive: true })
+    const config: Config = {
+      version: 1,
+      repo: { remote: 'r' },
+      machines: {},
+      projects: {
+        demo: {
+          folders: { notes: { mac: '/a/journal', lin: '/b/memory' } },
+          slotKinds: { notes: 'dir' },
+        },
+      },
+    }
+
+    const c = await correctProjectFolderPick(
+      proj,
+      'demo',
+      'notes',
+      'dir',
+      config,
+      linuxAdapter(),
+      'this',
+    )
+    expect(c.expectedLeaf).toBe('notes')
+    expect(c.redirected).toBe(true)
+    expect(c.path).toBe(join(proj, 'notes'))
+  })
+
+  it('never redirects a file-kind slot', async () => {
+    const base = await tmp()
+    const proj = join(base, 'root')
+    await mkdir(join(proj, 'memory'), { recursive: true })
+
+    const c = await correctProjectFolderPick(
+      proj,
+      'p',
+      'memory',
+      'file',
+      emptyConfig(),
+      linuxAdapter(),
+      'this',
+    )
+
+    expect(c.redirected).toBe(false)
+    expect(c.path).toBe(proj)
+    expect(c.reason).toBe('fileKind')
+  })
+
+  it('does not dig a second level when the pick is already a memory folder containing memory/', async () => {
+    const base = await tmp()
+    const memory = join(base, 'p', 'memory')
+    await mkdir(join(memory, 'memory'), { recursive: true })
+
+    const c = await correctProjectFolderPick(
+      memory,
+      'p',
+      'memory',
+      'dir',
+      emptyConfig(),
+      linuxAdapter(),
+      'this',
+    )
+
+    expect(c.reason).toBe('alreadyLeaf')
+    expect(c.redirected).toBe(false)
+    expect(c.path).toBe(memory)
+  })
+
+  it('does not redirect when the slot name is blank (add flow with the field cleared)', async () => {
+    const base = await tmp()
+    const proj = join(base, 'p')
+    await mkdir(proj, { recursive: true })
+
+    const c = await correctProjectFolderPick(
+      proj,
+      'p',
+      '',
+      'dir',
+      emptyConfig(),
+      linuxAdapter(),
+      'this',
+    )
+
+    expect(c.redirected).toBe(false)
+    expect(c.path).toBe(proj)
+    expect(c.reason).toBe('noChild')
+  })
+
+  it('keeps a nonexistent pick without throwing', async () => {
+    const base = await tmp()
+    const c = await correctProjectFolderPick(
+      join(base, 'nope'),
+      'p',
+      'memory',
+      'dir',
+      emptyConfig(),
+      linuxAdapter(),
+      'this',
+    )
+    expect(c.redirected).toBe(false)
+    expect(c.reason).toBe('noChild')
+  })
+
+  it('follows a symlinked <slot> child', async () => {
+    const base = await tmp()
+    const proj = join(base, 'p')
+    await mkdir(join(proj, 'realmem'), { recursive: true })
+    await symlink(join(proj, 'realmem'), join(proj, 'memory'))
+
+    const c = await correctProjectFolderPick(
+      proj,
+      'p',
+      'memory',
+      'dir',
+      emptyConfig(),
+      linuxAdapter(),
+      'this',
+    )
+
+    expect(c.redirected).toBe(true)
+    expect(c.path).toBe(join(proj, 'memory'))
+  })
+
+  it('compares the leaf case-insensitively on macOS', async () => {
+    const base = await tmp()
+    const memory = join(base, 'p', 'Memory')
+    await mkdir(memory, { recursive: true })
+
+    const c = await correctProjectFolderPick(
+      memory,
+      'p',
+      'memory',
+      'dir',
+      emptyConfig(),
+      macosAdapter(),
+      'this',
+    )
+
+    expect(c.reason).toBe('alreadyLeaf')
+    expect(c.redirected).toBe(false)
   })
 })
 

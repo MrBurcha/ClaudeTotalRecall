@@ -29,6 +29,7 @@ import {
   repoStatus,
   setPinnedFile,
   setProjectFolder,
+  suggestFolderCorrection,
   syncOutgoing,
   syncIncoming,
   workingCopyDir,
@@ -223,6 +224,48 @@ describe('incoming ledger (records real incoming, never touches the remote)', ()
     expect(incoming[0].fromMachines).toContain('m1')
     const claudeMd = incoming[0].changes.find((c) => c.path.endsWith('user/CLAUDE.md'))
     expect(claudeMd?.status).toBe('added')
+  })
+})
+
+describe('suggestFolderCorrection', () => {
+  async function setup() {
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a = adapterFor(join(base, 'home1'))
+    await connectRepo(remote, a)
+    await registerMachine(a, 'm1')
+    return a
+  }
+
+  it('redirects a picked project root to its memory child, and expands ~', async () => {
+    const a = await setup()
+    const projRoot = join(a.home(), 'dev', 'PWA-Santino')
+    await mkdir(join(projRoot, 'memory'), { recursive: true })
+
+    const abs = await suggestFolderCorrection(a, 'PWA-Santino', 'memory', projRoot, 'dir')
+    expect(abs.redirected).toBe(true)
+    expect(abs.path).toBe(join(projRoot, 'memory'))
+
+    const tilde = await suggestFolderCorrection(
+      a,
+      'PWA-Santino',
+      'memory',
+      '~/dev/PWA-Santino',
+      'dir',
+    )
+    expect(tilde.path).toBe(join(projRoot, 'memory'))
+    expect(tilde.redirected).toBe(true)
+  })
+
+  it('keeps a pick that already is the memory folder (project not yet in config)', async () => {
+    const a = await setup()
+    const memory = join(a.home(), 'dev', 'PWA-Santino', 'memory')
+    await mkdir(memory, { recursive: true })
+
+    const c = await suggestFolderCorrection(a, 'PWA-Santino', 'memory', memory, 'dir')
+    expect(c.redirected).toBe(false)
+    expect(c.reason).toBe('alreadyLeaf')
+    expect(c.path).toBe(memory)
   })
 })
 

@@ -338,6 +338,10 @@
     "filePathPlaceholder": "/ruta/al/archivo",
     "chooseFolder": "Elegir carpeta",
     "chooseFile": "Elegir archivo",
+    "folderRedirect": {
+      "adjusted": "Ajustado a la subcarpeta {{leaf}}/ — esto parece la raíz de un proyecto que la contiene.",
+      "revert": "Usar la carpeta que elegí"
+    },
     "project": {
       "nameEmpty": "El nombre de proyecto no puede estar vacío.",
       "nameInvalid": "Nombre de proyecto inválido. Usa solo letras, números, punto, guion y guion bajo."

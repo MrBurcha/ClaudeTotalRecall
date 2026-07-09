@@ -117,6 +117,11 @@ export function registerIpc(scheduler: SyncScheduler): void {
 
   // Auto-discovery of project sources + OS-aware cross-machine adoption.
   handle('project:discover', (_e, dir: string) => svc.discoverProject(adapter(), dir))
+  handle(
+    'project:suggestFolderCorrection',
+    (_e, p: { name: string; slot: string; path: string; kind: 'file' | 'dir' }) =>
+      svc.suggestFolderCorrection(adapter(), p.name, p.slot, p.path, p.kind),
+  )
   handle('project:applyDiscovery', (_e, input: svc.ApplyDiscoveryInput) =>
     svc.applyDiscovery(adapter(), input),
   )

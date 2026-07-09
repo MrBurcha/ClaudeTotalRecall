@@ -126,6 +126,83 @@ export async function discoverProjectSources(
   return { projectName: slug(basename(root)) || 'memory', root, rootIsMemory: false, slots }
 }
 
+// ── Correcting a manual folder pick (project root → <pick>/<leaf>) ───────────
+
+export type FolderPickReason = 'fileKind' | 'alreadyLeaf' | 'redirectedToChild' | 'noChild'
+
+export interface FolderPickCorrection {
+  /** The path the caller should use — the child folder when a redirect applied. */
+  path: string
+  /** True only when `path` differs from the (expanded) pick. */
+  redirected: boolean
+  /** The leaf we matched against: the slot name, or an agreed other-machine leaf. */
+  expectedLeaf: string
+  reason: FolderPickReason
+}
+
+/** The expected leaf folder name for a slot: a unanimous non-slot leaf recorded by
+ * OTHER machines wins (e.g. slot key `notes` but everyone syncs `.../journal`);
+ * otherwise the slot name itself. Empty/disagreeing other machines fall back. */
+function expectedSlotLeaf(
+  config: Config,
+  projectName: string,
+  slot: string,
+  machineId: string,
+): string {
+  const folder = config.projects[projectName]?.folders[slot]
+  if (!folder) return slot
+  const leaves = new Set(
+    Object.entries(folder)
+      .filter(([id]) => id !== machineId)
+      .map(([, p]) => basename(p)),
+  )
+  if (leaves.size === 1) {
+    const [only] = leaves
+    if (only && only !== slot) return only
+  }
+  return slot
+}
+
+/**
+ * Given a directory the user just picked for a `dir` slot, decides whether the
+ * pick is the leaf folder itself or a PARENT that contains it, and returns the
+ * corrected path. This is the same insight `discoverProjectSources` applies for
+ * the add flow (a project root maps to its `memory/` child), reused for the two
+ * manual-pick flows (inline editor, cross-machine adoption) that bypass discovery
+ * and would otherwise nest `.../memory/memory/…`. Read-only, tolerant (never
+ * throws); the collision guard stays authoritative at save time.
+ */
+export async function correctProjectFolderPick(
+  pickedPath: string,
+  projectName: string,
+  slot: string,
+  kind: SlotKind,
+  config: Config,
+  adapter: PlatformAdapter,
+  machineId: string,
+): Promise<FolderPickCorrection> {
+  const picked = adapter.expandHome(pickedPath.trim())
+  const expectedLeaf = expectedSlotLeaf(config, projectName, slot, machineId)
+  // File slots point straight at a file — never redirect them.
+  if (kind === 'file') return { path: picked, redirected: false, expectedLeaf, reason: 'fileKind' }
+  if (!picked) return { path: picked, redirected: false, expectedLeaf, reason: 'noChild' }
+  // A blank slot name (add flow with the field cleared) has no leaf to match on —
+  // `join(picked, '')` would collapse to the pick and falsely report a redirect.
+  if (!expectedLeaf) return { path: picked, redirected: false, expectedLeaf, reason: 'noChild' }
+  // Case-insensitive leaf compare on macOS (its default FS folds case).
+  const leaf = basename(picked)
+  const same =
+    adapter.os() === 'macos'
+      ? leaf.toLowerCase() === expectedLeaf.toLowerCase()
+      : leaf === expectedLeaf
+  if (same) return { path: picked, redirected: false, expectedLeaf, reason: 'alreadyLeaf' }
+  const child = join(picked, expectedLeaf)
+  const st = await statOrNull(child)
+  if (st?.isDirectory())
+    return { path: child, redirected: true, expectedLeaf, reason: 'redirectedToChild' }
+  return { path: picked, redirected: false, expectedLeaf, reason: 'noChild' }
+}
+
 // ── Bulk scan of ~/.claude/projects ─────────────────────────────────────────
 
 const SAFE_NAME = /^[A-Za-z0-9._-]+$/
