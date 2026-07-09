@@ -62,6 +62,10 @@ const api = {
     ipcRenderer.invoke('project:create', name) as Promise<CreateProjectResult>,
   projectSetFolder: (name: string, slot: string, path: string, kind?: 'file' | 'dir') =>
     ipcRenderer.invoke('project:setFolder', { name, slot, path, kind }) as Promise<void>,
+  clipboardWrite: (text: string) =>
+    ipcRenderer.invoke('clipboard:writeText', text) as Promise<void>,
+  projectFolderHasMemoryIndex: (path: string, kind: 'file' | 'dir') =>
+    ipcRenderer.invoke('project:folderHasMemoryIndex', { path, kind }) as Promise<boolean>,
   projectRemoveFolder: (name: string, slot: string) =>
     ipcRenderer.invoke('project:removeFolder', { name, slot }) as Promise<void>,
   projectDelete: (name: string) => ipcRenderer.invoke('project:delete', name) as Promise<void>,

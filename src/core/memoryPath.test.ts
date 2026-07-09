@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { isStructuralNoise, parseMemoryPath } from './memoryPath'
+import { isMemoryIndexPath, isStructuralNoise, parseMemoryPath } from './memoryPath'
+
+describe('isMemoryIndexPath', () => {
+  it('matches a MEMORY.md leaf regardless of depth', () => {
+    expect(isMemoryIndexPath('memories/projects/foo/memory/MEMORY.md')).toBe(true)
+    expect(isMemoryIndexPath('MEMORY.md')).toBe(true)
+  })
+  it('does not match other files', () => {
+    expect(isMemoryIndexPath('memories/projects/foo/memory/notes.md')).toBe(false)
+    expect(isMemoryIndexPath('memories/user/CLAUDE.md')).toBe(false)
+  })
+})
 
 describe('parseMemoryPath', () => {
   describe('project bucket', () => {

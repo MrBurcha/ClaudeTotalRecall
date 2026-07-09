@@ -1,8 +1,17 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import { app, BrowserWindow, dialog, ipcMain, shell, type IpcMainInvokeEvent } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  shell,
+  type IpcMainInvokeEvent,
+} from 'electron'
 import { createPlatformAdapter } from '../platform'
 import { AppError, encodeAppError } from '../core/errors'
+import { folderContainsMemoryIndex } from '../core/memoryScan'
 import { PlanDriftError } from '../core/plan'
 import { runPreflight } from '../core/preflight'
 import * as svc from '../core/service'
@@ -47,6 +56,12 @@ function handle<A extends unknown[], R>(
 export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateScheduler): void {
   handle('app:version', () => app.getVersion())
   handle('preflight:run', () => runPreflight())
+  handle('clipboard:writeText', (_e, text: string) => {
+    clipboard.writeText(text)
+  })
+  handle('project:folderHasMemoryIndex', (_e, p: { path: string; kind: 'file' | 'dir' }) =>
+    folderContainsMemoryIndex(adapter(), p.path, p.kind),
+  )
 
   // Window: custom (frameless) title-bar controls. The window is resolved from the
   // sender, without relying on a global reference. These never throw AppError, so

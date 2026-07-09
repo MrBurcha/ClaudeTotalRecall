@@ -446,6 +446,16 @@
 .link-accent:hover {
   text-decoration: underline;
 }
+.memory-prompt {
+  max-height: 320px;
+  overflow: auto;
+  padding: var(--space-3);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  white-space: pre-wrap;
+  font-size: var(--text-sm);
+}
 
 /* ══ Badges / pills / tags ════════════════════════════════════════════════ */
 .pill {

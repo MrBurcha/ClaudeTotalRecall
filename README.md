@@ -160,6 +160,29 @@ Running the CLI from source: `npm run build:cli` produces `dist-cli/index.js`, t
 - **Conflicts are resolved per file** — `ours` (local) or `theirs` (remote), then finalize the merge.
 - **Secrets are hard-excluded** — `.credentials.json`, `.claude.json`, `*.jsonl`, always.
 
+## Keeping MEMORY.md in sync
+
+`MEMORY.md` is the index of a memory store. When two machines held different
+memories and then synced, the index can end up reflecting only the machine that
+synced last — listing memories that aren't on disk, or missing ones that are.
+
+If that happens, open Claude Code in the affected project and run this maintenance
+pass to reconcile the index with the files on disk:
+
+```
+Do a maintenance pass on your memory store.
+1. Reindex. Reconcile the MEMORY.md index against the memory files actually on disk: add any memory that exists but isn't indexed, remove index lines whose file is gone, and fix hooks that no longer match their file's content. Keep each hook faithful to what the memory actually says.
+2. Find contradictions. Look for two kinds: memories that conflict with each other, and memories that conflict with current reality. For the second kind, verify claims against the actual repo/code/git before trusting them — a memory can have been correct when written but gone stale since. List everything you find and check with me before editing or deleting anything.
+3. Reorganize if warranted. Merge duplicates, split overloaded memories, and fix miscategorized ones — but preserve the intentional split between "what this is / what happened" (project) memories and "how you should act" (feedback) memories; don't collapse those into each other. Ask before any destructive change.
+4. Report a short summary of what you reindexed, which contradictions you found and how they were resolved, and what (if anything) you reorganized.
+```
+
+You only need this when machines genuinely diverged. If a `MEMORY.md` update is just
+a reconciliation you already ran on another machine propagating over, it's already
+consistent — no action needed. The app shows the same guidance in-app (next to a
+received `MEMORY.md` in Recent activity, and when you add such a source on a second
+machine).
+
 ## What gets synced (and what to back up)
 
 Claude Total Recall does **not** mirror all of `~/.claude`. It syncs a **curated allowlist** — the

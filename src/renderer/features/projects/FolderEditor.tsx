@@ -4,6 +4,7 @@ import { Button } from '../../components/Button'
 import { IconButton } from '../../components/IconButton'
 import { SegmentedControl } from '../../components/SegmentedControl'
 import { api, normalizeError } from '../../state/api'
+import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 import { validateName } from './names'
 
@@ -28,6 +29,7 @@ export function FolderEditor({
 }): JSX.Element {
   const { t } = useTranslation()
   const actions = useActions()
+  const { config, machineId } = useAppState()
   const editing = fixedSlot !== undefined
   const [slot, setSlot] = useState(fixedSlot ?? 'memory')
   const [kind, setKind] = useState<'file' | 'dir'>(initialKind ?? 'dir')
@@ -93,8 +95,17 @@ export function FolderEditor({
     try {
       await api.projectSetFolder(project, s, path.trim(), kind)
       actions.notify(t('projects.folderSaved', { slot: s, project }), 'ok')
+      // If this project already lives on another machine and the source we just
+      // saved carries a MEMORY.md, the index may now be out of sync — offer the pass.
+      const otherMachineHasProject = Object.values(config?.projects[project]?.folders ?? {}).some(
+        (byMachine) => Object.keys(byMachine).some((m) => m !== machineId),
+      )
+      const showMemoryHelp =
+        otherMachineHasProject &&
+        (await api.projectFolderHasMemoryIndex(path.trim(), kind).catch(() => false))
       await actions.refresh()
       onDone()
+      if (showMemoryHelp) actions.openModal({ kind: 'memory-maintenance' })
     } catch (e) {
       setError(normalizeError(e))
       setSubmitting(false)

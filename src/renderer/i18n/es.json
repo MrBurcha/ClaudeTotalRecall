@@ -521,7 +521,8 @@
     "change": "Cambio",
     "files_one": "{{count}} archivo",
     "files_other": "{{count}} archivos",
-    "moreFiles": "+{{count}} más"
+    "moreFiles": "+{{count}} más",
+    "memoryHelp": "Sobre esta actualización de MEMORY.md"
   },
   "preview": {
     "rendererAria": "Renderizador de la vista previa",
@@ -537,6 +538,17 @@
     "empty": "Este archivo está vacío.",
     "truncated": "Archivo grande — se muestra solo la primera parte.",
     "parseError": "JSON inválido — se muestra el texto crudo."
+  },
+  "memoryHelp": {
+    "title": "Reconciliá tu índice MEMORY.md",
+    "intro": "MEMORY.md es el índice de un almacén de memoria. Cuando dos máquinas tenían memorias distintas y sincronizaron, el índice puede quedar reflejando solo la máquina que sincronizó última — listando memorias que no están en disco, o dejando afuera algunas que sí.",
+    "whenRunTitle": "Cuándo correrlo",
+    "whenRun": "Si tus máquinas tenían contenido de memoria genuinamente distinto que recién se mezcló, corré el mantenimiento de abajo en Claude Code, en el proyecto afectado, para reconciliar el índice con los archivos en disco.",
+    "whenIgnoreTitle": "Cuándo podés ignorarlo",
+    "whenIgnore": "Si esta actualización es solo la reconciliación que ya corriste en otra máquina propagándose acá, ya quedó consistente — no necesitás correr nada. Este aviso aparece cada vez que llega un MEMORY.md desde otra máquina, no solo cuando algo está mal.",
+    "paste": "Pegá este prompt en Claude Code, en el proyecto afectado:",
+    "copy": "Copiar prompt",
+    "copied": "Copiado"
   },
   "fileTag": {
     "added": "Agregado",

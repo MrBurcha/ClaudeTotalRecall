@@ -521,7 +521,8 @@
     "change": "Change",
     "files_one": "{{count}} file",
     "files_other": "{{count}} files",
-    "moreFiles": "+{{count}} more"
+    "moreFiles": "+{{count}} more",
+    "memoryHelp": "About this MEMORY.md update"
   },
   "preview": {
     "rendererAria": "Preview renderer",
@@ -537,6 +538,17 @@
     "empty": "This file is empty.",
     "truncated": "Large file — showing the first part only.",
     "parseError": "Not valid JSON — showing the raw text."
+  },
+  "memoryHelp": {
+    "title": "Reconcile your MEMORY.md index",
+    "intro": "MEMORY.md is the index of a memory store. When two machines held different memories and then synced, the index can end up reflecting only the machine that synced last — listing memories that aren't on disk, or missing ones that are.",
+    "whenRunTitle": "When to run it",
+    "whenRun": "If your machines had genuinely different memory content that just merged, run the maintenance pass below in Claude Code, in the affected project, to reconcile the index with the files on disk.",
+    "whenIgnoreTitle": "When you can ignore it",
+    "whenIgnore": "If this update is just a reconciliation you already ran on another machine propagating here, it's already consistent — you don't need to run anything. This notice appears whenever a MEMORY.md arrives from another machine, not only when something's wrong.",
+    "paste": "Paste this prompt into Claude Code, in the affected project:",
+    "copy": "Copy prompt",
+    "copied": "Copied"
   },
   "fileTag": {
     "added": "Added",

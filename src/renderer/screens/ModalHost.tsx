@@ -4,6 +4,7 @@ import { BrandMark } from '../components/BrandMark'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
+import { MemoryMaintenanceModal } from '../features/memory/MemoryMaintenanceModal'
 import { PlanDriftDialog } from '../features/plan-review/PlanDriftDialog'
 import { PlanReview } from '../features/plan-review/PlanReview'
 import { FilePreviewModal } from '../features/preview/FilePreviewModal'
@@ -69,6 +70,8 @@ export function ModalHost(): JSX.Element | null {
       return <AboutModal />
     case 'file-preview':
       return <FilePreviewModal modal={top} />
+    case 'memory-maintenance':
+      return <MemoryMaintenanceModal />
     default:
       return null
   }

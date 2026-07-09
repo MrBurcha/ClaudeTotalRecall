@@ -58,3 +58,11 @@ export function isStructuralNoise(repoRelPath: string): boolean {
   const path = repoRelPath.replace(/\\/g, '/')
   return path === '.gitkeep' || path.endsWith('/.gitkeep')
 }
+
+/**
+ * True when a repo-relative path's basename is the memory index file `MEMORY.md`.
+ * Drives the "reconcile your index" help affordance in the activity feed (#73).
+ */
+export function isMemoryIndexPath(repoRelPath: string): boolean {
+  return repoRelPath.replace(/\\/g, '/').split('/').pop() === 'MEMORY.md'
+}
