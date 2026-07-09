@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Project } from '../../../core/types'
+import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { Icon } from '../../components/Icon'
 import { IconButton } from '../../components/IconButton'
@@ -21,10 +22,12 @@ export function ProjectItem({
   name,
   project,
   machineId,
+  focusTick,
 }: {
   name: string
   project: Project
   machineId: string | null
+  focusTick?: number
 }): JSX.Element {
   const { t } = useTranslation()
   const { busy } = useAppState()
@@ -39,6 +42,13 @@ export function ProjectItem({
   const [nameError, setNameError] = useState<string | null>(null)
   const [savingName, setSavingName] = useState(false)
   const [adding, setAdding] = useState(false)
+
+  const rootRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (focusTick === undefined) return
+    setOpen(true)
+    rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [focusTick])
 
   const startRename = (): void => {
     setDraftName(name)
@@ -84,7 +94,7 @@ export function ProjectItem({
   }
 
   return (
-    <div className="project-item">
+    <div className="project-item" ref={rootRef}>
       <button
         className="project-item__head"
         aria-expanded={open}
@@ -92,6 +102,12 @@ export function ProjectItem({
       >
         <Icon name={open ? 'chevron-down' : 'chevron-right'} size={16} />
         <span className="project-item__name grow">{name}</span>
+        {needsAdoption && (
+          <Badge>
+            <Icon name="alert" size={12} />
+            {t('projects.needsSetupBadge')}
+          </Badge>
+        )}
         <span className="muted">{t('projects.sourceCount', { count: folders.length })}</span>
       </button>
 
