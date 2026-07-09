@@ -329,19 +329,41 @@ async function currentSourceHash(action: PlanAction, ctx: SyncContext): Promise<
   return hashFile(action.from)
 }
 
+/**
+ * True if the DESTINATION changed since the Plan was built — e.g. a user edit
+ * landed on a machine file between an incoming Plan's preview and its execute.
+ * Without this check, `create`/`overwrite`/`delete` blindly clobber whatever is
+ * currently at `a.to`: only the source was revalidated, never the destination.
+ */
+async function destinationDrifted(action: PlanAction): Promise<boolean> {
+  if (!action.to) return false
+  const exists = await pathExists(action.to)
+  if (action.type === 'create') return exists // must still be absent
+  return exists ? (await hashFile(action.to)) !== action.hashTo : true
+}
+
 export async function executePlan(
   plan: Plan,
   ctx: SyncContext,
   opts: { force?: boolean } = {},
 ): Promise<ExecResult> {
-  // 1) TOCTOU revalidation: the source must not have changed since the build.
+  // 1) TOCTOU revalidation: neither the source NOR the destination may have
+  // changed since the build — a stale destination is just as unsafe to apply
+  // over as a stale source (#70 follow-up: an auto-sync cycle's incoming step
+  // silently overwrote a machine-side edit made between its plan preview and
+  // execute, because only the source side was ever revalidated).
   if (!opts.force) {
     const drifted: PlanAction[] = []
     for (const a of plan.actions) {
+      let isDrifted = false
       if (a.type === 'create' || a.type === 'overwrite') {
         const now = await currentSourceHash(a, ctx)
-        if (now !== (a.hashFrom ?? null)) drifted.push(a)
+        if (now !== (a.hashFrom ?? null)) isDrifted = true
       }
+      if (!isDrifted && (a.type === 'create' || a.type === 'overwrite' || a.type === 'delete')) {
+        if (await destinationDrifted(a)) isDrifted = true
+      }
+      if (isDrifted) drifted.push(a)
     }
     if (drifted.length > 0) throw new PlanDriftError(drifted)
   }
