@@ -39,12 +39,26 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:app
-      - name: Build & publish dmg (unsigned)
-        run: npx electron-builder --mac --config electron-builder.yml --publish always
+      - name: Build dmg (unsigned, not published yet)
+        run: npx electron-builder --mac --config electron-builder.yml --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Personal use: no signing or notarization.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # Real Finder-invisible flag (SetFile -a V) on everything in the dmg's
+      # root except the .app + Applications alias, so dmg-builder's internal
+      # background-image resource doesn't show as a stray icon when a user
+      # has "Show Hidden Files" toggled on (#67). Must run before upload —
+      # hence --publish never above instead of an electron-builder
+      # afterAllArtifactBuild hook (documented as racy with --publish always:
+      # electron-builder#3908 / #7145).
+      - name: Hide DMG background resource from Finder (SetFile -a V)
+        run: bash scripts/harden-dmg.sh release/*.dmg
+      - name: Upload dmg to the tag's draft Release
+        run: gh release upload "$TAG" release/*.dmg --clobber -R "$REPO"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
 
   linux:
     needs: create-release

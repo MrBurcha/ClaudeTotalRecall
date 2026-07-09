@@ -7,6 +7,20 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **macOS DMG: undersized window + stray "TIFF" icon over the background** (#67):
+  `dmg-builder` (electron-builder's DMG target) ignores `dmg.window` whenever
+  `dmg.background` is set — it derives the DMG window's total size from the
+  background image's own pixel dimensions instead. The background is now generated
+  at 640×528 (was 640×500), reserving the ~28px title bar so the design shows in
+  full without resizing or scrolling. Separately, the release pipeline now runs a
+  new `scripts/harden-dmg.sh` step (macOS only) after building the `.dmg` that
+  applies the real Finder "invisible" attribute (`SetFile -a V`) to everything in
+  the volume except the app and the `Applications` alias — the internal background
+  resource was only hidden by dot-prefix convention, which Finder's "Show Hidden
+  Files" toggle reveals.
+
 ## [0.8.0] - 2026-07-09
 
 ### Fixed
