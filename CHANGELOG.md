@@ -7,8 +7,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-09
+
 ### Fixed
 
+- **Adopting a project on a second machine could nest `memory/` inside itself** (#68):
+  the inline folder editor and the cross-machine "adopt" picker let you pick a
+  project's root folder for a `memory` slot instead of its `memory/` subfolder,
+  producing `memories/projects/<name>/memory/memory/…` on the remote and sync
+  ping-pong between machines. A new `correctProjectFolderPick` helper detects when
+  a pick is a project root containing the slot's leaf folder and auto-corrects it
+  at pick time (in both pickers), with an undoable inline notice — detection is
+  name/structure based and never silently overrides a same-machine save.
 - **macOS DMG: undersized window + stray "TIFF" icon over the background** (#67):
   `dmg-builder` (electron-builder's DMG target) ignores `dmg.window` whenever
   `dmg.background` is set — it derives the DMG window's total size from the
@@ -340,7 +350,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.8.1
 [0.8.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.8.0
 [0.7.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.7.1
 [0.7.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.7.0
