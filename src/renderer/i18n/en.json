@@ -25,7 +25,11 @@
   "sidebar": {
     "searchAction": "Search action",
     "unregistered": "not registered",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "updateBanner": {
+      "message": "New version {{version}} available",
+      "action": "Update"
+    }
   },
   "interval": {
     "30s": "30s",

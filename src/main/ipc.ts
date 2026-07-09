@@ -8,6 +8,7 @@ import { runPreflight } from '../core/preflight'
 import * as svc from '../core/service'
 import type { AutoSyncPrefs, Plan, Verb } from '../core/types'
 import type { SyncScheduler } from './syncScheduler'
+import type { UpdateScheduler } from './updateScheduler'
 
 /**
  * Cache of previewed Plans: plan:execute receives a planId and runs the exact Plan
@@ -43,7 +44,7 @@ function handle<A extends unknown[], R>(
   })
 }
 
-export function registerIpc(scheduler: SyncScheduler): void {
+export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateScheduler): void {
   handle('app:version', () => app.getVersion())
   handle('preflight:run', () => runPreflight())
 
@@ -67,6 +68,12 @@ export function registerIpc(scheduler: SyncScheduler): void {
   handle('sync:getState', () => scheduler.getState())
   handle('sync:setAuto', (_e, prefs: AutoSyncPrefs) => scheduler.setAuto(prefs))
   handle('sync:now', () => scheduler.syncNow())
+
+  // Update check (real-time state via webContents.send('update:state'), #66).
+  // openReleasePage just hands the URL to the OS default browser — no update is
+  // downloaded or installed by the app itself.
+  handle('update:getState', () => updateScheduler.getState())
+  handle('update:openReleasePage', (_e, url: string) => shell.openExternal(url))
 
   // Config / repo
   handle('config:load', () => svc.loadRepoConfig(adapter()).catch(() => null))

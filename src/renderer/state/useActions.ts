@@ -206,6 +206,13 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     }
   }
 
+  // ── Update check (#66) ──────────────────────────────────────────────────────
+  /** Opens the releases page in the OS default browser; never downloads/installs anything itself. */
+  const openUpdateReleasePage = (): void => {
+    const update = stateRef.current.updateAvailable
+    if (update) void api.openReleasePage(update.releasesUrl)
+  }
+
   return {
     notify,
     dismissToast,
@@ -230,6 +237,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     syncNow,
     setAutoSync,
     setSyncInterval,
+    openUpdateReleasePage,
   }
 }
 
