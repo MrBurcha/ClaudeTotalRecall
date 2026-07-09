@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Generates the macOS DMG installer background from scripts/background.html:
-#   build/background@2x.png (1280x1056, retina) + build/background.png (640x528).
+#   build/background@2x.png (1280x1208, retina) + build/background.png (640x604).
 # electron-builder's `dmg.background` points at build/background.png and auto-picks
 # the @2x variant by name. dmg-builder derives the DMG window's total size directly
-# from this file's pixel dimensions (see the comment in background.html) — 528, not
-# 500, so the ~28px title bar doesn't clip the bottom of the design.
+# from this file's pixel dimensions (see the comment in background.html), so the
+# canvas reserves headroom beyond just the ~28px title bar — mostly below the
+# design — because Finder can also show a path bar and status bar (stacked at the
+# bottom) for this window on macOS 26.2+ (dmgbuild's .DS_Store asks it not to, but
+# that's ignored whenever the user has those View-menu toggles on globally — #70).
 #
 # Usage:
 #   npm run background        (or: bash scripts/make-background.sh)
@@ -32,9 +35,9 @@ fi
 PROFILE="$(mktemp -d)"
 trap 'rm -rf "$PROFILE"' EXIT
 
-# Render at 2x: window 640x528 × device-scale-factor 2 = 1280x1056 screenshot.
+# Render at 2x: window 640x604 × device-scale-factor 2 = 1280x1208 screenshot.
 "$CHROME" --headless=new --no-sandbox --disable-gpu --hide-scrollbars \
-  --force-device-scale-factor=2 --window-size=640,528 \
+  --force-device-scale-factor=2 --window-size=640,604 \
   --user-data-dir="$PROFILE" \
   --screenshot="$OUT2X" "file://$HTML" >/dev/null 2>&1 || true
 
@@ -42,9 +45,9 @@ trap 'rm -rf "$PROFILE"' EXIT
 
 # Downscale the retina render to the 1x asset.
 if command -v magick >/dev/null 2>&1; then
-  magick "$OUT2X" -resize 640x528 "$OUT1X"
+  magick "$OUT2X" -resize 640x604 "$OUT1X"
 else
-  convert "$OUT2X" -resize 640x528 "$OUT1X"
+  convert "$OUT2X" -resize 640x604 "$OUT1X"
 fi
 
 dims() { identify -format '%wx%h' "$1" 2>/dev/null || echo '?'; }
