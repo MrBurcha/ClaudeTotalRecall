@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
 
+# Least-privilege GITHUB_TOKEN: the check job only checks out the repo and runs
+# npm scripts (typecheck/lint/format/coverage) — it never writes to the repo,
+# so read-only contents is enough. (CodeQL: actions/missing-workflow-permissions.)
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
