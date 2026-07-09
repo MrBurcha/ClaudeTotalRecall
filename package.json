@@ -1,6 +1,6 @@
 {
   "name": "claude-total-recall",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Claude Total Recall — sync Claude Code memory across machines via a private GitHub repo",
   "author": "MrBurcha",
   "license": "MIT",
