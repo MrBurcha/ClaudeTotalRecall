@@ -77,6 +77,24 @@ export function AppStateProvider({ children }: { children: ReactNode }): JSX.Ele
     }
   }, [])
 
+  // Update check (#66): same pull-then-subscribe shape as the sync engine above.
+  useEffect(() => {
+    let alive = true
+    void api
+      .updateGetState()
+      .then((s) => {
+        if (alive) dispatch({ t: 'updateAvailable', state: s })
+      })
+      .catch(() => {
+        /* not ready yet; the push will arrive when the first check completes */
+      })
+    const off = api.onUpdateState((s) => dispatch({ t: 'updateAvailable', state: s }))
+    return () => {
+      alive = false
+      off()
+    }
+  }, [])
+
   return (
     <StateContext.Provider value={state}>
       <DispatchContext.Provider value={dispatch}>{children}</DispatchContext.Provider>

@@ -102,6 +102,25 @@
   margin-top: 2px;
 }
 
+/* Pinned "update available" notice (#66): sits between the brand and the nav
+   items, compact rather than full `.card` padding — the sidebar is only 236px. */
+.sidebar__update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--accent-weak);
+  border: 1px solid var(--accent-line);
+  color: var(--text);
+  font-size: var(--text-xs);
+}
+.sidebar__update-banner .icon {
+  color: var(--accent);
+}
+
 .nav {
   display: flex;
   flex-direction: column;

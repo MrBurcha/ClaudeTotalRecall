@@ -7,6 +7,7 @@ import type {
   SyncEngineState,
   Verb,
 } from '../../core/types'
+import type { UpdateState } from '../../core/releaseCheck'
 
 /** Navigable sections of the steady-state (the wizard is a separate takeover). */
 export type Route = 'home' | 'projects' | 'settings'
@@ -85,4 +86,6 @@ export interface AppState {
   wizardOpen: boolean // wizard takeover forced on-demand
   // auto-sync engine (pushed by main; null until the first getState)
   syncEngine: SyncEngineState | null
+  // update check (#66): pushed by main on open + every 24h; null = up to date (or unknown yet)
+  updateAvailable: UpdateState
 }

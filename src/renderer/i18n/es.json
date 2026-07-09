@@ -25,7 +25,11 @@
   "sidebar": {
     "searchAction": "Buscar acción",
     "unregistered": "sin registrar",
-    "toggleTheme": "Cambiar tema"
+    "toggleTheme": "Cambiar tema",
+    "updateBanner": {
+      "message": "Nueva versión {{version}} disponible",
+      "action": "Actualizar"
+    }
   },
   "interval": {
     "30s": "30 s",

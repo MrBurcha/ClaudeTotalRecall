@@ -26,6 +26,7 @@ import type {
   MachineMappingProposal,
   ScannedProject,
 } from '../core/discovery'
+import type { UpdateState } from '../core/releaseCheck'
 
 /**
  * Resultado de ejecutar un Plan. Si el disco cambió desde el preview, el core
@@ -127,6 +128,19 @@ const api = {
     ipcRenderer.on('sync:state', listener)
     return () => {
       ipcRenderer.removeListener('sync:state', listener)
+    }
+  },
+
+  // Update check (#66): current state (pull), live push, and opening the releases
+  // page in the OS default browser.
+  updateGetState: () => ipcRenderer.invoke('update:getState') as Promise<UpdateState>,
+  openReleasePage: (url: string) =>
+    ipcRenderer.invoke('update:openReleasePage', url) as Promise<void>,
+  onUpdateState: (cb: (state: UpdateState) => void) => {
+    const listener = (_e: IpcRendererEvent, state: UpdateState) => cb(state)
+    ipcRenderer.on('update:state', listener)
+    return () => {
+      ipcRenderer.removeListener('update:state', listener)
     }
   },
 

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { StatusDot } from '../components/Badge'
 import { BrandMark } from '../components/BrandMark'
+import { Button } from '../components/Button'
 import { Icon, type IconName } from '../components/Icon'
 import { IconButton } from '../components/IconButton'
 import { Kbd } from '../components/Kbd'
@@ -29,6 +30,18 @@ export function Sidebar(): JSX.Element {
           <div className="brand__name">Claude Total Recall</div>
         </div>
       </div>
+
+      {state.updateAvailable && (
+        <div className="sidebar__update-banner">
+          <span className="cluster">
+            <Icon name="info" size={14} />
+            {t('sidebar.updateBanner.message', { version: state.updateAvailable.latestVersion })}
+          </span>
+          <Button variant="ghost" size="sm" onClick={actions.openUpdateReleasePage}>
+            {t('sidebar.updateBanner.action')}
+          </Button>
+        </div>
+      )}
 
       <div className="nav">
         {NAV.map((n) => (

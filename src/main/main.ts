@@ -3,8 +3,10 @@ import { join } from 'node:path'
 import { app, BrowserWindow, Menu } from 'electron'
 import { registerIpc } from './ipc'
 import { SyncScheduler } from './syncScheduler'
+import { UpdateScheduler } from './updateScheduler'
 
 let scheduler: SyncScheduler | null = null
+let updateScheduler: UpdateScheduler | null = null
 
 /**
  * Ícono de la ventana (barra de tareas, alt-tab, overview) en Linux/Windows: lo
@@ -91,8 +93,18 @@ void app.whenReady().then(() => {
       if (!w.isDestroyed()) w.webContents.send('sync:state', state)
     }
   })
-  registerIpc(scheduler)
-  if (!process.env.CLAUDE_TOTAL_RECALL_SMOKE) void scheduler.start()
+  // Checks GitHub for a newer stable release on open + every 24h (#66); never
+  // during the smoke test, same guard as the sync scheduler below.
+  updateScheduler = new UpdateScheduler(app.getVersion(), (state) => {
+    for (const w of BrowserWindow.getAllWindows()) {
+      if (!w.isDestroyed()) w.webContents.send('update:state', state)
+    }
+  })
+  registerIpc(scheduler, updateScheduler)
+  if (!process.env.CLAUDE_TOTAL_RECALL_SMOKE) {
+    void scheduler.start()
+    updateScheduler.start()
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -101,6 +113,7 @@ void app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   scheduler?.stop()
+  updateScheduler?.stop()
 })
 
 app.on('window-all-closed', () => {
