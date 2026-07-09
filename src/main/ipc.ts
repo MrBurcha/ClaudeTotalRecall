@@ -11,7 +11,7 @@ import {
 } from 'electron'
 import { createPlatformAdapter } from '../platform'
 import { AppError, encodeAppError } from '../core/errors'
-import { folderContainsMemoryIndex } from '../core/memoryMaintenance'
+import { folderContainsMemoryIndex } from '../core/memoryScan'
 import { PlanDriftError } from '../core/plan'
 import { runPreflight } from '../core/preflight'
 import * as svc from '../core/service'
