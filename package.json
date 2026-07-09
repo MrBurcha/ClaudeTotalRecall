@@ -73,8 +73,9 @@
   },
   "allowScripts": {
     "electron@43.1.0": true,
-    "esbuild@0.25.12": true,
-    "esbuild@0.27.7": true,
     "esbuild@0.28.1": true
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }
