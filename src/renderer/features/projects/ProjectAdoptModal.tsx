@@ -144,9 +144,19 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
         projectName: name,
         slots: chosen.map((r) => ({ slot: r.slot, path: r.path.trim(), kind: r.kind })),
       })
+      // Adopting means the project is already on another machine; if any adopted
+      // source carries a MEMORY.md, the index may need reconciling — offer the pass.
+      const showMemoryHelp = (
+        await Promise.all(
+          chosen.map((r) =>
+            api.projectFolderHasMemoryIndex(r.path.trim(), r.kind).catch(() => false),
+          ),
+        )
+      ).some(Boolean)
       await actions.refresh()
       actions.notify(t('projects.adopt.done', { count: res.slots }), 'ok')
       actions.closeModal()
+      if (showMemoryHelp) actions.openModal({ kind: 'memory-maintenance' })
     } catch (e) {
       setError(normalizeError(e))
       setSubmitting(false)
