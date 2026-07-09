@@ -44,6 +44,7 @@ export type ModalDescriptor =
   | { kind: 'project-adopt'; name: string }
   | { kind: 'about' }
   | { kind: 'file-preview'; path: string; name: string }
+  | { kind: 'memory-maintenance' }
 
 /** In-progress sync operation; feeds the constellation's animated state. */
 export interface ActiveOp {
