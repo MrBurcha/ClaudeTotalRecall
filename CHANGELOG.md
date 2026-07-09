@@ -7,6 +7,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-09
+
 ### Fixed
 
 - **Scan dialog named projects after Claude's dir, not the project** (#61): the "Already synced
@@ -29,6 +31,14 @@ and the project uses [Semantic Versioning](https://semver.org/).
   (the literal `memories/projects/<name>/` folder), so creating or renaming one whose name
   case-collides with an existing project is rejected — preventing `Zimbify` and `zimbify` from
   mapping to the same folder on a case-insensitive filesystem. Existing names are never rewritten.
+
+### Security
+
+- **esbuild advisory patched tree-wide + least-privilege CI token** (#64): forced `esbuild` to
+  `^0.28.1` via a global npm override (a dev-only dependency, never shipped in the
+  `.dmg`/AppImage/deb/pacman) to clear the GHSA-g7r4-m6w7-qqqr dev-server advisory, deduping the
+  tree to a single `esbuild@0.28.1`. Added a least-privilege `permissions: contents: read` block to
+  `ci.yml` (CodeQL `actions/missing-workflow-permissions`).
 
 ## [0.7.1] - 2026-07-08
 
@@ -316,7 +326,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.8.0
 [0.7.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.7.1
 [0.7.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.7.0
 [0.6.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.6.0
