@@ -63,7 +63,10 @@ export function ProjectFolderRow({
         {current ? (
           <span className="mono grow truncate">{current}</span>
         ) : (
-          <span className="muted grow">{t('projects.noPathOnMachine')}</span>
+          <span className="folder-row__missing grow">
+            <Icon name="alert" size={14} />
+            {t('projects.noPathOnMachine')}
+          </span>
         )}
         <IconButton
           icon="pencil"

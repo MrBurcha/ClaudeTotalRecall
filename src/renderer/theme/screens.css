@@ -161,6 +161,12 @@
   align-items: center;
   gap: var(--space-2);
 }
+.folder-row__missing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--accent);
+}
 .folder-row__others {
   margin-top: 4px;
   padding-left: 4px;

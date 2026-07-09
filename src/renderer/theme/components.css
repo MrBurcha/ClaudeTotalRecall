@@ -431,6 +431,21 @@
   border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
   background: color-mix(in srgb, var(--danger) 6%, var(--panel));
 }
+.card--accent {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+}
+.link-accent {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+}
+.link-accent:hover {
+  text-decoration: underline;
+}
 
 /* ══ Badges / pills / tags ════════════════════════════════════════════════ */
 .pill {
