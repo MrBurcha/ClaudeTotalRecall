@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next'
+import { unassociatedProjects } from '../../../core/nameMatch'
 import { Button } from '../../components/Button'
 import { Modal } from '../../components/Modal'
+import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 
 /**
@@ -10,7 +12,10 @@ import { useActions } from '../../state/useActions'
  */
 export function ProjectNewChooser(): JSX.Element {
   const { t } = useTranslation()
+  const { config, machineId } = useAppState()
   const actions = useActions()
+  // If projects exist unassociated here, nudge toward adopting instead of duplicating.
+  const unassociated = config && machineId ? unassociatedProjects(config, machineId) : []
 
   const openScan = (): void => {
     actions.closeModal()
@@ -37,6 +42,11 @@ export function ProjectNewChooser(): JSX.Element {
       }
     >
       <div className="stack">
+        {unassociated.length > 0 && (
+          <p className="muted">
+            {t('projects.new.unassociatedHint', { count: unassociated.length })}
+          </p>
+        )}
         <div className="stack stack-1">
           <Button variant="primary" icon="search" onClick={openScan}>
             {t('projects.new.scan')}

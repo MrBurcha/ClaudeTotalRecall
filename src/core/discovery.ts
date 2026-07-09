@@ -58,7 +58,7 @@ export interface DiscoveredSlot {
   item: DiscoveryItem
   /** Default true; false when the path overlaps something already synced on this machine. */
   include: boolean
-  collision?: { with: string; where: string }
+  collision?: { with: string; where: string; project?: string }
 }
 
 export interface DiscoveryProposal {
@@ -86,7 +86,8 @@ export async function discoverProjectSources(
   const synced = machineSyncedPaths(config, adapter, machineId)
   const collisionFor = (path: string): DiscoveredSlot['collision'] => {
     for (const sp of synced) {
-      if (pathsCollide(path, sp.path)) return { with: sp.path, where: sp.where }
+      if (pathsCollide(path, sp.path))
+        return { with: sp.path, where: sp.where, project: sp.project }
     }
     return undefined
   }
@@ -181,7 +182,14 @@ export interface ScannedProject {
   proposal: DiscoveryProposal
   /** every recognized slot already has a path synced on this machine */
   alreadySyncedHere: boolean
-  /** a project with `suggestedName` already exists in the config */
+  /**
+   * The canonical name of the configured project this dir already belongs to
+   * (by path collision), when `alreadySyncedHere`. This — not `suggestedName`,
+   * which is decoded from Claude's per-machine slug — is what the UI shows for
+   * a synced row.
+   */
+  syncedAs?: string
+  /** this dir already corresponds to a project in the config (by path or name) */
   existsInConfig: boolean
 }
 
@@ -224,6 +232,10 @@ export async function scanClaudeProjects(
     let unique = name
     for (let n = 2; used.has(unique); n++) unique = `${name}-${n}`
     used.add(unique)
+    const alreadySyncedHere = hasMemory && proposal.slots.every((s) => !!s.collision)
+    // The canonical name comes from the colliding project (path-matched), never
+    // from the decoded slug — Claude names its dirs per-machine, inconsistently.
+    const ownerProject = proposal.slots.find((s) => s.collision?.project)?.collision?.project
     out.push({
       dir,
       slug: dirName,
@@ -231,8 +243,10 @@ export async function scanClaudeProjects(
       hasMemory,
       memoryPath: join(dir, 'memory'),
       proposal,
-      alreadySyncedHere: hasMemory && proposal.slots.every((s) => !!s.collision),
-      existsInConfig: Boolean(config.projects[unique]),
+      alreadySyncedHere,
+      syncedAs: alreadySyncedHere ? ownerProject : undefined,
+      // Known project by PATH (robust) OR by an exact derived-name key match.
+      existsInConfig: ownerProject != null || Boolean(config.projects[unique]),
     })
   }
   return out
@@ -251,6 +265,13 @@ export interface RemapSlot {
   exists: boolean
   status: RemapStatus
   alreadyConfigured: boolean
+  /**
+   * True when the reference path lives under the reference machine's
+   * ~/.claude/projects. Claude names those dirs per-machine (the slug encodes the
+   * absolute cwd), so the home-prefix remap is meaningless across machines — the
+   * UI must have the user pick the local dir instead of trusting `proposedPath`.
+   */
+  claudeManaged: boolean
 }
 
 export interface MachineMappingProposal {
@@ -270,6 +291,13 @@ export function remapPath(refPath: string, refHome: string, targetHome: string):
   const prefix = refHome.endsWith(sep) ? refHome : refHome + sep
   if (!refPath.startsWith(prefix)) return null
   return join(targetHome, refPath.slice(prefix.length))
+}
+
+/** True when `refPath` is (under) the reference machine's ~/.claude/projects. Boundary-aware. */
+function isUnderClaudeProjects(refPath: string, refHome: string): boolean {
+  if (!refHome) return false
+  const root = join(refHome, '.claude', 'projects')
+  return refPath === root || refPath.startsWith(root + sep)
 }
 
 /**
@@ -327,11 +355,13 @@ export async function proposeMachineMapping(
         exists: false,
         status: 'noReference',
         alreadyConfigured,
+        claudeManaged: false,
       })
       continue
     }
     const referencePath = config.projects[projectName].folders[slot][ref]
     const refHome = config.machines[ref]?.home ?? ''
+    const claudeManaged = isUnderClaudeProjects(referencePath, refHome)
     const proposedPath = remapPath(referencePath, refHome, targetHome)
     if (proposedPath == null) {
       slots.push({
@@ -343,6 +373,7 @@ export async function proposeMachineMapping(
         exists: false,
         status: 'notUnderHome',
         alreadyConfigured,
+        claudeManaged,
       })
       continue
     }
@@ -356,6 +387,7 @@ export async function proposeMachineMapping(
       exists,
       status: exists ? 'ok' : 'missing',
       alreadyConfigured,
+      claudeManaged,
     })
   }
   return { projectName, targetMachine: targetMachineId, slots }

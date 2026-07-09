@@ -264,6 +264,33 @@ function assertSafeName(kind: 'project' | 'slot' | 'pin', value: string): string
   return v
 }
 
+/**
+ * The existing project key equal to `name` ignoring case, or null. The project
+ * name IS the identity (the repo folder `memories/projects/<name>/`), so two keys
+ * differing only in case would collide on a case-insensitive filesystem (macOS).
+ * Guards the canonical-name namespace when a NEW key is introduced — never
+ * renames or lowercases existing entries.
+ */
+function findProjectKeyCI(config: Config, name: string): string | null {
+  const lower = name.toLowerCase()
+  for (const key of Object.keys(config.projects)) {
+    if (key.toLowerCase() === lower) return key
+  }
+  return null
+}
+
+/** Throws when `name` case-collides with a DIFFERENT existing project key. */
+function assertNoCaseCollision(config: Config, name: string, allow?: string): void {
+  const ci = findProjectKeyCI(config, name)
+  if (ci && ci !== name && ci !== allow) {
+    throw new AppError(
+      'project.existsCaseInsensitive',
+      `A project named "${ci}" already exists (names are case-insensitive).`,
+      { name, existing: ci },
+    )
+  }
+}
+
 export interface CreateProjectResult {
   alreadyExists: boolean
 }
@@ -280,6 +307,7 @@ export async function createProject(
       alreadyExists = true
       return
     }
+    assertNoCaseCollision(config, proj)
     config.projects[proj] = { folders: {} }
   })
   return { alreadyExists }
@@ -393,6 +421,8 @@ export async function renameProject(
         throw new AppError('project.exists', `A project named "${to}" already exists.`, {
           name: to,
         })
+      // Case-only collision with a DIFFERENT project (allow fixing this one's own casing).
+      assertNoCaseCollision(config, to, oldName)
       config.projects[to] = config.projects[oldName]
       delete config.projects[oldName]
       // Move the gathered folder so its files follow the new name (no orphans).
@@ -442,7 +472,11 @@ function writeProjectSlots(
   id: string,
   claimed: ReturnType<typeof machineSyncedPaths>,
 ): void {
-  const project = config.projects[np.proj] ?? { folders: {} }
+  const existing = config.projects[np.proj]
+  // A new key must not case-collide with an existing project (adoption keeps the
+  // existing key, so this only fires when a scan/discovery would CREATE one).
+  if (!existing) assertNoCaseCollision(config, np.proj)
+  const project = existing ?? { folders: {} }
   for (const w of np.writes) {
     for (const other of claimed) {
       if (pathsCollide(w.path, other.path)) {

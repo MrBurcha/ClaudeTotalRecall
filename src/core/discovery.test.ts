@@ -139,6 +139,8 @@ describe('discoverProjectSources', () => {
     const mem = p.slots.find((s) => s.slot === 'memory')
     expect(mem?.include).toBe(false)
     expect(mem?.collision?.where).toBe('other/x')
+    // The owning project name travels structurally (not parsed from `where`).
+    expect(mem?.collision?.project).toBe('other')
   })
 
   it('returns an empty proposal for an empty directory (no throw)', async () => {
@@ -292,6 +294,30 @@ describe('proposeMachineMapping', () => {
     const mem = proposal.slots.find((s) => s.slot === 'memory')!
     expect(mem.alreadyConfigured).toBe(true)
   })
+
+  it('marks a slot whose reference path lives under ~/.claude/projects as claudeManaged', async () => {
+    const home = await tmp()
+    // baseConfig's reference path is /Users/x/.claude/projects/demo/memory (mac home /Users/x).
+    const proposal = await proposeMachineMapping(
+      'demo',
+      'lin',
+      baseConfig(home),
+      linuxAdapter(home),
+    )
+    const mem = proposal.slots.find((s) => s.slot === 'memory')!
+    // Claude names these dirs per-machine, so the home-prefix remap can't be trusted:
+    // the UI must let the user pick the local dir instead.
+    expect(mem.claudeManaged).toBe(true)
+  })
+
+  it('does not mark a non-Claude reference path as claudeManaged', async () => {
+    const home = await tmp()
+    const config = baseConfig(home)
+    config.projects.demo.folders.memory = { mac: '/opt/shared/demo/memory' }
+    const proposal = await proposeMachineMapping('demo', 'lin', config, linuxAdapter(home))
+    const mem = proposal.slots.find((s) => s.slot === 'memory')!
+    expect(mem.claudeManaged).toBe(false)
+  })
 })
 
 describe('decodeClaudeProjectDir', () => {
@@ -363,6 +389,26 @@ describe('scanClaudeProjects', () => {
     }
     const res = await scanClaudeProjects(root, config, linuxAdapter(), 'this')
     expect(res[0].alreadySyncedHere).toBe(true)
+  })
+
+  it('reports the configured project name (not the dir basename) as syncedAs, and existsInConfig by path identity', async () => {
+    const base = await tmp()
+    const root = join(base, 'projects')
+    // The dir basename decodes to "app", but the project is configured as "Zimbify".
+    const mem = join(root, '-x-app', 'memory')
+    await mkdir(mem, { recursive: true })
+    const config: Config = {
+      version: 1,
+      repo: { remote: 'r' },
+      machines: {},
+      projects: { Zimbify: { folders: { memory: { this: mem } }, slotKinds: { memory: 'dir' } } },
+    }
+    const res = await scanClaudeProjects(root, config, linuxAdapter(), 'this')
+    expect(res[0].alreadySyncedHere).toBe(true)
+    expect(res[0].syncedAs).toBe('Zimbify')
+    // Recognized as an existing project by PATH, even though the derived name ("app") isn't a config key.
+    expect(res[0].suggestedName).not.toBe('Zimbify')
+    expect(res[0].existsInConfig).toBe(true)
   })
 
   it('dedupes suggested names that collide within the scan', async () => {

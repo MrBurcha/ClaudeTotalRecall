@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { MachineMappingProposal, RemapSlot, SlotKind } from '../../../core/discovery'
+import type {
+  MachineMappingProposal,
+  RemapSlot,
+  ScannedProject,
+  SlotKind,
+} from '../../../core/discovery'
+import { scoreNameMatch } from '../../../core/nameMatch'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { Icon } from '../../components/Icon'
@@ -16,18 +22,50 @@ interface Row {
   status: RemapSlot['status']
   exists: boolean
   alreadyConfigured: boolean
+  claudeManaged: boolean
 }
 
 function toRows(slots: RemapSlot[]): Row[] {
   return slots.map((s) => ({
     slot: s.slot,
     kind: s.kind,
-    path: s.proposedPath ?? '',
-    include: !s.alreadyConfigured && (s.status === 'ok' || s.status === 'missing'),
+    // Claude names its per-machine dirs unpredictably, so the remapped path is a
+    // phantom: leave it empty and unchecked, and let the user pick the local dir.
+    path: s.claudeManaged ? '' : (s.proposedPath ?? ''),
+    include:
+      !s.alreadyConfigured && !s.claudeManaged && (s.status === 'ok' || s.status === 'missing'),
     status: s.status,
     exists: s.exists,
     alreadyConfigured: s.alreadyConfigured,
+    claudeManaged: s.claudeManaged,
   }))
+}
+
+interface Candidate {
+  path: string
+  label: string
+  score: number
+}
+
+/** Ranked local ~/.claude/projects dirs that expose a slot named `slotName`. */
+function candidatesForSlot(
+  scanned: ScannedProject[],
+  projectName: string,
+  slotName: string,
+): Candidate[] {
+  const out: Candidate[] = []
+  for (const p of scanned) {
+    const slot = p.proposal.slots.find((s) => s.slot === slotName)
+    if (!slot) continue
+    // Score against both the decoded name and the raw slug (which embeds the cwd),
+    // taking the best — the slug usually contains the real project name.
+    const score = Math.max(
+      scoreNameMatch(projectName, p.suggestedName),
+      scoreNameMatch(projectName, p.slug),
+    )
+    out.push({ path: slot.path, label: p.slug, score })
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, 3)
 }
 
 /**
@@ -40,6 +78,7 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
   const { t } = useTranslation()
   const actions = useActions()
   const [rows, setRows] = useState<Row[] | null>(null)
+  const [scanned, setScanned] = useState<ScannedProject[]>([])
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -53,6 +92,11 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
         if (alive) setError(normalizeError(e))
       }
     })()
+    // Local Claude dirs, for ranked candidate suggestions on claudeManaged slots.
+    void api
+      .projectScan()
+      .then((s) => alive && setScanned(s))
+      .catch(() => {})
     return () => {
       alive = false
     }
@@ -96,6 +140,7 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
 
   const statusBadge = (r: Row): JSX.Element | null => {
     if (r.alreadyConfigured) return <Badge muted>{t('projects.adopt.already')}</Badge>
+    if (r.claudeManaged) return <Badge muted>{t('projects.adopt.pickLocal')}</Badge>
     if (r.status === 'ok') return <Badge>{t('projects.adopt.exists')}</Badge>
     if (r.status === 'missing') return <Badge muted>{t('projects.adopt.missing')}</Badge>
     if (r.status === 'notUnderHome')
@@ -127,44 +172,69 @@ export function ProjectAdoptModal({ name }: { name: string }): JSX.Element {
       {rows !== null && actionable && (
         <div className="stack">
           <ul className="folder-list">
-            {rows.map((r) => (
-              <li key={r.slot} className="row row-nowrap">
-                <input
-                  type="checkbox"
-                  checked={r.include}
-                  disabled={r.alreadyConfigured}
-                  aria-label={t('projects.discover.include')}
-                  onChange={(e) => setRow(r.slot, { include: e.target.checked })}
-                />
-                <Icon name={r.kind === 'file' ? 'file-diff' : 'folder'} size={16} />
-                <span className="mono folder-slot">{r.slot}</span>
-                <input
-                  className="input input--mono grow"
-                  disabled={r.alreadyConfigured}
-                  placeholder={t(
-                    r.kind === 'file'
-                      ? 'projects.filePathPlaceholder'
-                      : 'projects.folderPathPlaceholder',
+            {rows.map((r) => {
+              const candidates = r.claudeManaged ? candidatesForSlot(scanned, name, r.slot) : []
+              return (
+                <li key={r.slot} className="stack stack-1">
+                  <div className="row row-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={r.include}
+                      disabled={r.alreadyConfigured}
+                      aria-label={t('projects.discover.include')}
+                      onChange={(e) => setRow(r.slot, { include: e.target.checked })}
+                    />
+                    <Icon name={r.kind === 'file' ? 'file-diff' : 'folder'} size={16} />
+                    <span className="mono folder-slot">{r.slot}</span>
+                    <input
+                      className="input input--mono grow"
+                      disabled={r.alreadyConfigured}
+                      placeholder={t(
+                        r.kind === 'file'
+                          ? 'projects.filePathPlaceholder'
+                          : 'projects.folderPathPlaceholder',
+                      )}
+                      value={r.path}
+                      onChange={(e) => {
+                        setRow(r.slot, { path: e.target.value })
+                        setError(null)
+                      }}
+                    />
+                    {!r.alreadyConfigured && (
+                      <Button
+                        size="sm"
+                        icon={r.kind === 'file' ? 'file-plus' : 'folder-open'}
+                        disabled={submitting}
+                        onClick={() => pickFor(r.slot, r.kind)}
+                      >
+                        {t(r.kind === 'file' ? 'projects.chooseFile' : 'projects.chooseFolder')}
+                      </Button>
+                    )}
+                    {statusBadge(r)}
+                  </div>
+                  {r.claudeManaged && candidates.length > 0 && (
+                    <div className="stack stack-1">
+                      <span className="muted">{t('projects.adopt.candidates')}</span>
+                      {candidates.map((c) => (
+                        <Button
+                          key={c.path}
+                          size="sm"
+                          variant="ghost"
+                          icon="folder"
+                          disabled={submitting}
+                          onClick={() => {
+                            setRow(r.slot, { path: c.path, include: true })
+                            setError(null)
+                          }}
+                        >
+                          <span className="mono ellipsis">{c.label}</span>
+                        </Button>
+                      ))}
+                    </div>
                   )}
-                  value={r.path}
-                  onChange={(e) => {
-                    setRow(r.slot, { path: e.target.value })
-                    setError(null)
-                  }}
-                />
-                {!r.alreadyConfigured && (
-                  <Button
-                    size="sm"
-                    icon={r.kind === 'file' ? 'file-plus' : 'folder-open'}
-                    disabled={submitting}
-                    onClick={() => pickFor(r.slot, r.kind)}
-                  >
-                    {t(r.kind === 'file' ? 'projects.chooseFile' : 'projects.chooseFolder')}
-                  </Button>
-                )}
-                {statusBadge(r)}
-              </li>
-            ))}
+                </li>
+              )
+            })}
           </ul>
           {error && <div className="field__error">{error}</div>}
         </div>

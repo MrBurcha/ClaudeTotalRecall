@@ -218,6 +218,7 @@
       "invalidName": "Invalid project name: \"{{value}}\". Use only letters, numbers, dot, hyphen and underscore.",
       "folderNested": "This folder overlaps \"{{conflict}}\" ({{where}}), already synced on this machine. Nesting would sync the same files twice.",
       "exists": "A project named \"{{name}}\" already exists.",
+      "existsCaseInsensitive": "A project named \"{{existing}}\" already exists (names are case-insensitive).",
       "notFound": "Project \"{{name}}\" not found."
     },
     "pin": {
@@ -301,6 +302,9 @@
     "registerMachineHint": "You need to register this computer before assigning folders.",
     "noProjectsYet": "No projects yet",
     "noProjectsHint": "Create one to sync specific memory folders.",
+    "unassociatedTitle_one": "{{count}} project configured on another machine",
+    "unassociatedTitle_other": "{{count}} projects configured on other machines",
+    "unassociatedHint": "They aren't associated on this machine yet. Open a project and use “Configure on this machine” to link its local folder — instead of creating a new one.",
     "folder": "Folder",
     "file": "File",
     "sourceType": "Source type",
@@ -354,6 +358,10 @@
       "collides": "Overlaps {{where}}, already synced here",
       "selectOne": "Select at least one source.",
       "confirm": "Create project",
+      "maybeExisting": "This looks like the existing project “{{name}}”. Associate it here instead of creating a new one?",
+      "associate": "Associate to “{{name}}”",
+      "associated_one": "Associated {{count}} source to “{{name}}”.",
+      "associated_other": "Associated {{count}} sources to “{{name}}”.",
       "done_one": "Created \"{{name}}\" with {{count}} source.",
       "done_other": "Created \"{{name}}\" with {{count}} sources."
     },
@@ -364,6 +372,8 @@
       "exists": "Found on disk",
       "missing": "Not found on disk",
       "manual": "Couldn't map automatically — pick a path",
+      "pickLocal": "Claude names this dir differently here — pick the local one",
+      "candidates": "Local Claude dirs that might match:",
       "noReference": "No other machine has this source",
       "selectOne": "Select at least one source with a path.",
       "confirm": "Configure",
@@ -373,6 +383,8 @@
     },
     "new": {
       "title": "Add a project",
+      "unassociatedHint_one": "{{count}} project from another machine isn’t associated here yet — if this folder is it, you’ll be offered to associate instead of creating a duplicate.",
+      "unassociatedHint_other": "{{count}} projects from other machines aren’t associated here yet — if this folder is one of them, you’ll be offered to associate instead of creating a duplicate.",
       "scan": "Scan my Claude projects",
       "scanHint": "Find projects under ~/.claude/projects and create them in bulk.",
       "folder": "Pick a folder",

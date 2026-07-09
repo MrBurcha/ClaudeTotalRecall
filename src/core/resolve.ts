@@ -104,6 +104,8 @@ export function pathsCollide(a: string, b: string): boolean {
 export interface SyncedPath {
   path: string
   where: string
+  /** Nombre canónico del proyecto dueño, si el path proviene de una ranura de proyecto. */
+  project?: string
 }
 
 /**
@@ -125,7 +127,7 @@ export function machineSyncedPaths(
     for (const [slot, folder] of Object.entries(project.folders)) {
       if (excludeSlot && excludeSlot.project === projectName && excludeSlot.slot === slot) continue
       const p = folder[machineId]
-      if (p) out.push({ path: p, where: `${projectName}/${slot}` })
+      if (p) out.push({ path: p, where: `${projectName}/${slot}`, project: projectName })
     }
   }
   for (const [pinId, byMachine] of Object.entries(config.pinnedFiles ?? {})) {

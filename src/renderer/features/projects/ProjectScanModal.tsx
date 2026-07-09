@@ -31,7 +31,8 @@ function toRow(p: ScannedProject): Row {
           .map((s) => ({ slot: s.slot, path: s.path, kind: s.kind }))
   return {
     slug: p.slug,
-    name: p.suggestedName,
+    // Synced rows show the canonical project name; the raw Claude slug stays in `slug`.
+    name: p.syncedAs ?? p.suggestedName,
     include: category === 'ready',
     category,
     existsInConfig: p.existsInConfig,
