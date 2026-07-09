@@ -7,6 +7,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **In-app help for reconciling `MEMORY.md` after a cross-machine sync** (#73):
+  when two machines held different memories and synced, the `MEMORY.md` index can
+  end up matching only the machine that synced last. A reusable help modal now
+  offers a maintenance prompt (ready to copy) to reconcile the index in Claude
+  Code, surfaced at two moments — next to a `MEMORY.md` that arrived from another
+  machine in Recent activity, and when you save a project source that contains a
+  `MEMORY.md` on a project already configured on another machine. The same
+  guidance is in the README, and the copy is explicit that a normal propagated
+  update needs no action.
+
 ### Changed
 
 - **The "project configured on another machine" notice now makes clear which
