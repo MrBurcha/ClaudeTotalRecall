@@ -7,6 +7,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Auto-sync's incoming step could silently clobber a fresh local edit** (#77): `executePlan`
+  revalidated the Plan's source hash before applying (TOCTOU guard), but never the destination.
+  An auto-sync cycle builds an `incoming` Plan and executes it moments later, after an `outgoing`
+  phase that does a real git pull/push — if a local edit landed on a machine file in that window,
+  the stale Plan blindly overwrote it, with no error and no conflict (conflict detection is
+  git-based, and the edit never made it into git). `executePlan` now also revalidates the
+  destination for `create`/`overwrite`/`delete` actions, aborting with the same `PlanDriftError`
+  so the caller rebuilds a fresh Plan instead of overwriting.
+
 ## [0.9.0] - 2026-07-09
 
 ### Added

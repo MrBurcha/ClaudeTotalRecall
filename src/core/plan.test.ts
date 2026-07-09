@@ -252,4 +252,26 @@ describe('TOCTOU revalidation', () => {
     // With force, it applies anyway.
     await expect(executeOutgoing(plan, ctx1, { force: true })).resolves.toBeDefined()
   })
+
+  it('aborts with PlanDriftError if the destination changed, unless force (#70 follow-up)', async () => {
+    const sb = await seed()
+    const ctx1 = ctxFor(sb, sb.home1, 'm1')
+
+    // Give the repo a different CLAUDE.md so incoming plans an overwrite.
+    await mkdir(join(sb.repoDir, 'memories/user'), { recursive: true })
+    await writeFile(join(sb.repoDir, 'memories/user/CLAUDE.md'), 'FROM REPO\n')
+
+    const plan = await buildIncomingPlan(ctx1, META)
+    // A local edit lands on the machine file AFTER the plan was previewed —
+    // this is what an auto-sync cycle's incoming step must never clobber.
+    await writeFile(join(sb.home1, '.claude/CLAUDE.md'), 'FRESH LOCAL EDIT\n')
+
+    await expect(executeIncoming(plan, ctx1)).rejects.toBeInstanceOf(PlanDriftError)
+    // The fresh edit survives — it was never overwritten.
+    expect(await read(join(sb.home1, '.claude/CLAUDE.md'))).toBe('FRESH LOCAL EDIT\n')
+
+    // With force, it applies anyway (explicit override).
+    await expect(executeIncoming(plan, ctx1, { force: true })).resolves.toBeDefined()
+    expect(await read(join(sb.home1, '.claude/CLAUDE.md'))).toBe('FROM REPO\n')
+  })
 })
