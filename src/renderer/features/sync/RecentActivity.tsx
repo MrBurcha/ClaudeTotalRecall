@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import type { FileChange, HistoryEntry } from '../../../core/types'
-import { isStructuralNoise, parseMemoryPath } from '../../../core/memoryPath'
+import { isMemoryIndexPath, isStructuralNoise, parseMemoryPath } from '../../../core/memoryPath'
 import { FileTag } from '../../components/Badge'
 import { Icon, type IconName } from '../../components/Icon'
+import { IconButton } from '../../components/IconButton'
 import { api } from '../../state/api'
 import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
@@ -261,6 +262,10 @@ export function RecentActivity(): JSX.Element {
                 // claudetr.json, which would be noise here.
                 const showFiles =
                   (e.type === 'outgoing' || e.type === 'incoming') && visible.length > 0
+                // Only nudge about a MEMORY.md the user *received* (incoming, or another
+                // machine's push) — never their own push, which they just curated.
+                const received =
+                  e.type === 'incoming' || (e.type === 'outgoing' && e.machineId !== machineId)
                 const shown = visible.slice(0, FILE_CAP)
                 const overflow = visible.length - shown.length
                 const meta = metaBits(e, machineId, visible.length, t)
@@ -295,6 +300,15 @@ export function RecentActivity(): JSX.Element {
                                   >
                                     {f.leaf}
                                   </button>
+                                  {received && isMemoryIndexPath(f.path) && (
+                                    <IconButton
+                                      icon="info"
+                                      label={t('activity.memoryHelp')}
+                                      onClick={() =>
+                                        actions.openModal({ kind: 'memory-maintenance' })
+                                      }
+                                    />
+                                  )}
                                 </li>
                               ))}
                             </ul>
