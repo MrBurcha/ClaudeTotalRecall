@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next'
+import { unassociatedProjects } from '../../core/nameMatch'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
+import { Icon } from '../components/Icon'
 import { ProjectItem } from '../features/projects/ProjectItem'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
@@ -11,6 +13,8 @@ export function Projects(): JSX.Element {
   const { config, machineId } = useAppState()
   const actions = useActions()
   const projects = config ? Object.entries(config.projects) : []
+  // Projects configured on other machines but not associated here → invite adoption.
+  const unassociated = config && machineId ? unassociatedProjects(config, machineId) : []
 
   return (
     <div className="view">
@@ -43,6 +47,18 @@ export function Projects(): JSX.Element {
           <EmptyState icon="folder" title={t('projects.noProjectsYet')}>
             {t('projects.noProjectsHint')}
           </EmptyState>
+        </div>
+      )}
+
+      {unassociated.length > 0 && (
+        <div className="card card--highlight">
+          <div className="card__head">
+            <span className="card__title cluster">
+              <Icon name="monitor" size={16} />
+              {t('projects.unassociatedTitle', { count: unassociated.length })}
+            </span>
+          </div>
+          <p className="muted">{t('projects.unassociatedHint')}</p>
         </div>
       )}
 

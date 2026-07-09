@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DiscoveredSlot, DiscoveryProposal, SlotKind } from '../../../core/discovery'
+import { scoreNameMatch, unassociatedProjects } from '../../../core/nameMatch'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { Icon } from '../../components/Icon'
 import { Modal } from '../../components/Modal'
 import { api, normalizeError } from '../../state/api'
+import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 import { validateName } from './names'
+
+/** Minimum name-similarity to suggest associating with an existing project. */
+const ASSOCIATE_THRESHOLD = 0.5
 
 interface Row {
   item: string
@@ -38,13 +43,17 @@ function toRows(slots: DiscoveredSlot[]): Row[] {
  */
 export function ProjectDiscoverModal(): JSX.Element {
   const { t } = useTranslation()
+  const { config, machineId } = useAppState()
   const actions = useActions()
   const started = useRef(false)
   const [phase, setPhase] = useState<Phase>('scanning')
   const [projectName, setProjectName] = useState('')
   const [rows, setRows] = useState<Row[]>([])
+  const [suggestion, setSuggestion] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const unassociated = config && machineId ? unassociatedProjects(config, machineId) : []
 
   const pick = async (): Promise<void> => {
     const dir = await api.projectPickFolder()
@@ -58,10 +67,44 @@ export function ProjectDiscoverModal(): JSX.Element {
       const proposal: DiscoveryProposal = await api.projectDiscover(dir)
       setProjectName(proposal.projectName)
       setRows(toRows(proposal.slots))
+      setSuggestion(bestMatch(dir, proposal.projectName))
       setPhase(proposal.slots.length === 0 ? 'empty' : 'review')
     } catch (e) {
       setError(normalizeError(e))
       setPhase('empty')
+    }
+  }
+
+  /** The unassociated project that best matches the picked folder, above the threshold. */
+  const bestMatch = (dir: string, derivedName: string): string | null => {
+    const base = dir.split(/[/\\]/).filter(Boolean).pop() ?? ''
+    let best: { name: string; score: number } | null = null
+    for (const name of unassociated) {
+      const score = Math.max(scoreNameMatch(name, derivedName), scoreNameMatch(name, base))
+      if (score >= ASSOCIATE_THRESHOLD && (!best || score > best.score)) best = { name, score }
+    }
+    return best?.name ?? null
+  }
+
+  const associate = async (name: string): Promise<void> => {
+    const chosen = rows.filter((r) => r.include)
+    if (chosen.length === 0) {
+      setError(t('projects.discover.selectOne'))
+      return
+    }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await api.projectApplyMapping({
+        projectName: name,
+        slots: chosen.map((r) => ({ slot: r.slot.trim(), path: r.path, kind: r.kind })),
+      })
+      await actions.refresh()
+      actions.notify(t('projects.discover.associated', { name, count: res.slots }), 'ok')
+      actions.closeModal()
+    } catch (e) {
+      setError(normalizeError(e))
+      setSubmitting(false)
     }
   }
 
@@ -155,6 +198,22 @@ export function ProjectDiscoverModal(): JSX.Element {
 
       {phase === 'review' && (
         <div className="stack">
+          {suggestion && (
+            <div className="card card--highlight">
+              <p>{t('projects.discover.maybeExisting', { name: suggestion })}</p>
+              <div className="row">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon="monitor"
+                  disabled={submitting}
+                  onClick={() => associate(suggestion)}
+                >
+                  {t('projects.discover.associate', { name: suggestion })}
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="stack stack-1">
             <span className="label">{t('projects.discover.projectName')}</span>
             <input

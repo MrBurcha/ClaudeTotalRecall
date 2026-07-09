@@ -218,6 +218,7 @@
       "invalidName": "Nombre de proyecto inválido: \"{{value}}\". Usa solo letras, números, punto, guion y guion bajo.",
       "folderNested": "Esta carpeta se solapa con \"{{conflict}}\" ({{where}}), que ya se sincroniza en esta máquina. Anidarlas sincronizaría los mismos archivos dos veces.",
       "exists": "Ya existe un proyecto llamado \"{{name}}\".",
+      "existsCaseInsensitive": "Ya existe un proyecto llamado \"{{existing}}\" (los nombres no distinguen mayúsculas).",
       "notFound": "No se encontró el proyecto \"{{name}}\"."
     },
     "pin": {
@@ -301,6 +302,9 @@
     "registerMachineHint": "Necesitas registrar esta computadora antes de asignar carpetas.",
     "noProjectsYet": "Ningún proyecto todavía",
     "noProjectsHint": "Crea uno para sincronizar carpetas de memoria específicas.",
+    "unassociatedTitle_one": "{{count}} proyecto configurado en otra máquina",
+    "unassociatedTitle_other": "{{count}} proyectos configurados en otras máquinas",
+    "unassociatedHint": "Todavía no están asociados en esta máquina. Abrí un proyecto y usá «Configurar en esta máquina» para vincular su carpeta local — en lugar de crear uno nuevo.",
     "folder": "Carpeta",
     "file": "Archivo",
     "sourceType": "Tipo de origen",
@@ -354,6 +358,10 @@
       "collides": "Se superpone con {{where}}, ya sincronizado acá",
       "selectOne": "Elegí al menos una fuente.",
       "confirm": "Crear proyecto",
+      "maybeExisting": "Esto se parece al proyecto existente «{{name}}». ¿Asociarlo acá en vez de crear uno nuevo?",
+      "associate": "Asociar a «{{name}}»",
+      "associated_one": "Se asoció {{count}} fuente a «{{name}}».",
+      "associated_other": "Se asociaron {{count}} fuentes a «{{name}}».",
       "done_one": "Se creó \"{{name}}\" con {{count}} fuente.",
       "done_other": "Se creó \"{{name}}\" con {{count}} fuentes."
     },
@@ -364,6 +372,8 @@
       "exists": "Encontrada en el disco",
       "missing": "No se encontró en el disco",
       "manual": "No se pudo mapear automáticamente — elegí una ruta",
+      "pickLocal": "Acá Claude nombró este directorio distinto — elegí el local",
+      "candidates": "Directorios locales de Claude que podrían coincidir:",
       "noReference": "Ninguna otra máquina tiene esta fuente",
       "selectOne": "Elegí al menos una fuente con una ruta.",
       "confirm": "Configurar",
@@ -373,6 +383,8 @@
     },
     "new": {
       "title": "Agregar un proyecto",
+      "unassociatedHint_one": "{{count}} proyecto de otra máquina todavía no está asociado acá — si esta carpeta es ese, te vamos a proponer asociarlo en vez de crear un duplicado.",
+      "unassociatedHint_other": "{{count}} proyectos de otras máquinas todavía no están asociados acá — si esta carpeta es uno de ellos, te vamos a proponer asociarlo en vez de crear un duplicado.",
       "scan": "Escanear mis proyectos de Claude",
       "scanHint": "Encontrá proyectos en ~/.claude/projects y crealos en masa.",
       "folder": "Elegir una carpeta",

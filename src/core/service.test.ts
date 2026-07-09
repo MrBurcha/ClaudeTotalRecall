@@ -362,6 +362,35 @@ describe('project operations (CRUD)', () => {
     expect(config.projects.alpha).toBeDefined()
     expect(config.projects.beta).toBeDefined()
   })
+
+  it('rejects creating a project whose name case-collides with an existing one (namespace integrity)', async () => {
+    const a = await setup()
+    await createProject(a, 'Zimbify')
+    // an exact re-create stays a no-op
+    expect(await createProject(a, 'Zimbify')).toEqual({ alreadyExists: true })
+    // a different casing would map to the same folder on a case-insensitive FS → reject
+    await expect(createProject(a, 'zimbify')).rejects.toMatchObject({
+      code: 'project.existsCaseInsensitive',
+    })
+    const config = await cfg(a)
+    expect(config.projects.Zimbify).toBeDefined()
+    expect(config.projects.zimbify).toBeUndefined()
+  })
+
+  it('renameProject rejects a case-insensitive collision but allows fixing a name’s own casing', async () => {
+    const a = await setup()
+    await createProject(a, 'alpha')
+    await createProject(a, 'Beta')
+    // renaming INTO a different-cased existing name → reject
+    await expect(renameProject(a, 'alpha', 'BETA')).rejects.toMatchObject({
+      code: 'project.existsCaseInsensitive',
+    })
+    // fixing a project's OWN casing is allowed
+    await renameProject(a, 'alpha', 'Alpha')
+    const config = await cfg(a)
+    expect(config.projects.Alpha).toBeDefined()
+    expect(config.projects.alpha).toBeUndefined()
+  })
 })
 
 describe('file slots and pinned files (#11)', () => {

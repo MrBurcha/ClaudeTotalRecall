@@ -7,6 +7,29 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Scan dialog named projects after Claude's dir, not the project** (#61): the "Already synced
+  here" section named already-configured projects after their `~/.claude/projects` directory slug
+  (e.g. `core`, `app`) instead of their configured canonical name (e.g. `Zimbify`). The canonical
+  name now travels structurally with the path-based match and is shown; the raw slug stays literal
+  beside it.
+
+### Added
+
+- **Assisted cross-machine reconciliation** (#61): adopting a project on a second machine no longer
+  pre-fills a phantom home-remapped path for a `~/.claude/projects` source (Claude names those dirs
+  differently per machine) — it offers ranked local candidates to pick instead. The Projects view
+  and the New-project flow now non-blockingly invite associating an existing project instead of
+  creating a duplicate, ranked by a deterministic name-match score.
+
+### Changed
+
+- **Project names are now case-insensitive for uniqueness** (#61): a project's name is its identity
+  (the literal `memories/projects/<name>/` folder), so creating or renaming one whose name
+  case-collides with an existing project is rejected — preventing `Zimbify` and `zimbify` from
+  mapping to the same folder on a case-insensitive filesystem. Existing names are never rewritten.
+
 ## [0.7.1] - 2026-07-08
 
 ### Changed
