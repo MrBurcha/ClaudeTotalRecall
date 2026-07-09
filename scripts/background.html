@@ -1,10 +1,15 @@
 <!doctype html>
 <!--
   Source for the macOS DMG installer background (build/background.png + @2x).
-  Rendered by scripts/make-background.sh via headless Chromium at 2x → 1280×1000,
-  downscaled to 640×500. Design coords are 1x (640×500). The two glows sit at the
-  icon centers electron-builder uses (165,195) app · (475,195) Applications alias.
-  Edit copy/design here and re-run `npm run background`.
+  Rendered by scripts/make-background.sh via headless Chromium at 2x → 1280×1056,
+  downscaled to 640×528. Design coords are 1x (640×528): the visible design occupies
+  the top ~472px (matching electron-builder's dmg.window when it worked pre-EB26),
+  the extra 28px of blank canvas at the bottom are load-bearing — dmg-builder derives
+  the DMG's total window size directly from this file's own pixel dimensions (it
+  ignores dmg.window whenever dmg.background is set), and that total size must
+  include the ~28px title bar or the bottom of the design gets clipped. The two
+  glows sit at the icon centers electron-builder uses (165,195) app · (475,195)
+  Applications alias. Edit copy/design here and re-run `npm run background`.
 -->
 <html lang="en">
   <head>
@@ -28,7 +33,7 @@
       html,
       body {
         width: 640px;
-        height: 500px;
+        height: 528px;
         overflow: hidden;
         font-family:
           -apple-system, 'SF Pro Display', system-ui, 'Segoe UI', Roboto, 'DejaVu Sans', sans-serif;
@@ -38,7 +43,7 @@
       .stage {
         position: relative;
         width: 640px;
-        height: 500px;
+        height: 528px;
         background: radial-gradient(
           120% 90% at 50% -10%,
           #10162b 0%,
@@ -230,7 +235,7 @@
   <body>
     <div class="stage">
       <div class="field">
-        <svg width="640" height="500" viewBox="0 0 640 500" fill="none">
+        <svg width="640" height="528" viewBox="0 0 640 528" fill="none">
           <!-- upper-left branch -->
           <polyline
             points="70,72 152,122 132,196"
