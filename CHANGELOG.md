@@ -7,6 +7,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-07-10
+
+### Fixed
+
+- **Recent Activity: the `MEMORY.md` help icon was shown inconsistently** (#82): the ⓘ icon that
+  opens the memory-maintenance help was gated by an event-level `received` flag — true only for an
+  `incoming` event or another machine's `outgoing` push, never your own push. A self-synced
+  `MEMORY.md` row never showed the icon, regardless of whether it was added, updated, or deleted,
+  since every file status shares the same row renderer and gate. The icon's visibility now depends
+  solely on the file being `MEMORY.md`, so it always shows — including on deletion, since removing
+  the index is the strongest signal it may need regenerating.
+
 ## [0.9.2] - 2026-07-10
 
 ### Fixed
@@ -424,7 +436,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.2...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.3...HEAD
+[0.9.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.3
 [0.9.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.2
 [0.9.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.1
 [0.9.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.0
