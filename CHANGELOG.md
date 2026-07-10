@@ -7,6 +7,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-07-10
+
+### Fixed
+
+- **"Node.js 20 is deprecated" warning on every release run (#96)**: `release.yml` and
+  `warm-release-cache.yml` pinned `actions/cache@v4`, whose `action.yml` still declares
+  `using: node20` — GitHub Actions forces it onto the Node24 runtime anyway and annotates
+  the run with a deprecation warning on both the `macos` and `linux` jobs. Bumped to
+  `actions/cache@v6` (fixed upstream since `v5.0.0`; same `path`/`key`/`restore-keys`/
+  `cache-hit` surface, so no other changes were needed).
+
 ## [0.9.8] - 2026-07-10
 
 ### Fixed
