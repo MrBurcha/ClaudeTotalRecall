@@ -1,0 +1,33 @@
+name: cache-probe
+
+# Temporary diagnostic workflow — NOT meant to stay in the repo. Answers one
+# question empirically: can a workflow run triggered by a git TAG push restore
+# a cache saved by a run on the default branch (main)? GitHub's own docs are
+# ambiguous about whether tag refs count as "all branches" for that purpose.
+# `cache-probe-*` deliberately doesn't match release.yml's `v*.*.*` pattern,
+# so pushing a probe tag never triggers a real release build.
+on:
+  push:
+    branches: [main]
+    tags: ['cache-probe-*']
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Try restore probe cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/probe
+          key: cache-scope-probe-v1
+      - name: Report and seed if missing
+        run: |
+          echo "cache-hit output: ${{ steps.cache.outputs.cache-hit }}"
+          mkdir -p /tmp/probe
+          if [ -f /tmp/probe/data.txt ]; then
+            echo "RESTORED CONTENT: $(cat /tmp/probe/data.txt)"
+          else
+            echo "NO PRIOR CONTENT — seeding now"
+            echo "seeded-by-${{ github.ref }}-at-${{ github.run_id }}" > /tmp/probe/data.txt
+          fi
