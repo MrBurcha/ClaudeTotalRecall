@@ -39,13 +39,23 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      # Keyed on Electron/electron-builder's own resolved versions, not
+      # hashFiles('package-lock.json') — `npm version` (run on every "release:
+      # vX.Y.Z" commit) rewrites the lockfile's top-level version field, which
+      # would invalidate that hash on every single release even when neither
+      # dependency actually changed.
+      - name: Resolve Electron/electron-builder versions for cache key
+        id: versions
+        run: |
+          echo "electron=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+          echo "builder=$(jq -r '.packages["node_modules/electron-builder"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
       - name: Cache Electron + electron-builder binaries
         uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/electron
             ~/Library/Caches/electron-builder
-          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-electron-${{ steps.versions.outputs.electron }}-${{ steps.versions.outputs.builder }}
           restore-keys: |
             ${{ runner.os }}-electron-
       - run: npm ci
@@ -82,13 +92,21 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      # See the equivalent step in the macos job above for why this keys on
+      # Electron/electron-builder's resolved versions rather than
+      # hashFiles('package-lock.json').
+      - name: Resolve Electron/electron-builder versions for cache key
+        id: versions
+        run: |
+          echo "electron=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+          echo "builder=$(jq -r '.packages["node_modules/electron-builder"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
       - name: Cache Electron + electron-builder binaries
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/electron
             ~/.cache/electron-builder
-          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-electron-${{ steps.versions.outputs.electron }}-${{ steps.versions.outputs.builder }}
           restore-keys: |
             ${{ runner.os }}-electron-
       - run: npm ci
