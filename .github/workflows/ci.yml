@@ -20,21 +20,6 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      # hashFiles('package-lock.json') would seem like the obvious cache key, but
-      # `npm version` (run on every "release: vX.Y.Z" commit) rewrites the lockfile's
-      # top-level version field, changing that hash even when Electron itself didn't
-      # change — keying on Electron's own resolved version avoids invalidating the
-      # cache on every release.
-      - name: Resolve Electron version for cache key
-        id: electron-version
-        run: echo "version=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
-      - name: Cache Electron runtime binary
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/electron
-          key: ${{ runner.os }}-electron-${{ steps.electron-version.outputs.version }}
-          restore-keys: |
-            ${{ runner.os }}-electron-
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
