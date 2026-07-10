@@ -111,6 +111,14 @@ jobs:
       # after both jobs finished uploading, covers all 4 binaries uniformly without
       # re-uploading anything (the Assets list shows this text instead of the raw
       # filename; the actual download name is unaffected).
+      #
+      # `gh api repos/.../releases/tags/$TAG` 404s here — that REST endpoint doesn't
+      # resolve draft releases, and this step runs while the tag's Release is still a
+      # draft (the "publish the Release" steps below are what un-drafts it). `gh
+      # release view` IS draft-aware, and its `assets[].apiUrl` is already the exact
+      # REST endpoint each PATCH needs — `assets[].id` is a GraphQL node id, not the
+      # numeric id that endpoint expects, so apiUrl sidesteps that mismatch too
+      # (learned from v0.9.4's release run, which failed here on the first try).
       - name: Label release assets by platform
         run: |
           set -euo pipefail
@@ -120,11 +128,11 @@ jobs:
             [".deb"]="Linux — Debian/Ubuntu (.deb, amd64)"
             [".pacman"]="Linux — Arch/Manjaro (.pacman)"
           )
-          gh api "repos/$REPO/releases/tags/$TAG" --jq '.assets[] | "\(.id)\t\(.name)"' |
-          while IFS=$'\t' read -r id name; do
+          gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[] | "\(.apiUrl)\t\(.name)"' |
+          while IFS=$'\t' read -r api_url name; do
             for ext in "${!LABELS[@]}"; do
               if [[ "$name" == *"$ext" ]]; then
-                gh api --method PATCH "repos/$REPO/releases/assets/$id" -f "label=${LABELS[$ext]}"
+                gh api --method PATCH "$api_url" -f "label=${LABELS[$ext]}"
                 break
               fi
             done
