@@ -7,6 +7,12 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-07-10
+
+No functional changes. Version-only release to confirm the Electron cache key fix (#89) actually
+produces a cache hit on a real run — v0.9.6 saved the cache under its new, stable key
+(`electron-43.1.0-26.15.3`) for the first time, so it was still a miss there.
+
 ## [0.9.6] - 2026-07-10
 
 ### Fixed
@@ -477,6 +483,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
   `v*.*.*` tag.
 
 [Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.3...HEAD
+[0.9.7]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.7
 [0.9.6]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.6
 [0.9.5]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.5
 [0.9.4]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.4
