@@ -7,6 +7,22 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-07-10
+
+### Fixed
+
+- **Auto-sync's incoming step could still clobber a fresh edit — a second race #77 didn't cover**
+  (#80): `destinationDrifted` (#77) protects the window between a Plan's build and its execute, but
+  not the window between a single auto-sync cycle's own outgoing and incoming phases. Phase 1
+  (outgoing) can include a real commit/pull/push (a multi-second network round trip); an edit
+  landing after that phase's Plan was built — so it never captured it — but before the incoming
+  phase builds its own Plan gets silently overwritten, because the incoming Plan's hash already
+  reflects the fresh edit at build time, so nothing looks "drifted" to it. Fixed by re-checking the
+  machine's own hashes right before building the incoming Plan, comparing against what the
+  outgoing phase already captured; if anything changed, incoming is skipped for that cycle (the
+  edit itself already queued the next cycle, which then settles cleanly). Reproduced live against
+  the real app and covered by a deterministic regression test.
+
 ## [0.9.1] - 2026-07-09
 
 ### Fixed
@@ -408,7 +424,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.2
 [0.9.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.1
 [0.9.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.0
 [0.8.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.8.1
