@@ -7,6 +7,18 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-07-10
+
+### Changed
+
+- **Release Assets no longer include `latest-linux.yml`**: that file was electron-updater's
+  Linux auto-update manifest, generated as a side effect of the `linux` job's
+  `electron-builder --publish always`. The app has no `autoUpdater`/`electron-updater` anywhere
+  in `src/`, so it served no purpose — it just cluttered the Assets list. The `linux` job now
+  builds unpublished and uploads its 3 binaries by hand (same pattern the `macos` job already
+  used), which drops the manifest entirely and labels every asset inline at upload time instead
+  of through a separate step.
+
 ## [0.9.4] - 2026-07-10
 
 ### Changed
@@ -454,6 +466,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
   `v*.*.*` tag.
 
 [Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.3...HEAD
+[0.9.5]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.5
 [0.9.4]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.4
 [0.9.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.3
 [0.9.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.2
