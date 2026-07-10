@@ -7,6 +7,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-07-10
+
+### Fixed
+
+- **The Electron cache added in v0.9.4 never actually hit**: its key was `hashFiles('package-lock.json')`,
+  but `npm version` (run on every "release: vX.Y.Z" commit) rewrites the lockfile's own top-level
+  version field, changing that hash — and so the cache key — on every single release even when
+  Electron/electron-builder didn't change at all. Confirmed live: v0.9.5's release run still showed
+  "Cache not found". Keys on Electron's (and electron-builder's) own resolved version from the
+  lockfile instead, which only changes on a real dependency bump.
+
 ## [0.9.5] - 2026-07-10
 
 ### Changed
@@ -466,6 +477,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
   `v*.*.*` tag.
 
 [Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.3...HEAD
+[0.9.6]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.6
 [0.9.5]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.5
 [0.9.4]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.4
 [0.9.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.3
