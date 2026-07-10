@@ -50,7 +50,7 @@ jobs:
           echo "electron=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
           echo "builder=$(jq -r '.packages["node_modules/electron-builder"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
       - name: Cache Electron + electron-builder binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Caches/electron
@@ -101,7 +101,7 @@ jobs:
           echo "electron=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
           echo "builder=$(jq -r '.packages["node_modules/electron-builder"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
       - name: Cache Electron + electron-builder binaries
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/electron
