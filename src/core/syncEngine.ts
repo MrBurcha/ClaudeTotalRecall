@@ -54,6 +54,31 @@ function workingCopySnapshot(incomingPlan: Plan): Set<string> {
   return paths
 }
 
+/**
+ * "Firma" del lado MÁQUINA de una acción de un plan outgoing: el hash de lo que
+ * hay en la máquina (`hashFrom`, seteado para create/overwrite/noop — lo único
+ * que lo deja `undefined` es que la máquina no tenga el archivo, i.e. `delete`).
+ * Sirve para distinguir "la máquina cambió" de "el working copy se movió debajo"
+ * (p.ej. por el pull de la fase 1) sin que la máquina haya cambiado un bit.
+ */
+function machineSignature(a: PlanAction): string | null {
+  return a.hashFrom ?? null
+}
+
+/**
+ * True si algún archivo cambió de lado MÁQUINA entre dos snapshots outgoing del
+ * mismo ciclo — nunca por una diferencia que viene del lado working copy (eso lo
+ * resuelve incoming normalmente, no es una carrera). Compara por logicalPath;
+ * `?? null` trata "no estaba en `before`" igual que "la máquina no lo tenía":
+ * un archivo puede volverse "candidato" recién en `after` porque el pull de la
+ * fase 1 lo agregó al working copy (la máquina nunca lo tuvo ni lo tiene) — eso
+ * NO es un cambio de máquina, aunque el archivo no exista en `before.actions`.
+ */
+function machineChangedSince(before: Plan, after: Plan): boolean {
+  const prev = new Map(before.actions.map((a) => [a.logicalPath, machineSignature(a)]))
+  return after.actions.some((a) => (prev.get(a.logicalPath) ?? null) !== machineSignature(a))
+}
+
 async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
   const git = new Git(workingCopyDir(adapter))
   const baseline = await loadBaseline(adapter)
@@ -91,6 +116,32 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
       if (!push.ok) return { kind: 'error', message: 'No se pudo pushear al remoto' }
       pushed = true
     }
+  }
+
+  // ── Fase 1.5: re-chequeo — ¿la MÁQUINA cambió DESPUÉS de que fase 1 ya corrió? ──
+  // Fase 1 puede incluir un pull/push real (segundos de red). Un edit que aterriza
+  // en esa ventana nunca lo vio el outgoingPlan de arriba, así que si seguimos
+  // directo a construir el incoming, su propio hashTo ya reflejaría ese edit al
+  // armarse — destinationDrifted (TOCTOU de #77) no encuentra nada raro, porque
+  // no compara "esto es lo que outgoing ya capturó", solo "esto cambió desde que
+  // ESTE plan se armó". Sin este re-chequeo, incoming pisa el edit fresco con la
+  // versión vieja del working copy, sin error ni conflicto (bug real encontrado
+  // dogfooding, 2026-07-09 — ver plan.test.ts para la reproducción a nivel Plan).
+  //
+  // OJO: comparamos por `machineChangedSince`, NUNCA por "el outgoing de ahora
+  // tiene acciones" a secas — la rama de arriba (sin cambios locales) puede
+  // haber hecho un pull real que mueve el WORKING COPY (p.ej. trae un delete de
+  // otra máquina), lo que por sí solo ya genera diffs nuevos sin que la máquina
+  // haya cambiado un bit (un archivo que antes era `noop` pasa a verse como
+  // `create` porque el working copy lo perdió, no porque la máquina lo ganara).
+  // Tratar eso como "hay algo nuevo" saltearía el incoming que justamente tiene
+  // que borrar ese archivo — falso positivo que reproduce y rompe
+  // syncEngine.test.ts "propagates a directory deletion...". Por eso comparamos
+  // el lado MÁQUINA del outgoingPlan original contra el del re-chequeo: si no
+  // cambió ni un hash del lado máquina, seguimos con incoming normalmente.
+  const recheck = await buildVerbPlan(adapter, 'outgoing', newMeta())
+  if (machineChangedSince(outgoingPlan, recheck)) {
+    return { kind: 'synced', pushed, pulled, incoming: false }
   }
 
   // ── Fase 2: bajar a la máquina (working copy → máquina), mismos vetos ──────────
