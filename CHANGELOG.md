@@ -7,6 +7,17 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-07-10
+
+### Fixed
+
+- **The Electron cache still missed on every release, even with a stable key (v0.9.7)**: GitHub
+  Actions caches are isolated per ref, and `release.yml` only ever runs on tag pushes — each tag is
+  its own isolated scope, so a cache saved by one release was never visible to the next one, no
+  matter how the key was computed. A new `warm-release-cache.yml` now seeds the cache on every push
+  to `main` (confirmed live that tag-triggered runs _can_ inherit the default branch's cache); this
+  release verifies `release.yml` actually restores it.
+
 ## [0.9.7] - 2026-07-10
 
 No functional changes. Version-only release to confirm the Electron cache key fix (#89) actually
@@ -483,6 +494,7 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
   `v*.*.*` tag.
 
 [Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.3...HEAD
+[0.9.8]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.8
 [0.9.7]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.7
 [0.9.6]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.6
 [0.9.5]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.5
