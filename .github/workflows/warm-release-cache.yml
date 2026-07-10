@@ -1,0 +1,78 @@
+name: warm-release-cache
+
+# release.yml only ever runs on tag pushes, and GitHub Actions caches are
+# isolated per ref — a cache saved under one tag is invisible to every other
+# tag (confirmed live: v0.9.6's Electron cache 404'd for v0.9.7 despite an
+# identical key). The default branch is the one ref whose cache IS shared
+# with every other ref, tags included (also confirmed live) — so this
+# populates it on every push to main, giving release.yml something to
+# actually inherit the next time a tag is pushed.
+#
+# Deliberately cheap: `install-electron` triggers the same lazy binary
+# download electron-builder's own packaging step needs (electron's package
+# has no postinstall of its own — the download happens on first access), but
+# skips the minutes-long AppImage/deb/pacman/dmg packaging work entirely.
+# After the first run seeds the cache, subsequent pushes are a cache hit and
+# finish in seconds — this only pays the real download cost again when
+# Electron's resolved version actually changes.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-14
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - name: Resolve Electron/electron-builder versions for cache key
+        id: versions
+        run: |
+          echo "electron=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+          echo "builder=$(jq -r '.packages["node_modules/electron-builder"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+      - name: Cache Electron + electron-builder binaries
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-${{ steps.versions.outputs.electron }}-${{ steps.versions.outputs.builder }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: npx install-electron
+
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - name: Resolve Electron/electron-builder versions for cache key
+        id: versions
+        run: |
+          echo "electron=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+          echo "builder=$(jq -r '.packages["node_modules/electron-builder"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+      - name: Cache Electron + electron-builder binaries
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-${{ steps.versions.outputs.electron }}-${{ steps.versions.outputs.builder }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: npx install-electron
