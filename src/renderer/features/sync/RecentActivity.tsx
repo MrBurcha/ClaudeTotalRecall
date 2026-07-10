@@ -262,10 +262,6 @@ export function RecentActivity(): JSX.Element {
                 // claudetr.json, which would be noise here.
                 const showFiles =
                   (e.type === 'outgoing' || e.type === 'incoming') && visible.length > 0
-                // Only nudge about a MEMORY.md the user *received* (incoming, or another
-                // machine's push) — never their own push, which they just curated.
-                const received =
-                  e.type === 'incoming' || (e.type === 'outgoing' && e.machineId !== machineId)
                 const shown = visible.slice(0, FILE_CAP)
                 const overflow = visible.length - shown.length
                 const meta = metaBits(e, machineId, visible.length, t)
@@ -300,7 +296,7 @@ export function RecentActivity(): JSX.Element {
                                   >
                                     {f.leaf}
                                   </button>
-                                  {received && isMemoryIndexPath(f.path) && (
+                                  {isMemoryIndexPath(f.path) && (
                                     <IconButton
                                       icon="info"
                                       label={t('activity.memoryHelp')}
