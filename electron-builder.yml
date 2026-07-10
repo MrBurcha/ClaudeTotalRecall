@@ -106,6 +106,18 @@ pacman:
     - re2
     - snappy
     - libnotify
+# Chromium ships 55 locale files by default (measured: 47MB uncompressed,
+# ~1.8MB kept). The app's own UI is translated separately via react-i18next
+# (src/renderer/i18n, en/es only), so this only trims Chromium-native strings
+# (right-click context menu, spellchecker) to the locales the app targets.
+# Both delimiter forms are listed for "419" because electron-builder matches
+# against the on-disk filename verbatim, and macOS ships it as `es_419.lproj`
+# (underscore) while Linux/Windows ship `es-419.pak` (hyphen).
+electronLanguages:
+  - en
+  - es
+  - es-419
+  - es_419
 # CI (release on tag) publishes the artifacts to this repo's Release.
 publish:
   provider: github

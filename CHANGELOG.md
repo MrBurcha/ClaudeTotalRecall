@@ -7,6 +7,23 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-07-10
+
+### Changed
+
+- **Smaller binaries: Electron now ships only the locales the app uses**: `electron-builder.yml`
+  sets `electronLanguages` to `en`/`es`/`es-419`, trimming Chromium's default set of 55 locale
+  files (measured at 47MB uncompressed) down to the ~1.8MB actually needed. The app's own UI
+  translations (`react-i18next`, `src/renderer/i18n`) are unaffected — only native Chromium
+  strings (the right-click context menu, spellchecker) for locales outside en/es fall back to
+  English.
+- **Release assets now say what each binary is for**: the `release` workflow labels every
+  downloadable asset (`.dmg`, `.AppImage`, `.deb`, `.pacman`) with its platform/format in the
+  GitHub Release's Assets list, instead of just the raw filename.
+- **Faster CI and release builds**: `ci.yml` and `release.yml` now cache the Electron runtime
+  binary, previously re-downloaded from scratch on every `npm ci` — including in the `release`
+  workflow's slowest step (`electron-builder --linux`, ~2m53s before this).
+
 ## [0.9.3] - 2026-07-10
 
 ### Fixed
@@ -437,6 +454,7 @@ and the project uses [Semantic Versioning](https://semver.org/).
   `v*.*.*` tag.
 
 [Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.3...HEAD
+[0.9.4]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.4
 [0.9.3]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.3
 [0.9.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.2
 [0.9.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.1
