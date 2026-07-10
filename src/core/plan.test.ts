@@ -274,4 +274,36 @@ describe('TOCTOU revalidation', () => {
     await expect(executeIncoming(plan, ctx1, { force: true })).resolves.toBeDefined()
     expect(await read(join(sb.home1, '.claude/CLAUDE.md'))).toBe('FROM REPO\n')
   })
+
+  // Reproduces a real data-loss race found while dogfooding auto-sync (2026-07-09),
+  // distinct from — and not caught by — the #70-follow-up fix above. There, the
+  // destination changed AFTER the plan was built (destinationDrifted catches that).
+  // Here, the fresh edit lands BEFORE buildIncomingPlan runs — e.g. in the gap
+  // between an auto-sync cycle's outgoing phase (which didn't capture it, because
+  // it landed after THAT phase's own plan was built) and this cycle's incoming
+  // phase. The incoming plan's own hashTo already reflects the fresh edit at build
+  // time, so destinationDrifted finds nothing wrong at execute time — it only
+  // detects changes since ITS OWN build, not "this destination disagrees with the
+  // plan's source for a legitimate reason (it's newer, not stale)". Currently RED:
+  // documents the gap, not yet fixed.
+  it.fails(
+    'a fresh local edit that landed before the plan was built still survives an incoming overwrite',
+    async () => {
+      const sb = await seed()
+      const ctx1 = ctxFor(sb, sb.home1, 'm1')
+
+      await mkdir(join(sb.repoDir, 'memories/user'), { recursive: true })
+      await writeFile(join(sb.repoDir, 'memories/user/CLAUDE.md'), 'FROM REPO\n')
+
+      // The fresh edit happens BEFORE the plan is built this time.
+      await writeFile(join(sb.home1, '.claude/CLAUDE.md'), 'FRESH LOCAL EDIT\n')
+
+      const plan = await buildIncomingPlan(ctx1, META)
+      await executeIncoming(plan, ctx1)
+
+      // Should survive (or the caller should be warned this is actually an
+      // outgoing-worthy change) — instead it's silently clobbered.
+      expect(await read(join(sb.home1, '.claude/CLAUDE.md'))).toBe('FRESH LOCAL EDIT\n')
+    },
+  )
 })

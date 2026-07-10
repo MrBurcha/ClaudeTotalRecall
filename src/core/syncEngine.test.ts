@@ -1,10 +1,11 @@
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createPlatformAdapter } from '../platform'
 import { run } from './exec'
 import { connectRepo, registerMachine, workingCopyDir } from './service'
+import * as service from './service'
 import { runSyncCycle } from './syncEngine'
 
 const bases: string[] = []
@@ -175,5 +176,90 @@ describe('runSyncCycle', () => {
     if (out.kind === 'conflict') {
       expect(out.files).toContain('memories/user/CLAUDE.md')
     }
+  })
+})
+
+describe('outgoing→incoming race (found dogfooding auto-sync, 2026-07-09)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('a fresh edit that lands right after the outgoing phase commits survives — incoming is skipped this cycle', async () => {
+    const base = await newBase()
+    await bareRemote(base)
+
+    const home1 = join(base, 'home1')
+    await mkdir(join(home1, '.claude'), { recursive: true })
+    await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'V0\n')
+    const a1 = await joinMachine(base, 'm1', home1)
+    await runSyncCycle(a1) // baseline cycle: working copy == machine == V0
+
+    // The machine has something new to gather this cycle...
+    await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'V1\n')
+
+    // ...but the instant Phase 1 (outgoing) finishes committing+pushing V1, a
+    // SECOND edit (V2) lands on the machine — simulating a race that outran
+    // the outgoing phase's own plan-build (in production this window is a real
+    // git pull/push round trip; here it's injected as a side effect of the
+    // real syncOutgoing call so it deterministically lands between Phase 1 and
+    // Phase 2 of the SAME runSyncCycle invocation).
+    const realSyncOutgoing = service.syncOutgoing
+    const spy = vi.spyOn(service, 'syncOutgoing').mockImplementation(async (...args) => {
+      const result = await realSyncOutgoing(...args)
+      await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'V2\n')
+      return result
+    })
+
+    const out = await runSyncCycle(a1)
+    spy.mockRestore()
+
+    expect(out.kind).toBe('synced')
+    // Incoming was skipped this cycle (the re-check caught V2 as unpropagated) —
+    // NOT applied-but-harmless: it must not have run at all, or V2 could still
+    // have been clobbered by a "lucky" no-op incoming.
+    if (out.kind === 'synced') expect(out.incoming).toBe(false)
+
+    // V2 survives on the machine — the bug this reproduces is exactly this
+    // silently becoming 'V0\n' (working copy's content before V1 was even
+    // gathered) with no error and no conflict.
+    expect(await readFile(join(home1, '.claude', 'CLAUDE.md'), 'utf8')).toBe('V2\n')
+
+    // The next cycle (as if the debounce fired again, since V2 itself reset
+    // it) fully settles: V2 gets gathered outgoing, and a fresh machine2
+    // correctly receives V2 via incoming.
+    const out2 = await runSyncCycle(a1)
+    expect(out2.kind).toBe('synced')
+    if (out2.kind === 'synced') expect(out2.pushed).toBe(true)
+
+    const home2 = join(base, 'home2')
+    const a2 = await joinMachine(base, 'm2', home2)
+    await runSyncCycle(a2)
+    expect(await readFile(join(home2, '.claude', 'CLAUDE.md'), 'utf8')).toBe('V2\n')
+  })
+
+  it('does not skip incoming when nothing changed after the outgoing phase (no false positives)', async () => {
+    const base = await newBase()
+    await bareRemote(base)
+
+    const home1 = join(base, 'home1')
+    await mkdir(join(home1, '.claude'), { recursive: true })
+    await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'V0\n')
+    const a1 = await joinMachine(base, 'm1', home1)
+    await runSyncCycle(a1)
+
+    // Another machine pushes something new for m1 to pull down via incoming.
+    const home2 = join(base, 'home2')
+    const a2 = await joinMachine(base, 'm2', home2)
+    await runSyncCycle(a2)
+    await mkdir(join(home2, '.claude', 'commands'), { recursive: true })
+    await writeFile(join(home2, '.claude', 'commands', 'new.md'), 'new\n')
+    await runSyncCycle(a2)
+
+    // m1 has nothing local to gather this cycle, so the re-check finds nothing
+    // new either — incoming must proceed normally and pull m2's file down.
+    const out = await runSyncCycle(a1)
+    expect(out.kind).toBe('synced')
+    if (out.kind === 'synced') expect(out.incoming).toBe(true)
+    expect(await exists(join(home1, '.claude', 'commands', 'new.md'))).toBe(true)
   })
 })
