@@ -37,6 +37,15 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Cache Electron + electron-builder binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
       - run: npm ci
       - run: npm run build:app
       - name: Build dmg (unsigned, not published yet)
@@ -69,6 +78,15 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - name: Cache Electron + electron-builder binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
       - run: npm ci
       - run: npm run build:app
       # fpm builds the pacman target with bsdtar (.MTREE); ubuntu doesn't ship it by default.
@@ -87,6 +105,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # macOS uploads its dmg by hand (gh release upload, which supports an inline
+      # #label), but Linux publishes AppImage/deb/pacman via electron-builder's own
+      # GitHub publisher, which doesn't set labels at all. Patching the label here,
+      # after both jobs finished uploading, covers all 4 binaries uniformly without
+      # re-uploading anything (the Assets list shows this text instead of the raw
+      # filename; the actual download name is unaffected).
+      - name: Label release assets by platform
+        run: |
+          set -euo pipefail
+          declare -A LABELS=(
+            [".dmg"]="macOS (Apple Silicon) — .dmg installer"
+            [".AppImage"]="Linux — AppImage (portable, any distro)"
+            [".deb"]="Linux — Debian/Ubuntu (.deb, amd64)"
+            [".pacman"]="Linux — Arch/Manjaro (.pacman)"
+          )
+          gh api "repos/$REPO/releases/tags/$TAG" --jq '.assets[] | "\(.id)\t\(.name)"' |
+          while IFS=$'\t' read -r id name; do
+            for ext in "${!LABELS[@]}"; do
+              if [[ "$name" == *"$ext" ]]; then
+                gh api --method PATCH "repos/$REPO/releases/assets/$id" -f "label=${LABELS[$ext]}"
+                break
+              fi
+            done
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
       # Extract the "## [x.y.z]" section of the CHANGELOG as the Release body. If
       # the version isn't documented, let GitHub auto-generate the notes
       # (--generate-notes) so a Release is never published with an empty body.
