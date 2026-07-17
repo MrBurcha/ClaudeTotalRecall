@@ -758,15 +758,26 @@
 }
 
 /* ══ Notebook (two-pane tree + viewer/editor, #104) ═══════════════════════════ */
-.view--wide {
-  max-width: 1160px;
+/* The Notebook fills the whole content area (its panes scroll internally) instead
+   of a fixed height that leaves air on tall windows. Trim the side/bottom margins
+   — keep the top — so extra space is used rather than padded away. */
+.content--fill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--space-7) var(--space-5) var(--space-4);
+}
+.content--fill .view {
+  max-width: none;
+  flex: 1;
+  min-height: 0;
 }
 .notebook {
   display: grid;
   grid-template-columns: minmax(240px, 340px) 1fr;
   gap: var(--space-4);
-  height: min(72vh, 680px);
-  min-height: 380px;
+  flex: 1;
+  min-height: 0;
 }
 .notebook__tree,
 .notebook__detail {
@@ -949,10 +960,18 @@
   color: var(--muted);
   min-width: 0;
 }
+/* Body is a flex column so the viewer and the editor each fill the panel. */
 .note-detail__body {
   flex: 1;
-  overflow: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: var(--space-4) var(--space-5);
+}
+.note-detail__view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 .note-detail__note {
   display: flex;
@@ -961,10 +980,11 @@
   margin: 0 0 var(--space-3);
   font-size: var(--text-sm);
 }
+/* Editor fills the whole body — same footprint as the viewer, not a short box. */
 .note-detail__editor {
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  height: 100%;
-  min-height: 320px;
   resize: none;
   font-family: var(--font-mono);
   font-size: var(--text-sm);

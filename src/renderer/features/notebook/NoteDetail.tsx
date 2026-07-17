@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/Button'
-import { TextArea } from '../../components/Field'
 import { Icon } from '../../components/Icon'
 import type { NotebookFile } from '../../../core/types'
 import { detectPreviewKind } from '../preview/previewFormat'
@@ -84,26 +83,32 @@ export function NoteDetail(props: NoteDetailProps): JSX.Element {
 
       <div className="note-detail__body">
         {editing ? (
-          <TextArea
-            className="note-detail__editor"
+          <textarea
+            className="textarea note-detail__editor"
             value={props.draft}
             onChange={(e) => props.onDraft(e.target.value)}
             spellCheck={false}
             autoFocus
           />
-        ) : !file.exists ? (
-          <p className="muted note-detail__note">{t('notebook.missing')}</p>
-        ) : file.binary ? (
-          <p className="muted note-detail__note">
-            <Icon name="lock" size={15} /> {t('preview.binary')}
-          </p>
-        ) : file.content === '' ? (
-          <p className="muted note-detail__note">{t('preview.empty')}</p>
         ) : (
-          <>
-            {file.truncated && <p className="muted note-detail__note">{t('preview.truncated')}</p>}
-            <NoteView name={props.name} content={file.content} />
-          </>
+          <div className="note-detail__view">
+            {!file.exists ? (
+              <p className="muted note-detail__note">{t('notebook.missing')}</p>
+            ) : file.binary ? (
+              <p className="muted note-detail__note">
+                <Icon name="lock" size={15} /> {t('preview.binary')}
+              </p>
+            ) : file.content === '' ? (
+              <p className="muted note-detail__note">{t('preview.empty')}</p>
+            ) : (
+              <>
+                {file.truncated && (
+                  <p className="muted note-detail__note">{t('preview.truncated')}</p>
+                )}
+                <NoteView name={props.name} content={file.content} />
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

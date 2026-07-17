@@ -57,7 +57,7 @@ export function AppShell(): JSX.Element {
     <div className="app">
       <TitleBar />
       <Sidebar />
-      <main className="content">
+      <main className={state.route === 'notebook' ? 'content content--fill' : 'content'}>
         {state.route === 'home' && <SyncHome />}
         {state.route === 'projects' && <Projects />}
         {state.route === 'notebook' && <Notebook />}
