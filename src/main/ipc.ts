@@ -12,6 +12,7 @@ import {
 import { createPlatformAdapter } from '../platform'
 import { AppError, encodeAppError } from '../core/errors'
 import { folderContainsMemoryIndex } from '../core/memoryScan'
+import * as notebook from '../core/notebook'
 import { PlanDriftError } from '../core/plan'
 import { runPreflight } from '../core/preflight'
 import * as svc from '../core/service'
@@ -171,6 +172,25 @@ export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateSch
     shell.showItemInFolder(path)
     return true
   })
+
+  // Notebook (#104): cloud-native notes/prompts. Mutations commit locally (no push);
+  // the normal sync cycle pushes them later. Paths are validated server-side.
+  handle('notebook:tree', () => notebook.notebookTree(adapter()))
+  handle('notebook:read', (_e, rel: string) => notebook.readNote(adapter(), rel))
+  handle('notebook:createNote', (_e, p: { relPath: string; content?: string }) =>
+    notebook.createNote(adapter(), p),
+  )
+  handle('notebook:write', (_e, p: { relPath: string; content: string }) =>
+    notebook.writeNote(adapter(), p),
+  )
+  handle('notebook:createFolder', (_e, rel: string) => notebook.createFolder(adapter(), rel))
+  handle('notebook:rename', (_e, p: { relPath: string; newName: string }) =>
+    notebook.renameEntry(adapter(), p),
+  )
+  handle('notebook:move', (_e, p: { relPath: string; toDir: string }) =>
+    notebook.moveEntry(adapter(), p),
+  )
+  handle('notebook:delete', (_e, rel: string) => notebook.deleteEntry(adapter(), rel))
 
   // Pinned files (global pinpoint files, outside any project)
   handle('pinned:set', (_e, p: { pinId: string; path: string }) =>

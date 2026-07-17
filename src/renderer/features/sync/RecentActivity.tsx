@@ -44,6 +44,8 @@ function iconFor(e: HistoryEntry, currentMachine: string | null): IconName {
       return 'file-minus'
     case 'conflicts':
       return 'alert'
+    case 'notebook':
+      return 'book'
     default:
       return 'sync'
   }
@@ -80,6 +82,8 @@ function labelFor(e: HistoryEntry, currentMachine: string | null, t: TFunction):
       return t('activity.fileUnpinned', { pin: e.pin })
     case 'conflicts':
       return t('activity.conflictsResolved')
+    case 'notebook':
+      return t('activity.notebookChanged')
     default:
       return t('activity.change')
   }
@@ -183,6 +187,13 @@ function groupChanges(changes: FileChange[], t: TFunction): FileGroup[] {
         heading = t('activity.bucketPinned')
         leaf = loc.pin
         break
+      case 'notebook': {
+        const container = loc.scope === 'general' ? t('notebook.general') : (loc.project ?? '')
+        key = `notebook:${loc.scope}:${loc.project ?? 'general'}`
+        heading = `${t('activity.bucketNotebook')} › ${container}`
+        leaf = loc.rest.split('/').pop() || loc.rest
+        break
+      }
       default:
         key = 'unknown'
         heading = t('activity.bucketUnknown')
@@ -258,10 +269,14 @@ export function RecentActivity(): JSX.Element {
                 // seeding the empty memories/ dirs, which would otherwise read as
                 // a bunch of spurious "removed" rows.
                 const visible = e.changes.filter((c) => !isStructuralNoise(c.path))
-                // File details only for the sync verbs: config commits also touch
-                // claudetr.json, which would be noise here.
+                // File details for the sync verbs and Notebook edits: config commits
+                // also touch claudetr.json, which would be noise here.
                 const showFiles =
-                  (e.type === 'outgoing' || e.type === 'incoming') && visible.length > 0
+                  (e.type === 'outgoing' || e.type === 'incoming' || e.type === 'notebook') &&
+                  visible.length > 0
+                // A Notebook "create folder" commit only touches a .gitkeep placeholder;
+                // with structural noise filtered there's nothing to show, so skip the row.
+                if (e.type === 'notebook' && visible.length === 0) return null
                 const shown = visible.slice(0, FILE_CAP)
                 const overflow = visible.length - shown.length
                 const meta = metaBits(e, machineId, visible.length, t)

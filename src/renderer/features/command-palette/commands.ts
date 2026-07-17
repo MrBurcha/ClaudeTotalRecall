@@ -101,6 +101,14 @@ export function buildCommands(state: AppState, actions: Actions, t: TFunction): 
       run: () => actions.navigate('projects'),
     },
     {
+      id: 'go-notebook',
+      title: t('palette.goNotebook'),
+      icon: 'book',
+      group: t('palette.group.navigate'),
+      keywords: ['notebook', 'cuaderno', 'notes', 'notas', 'prompts'],
+      run: () => actions.navigate('notebook'),
+    },
+    {
       id: 'go-machines',
       title: t('palette.goMachines'),
       icon: 'monitor',

@@ -756,3 +756,245 @@
 .preview-props__blank {
   height: var(--space-2);
 }
+
+/* ══ Notebook (two-pane tree + viewer/editor, #104) ═══════════════════════════ */
+/* The Notebook fills the whole content area (its panes scroll internally) instead
+   of a fixed height that leaves air on tall windows. Trim the side/bottom margins
+   — keep the top — so extra space is used rather than padded away. */
+.content--fill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--space-7) var(--space-5) var(--space-4);
+}
+.content--fill .view {
+  max-width: none;
+  /* Drop the centering `margin: 0 auto`: in this flex column an auto cross-axis
+     margin makes the view shrink-to-content (narrow when empty or editing, wide
+     only with long markdown). margin:0 lets align-items:stretch fill the width. */
+  margin: 0;
+  flex: 1;
+  min-height: 0;
+}
+.notebook {
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) 1fr;
+  /* Explicit single row that fills the flex container, so BOTH panes always take
+     the full height — even when the detail pane is empty or holds a flex textarea
+     (which has no intrinsic height and would otherwise collapse). */
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+}
+.notebook__tree,
+.notebook__detail {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.notebook__tree {
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+.notebook__moving {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  font-size: var(--text-sm);
+}
+
+/* Tree */
+.nb-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.nb-tree__group {
+  display: flex;
+  flex-direction: column;
+}
+.nb-tree__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 5px var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text);
+  transition: background var(--dur-fast);
+  min-height: 30px;
+}
+.nb-tree__row:hover {
+  background: var(--panel-2);
+}
+.nb-tree__root {
+  font-weight: var(--weight-semibold);
+}
+.nb-tree__row--active {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.nb-tree__row--active:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.nb-tree__row--drop {
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+}
+.nb-tree__row--dim {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.nb-tree__chev {
+  flex: none;
+  width: 14px;
+  color: var(--muted);
+}
+/* Single kebab per row: one fixed slot (no name squeeze), revealed on hover. */
+.nb-menu__trigger {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--dur-fast),
+    background var(--dur-fast),
+    color var(--dur-fast);
+}
+.nb-tree__row:hover .nb-menu__trigger,
+.nb-menu__trigger--open {
+  opacity: 1;
+}
+.nb-menu__trigger:hover,
+.nb-menu__trigger--open {
+  background: var(--panel-3, var(--panel-2));
+  color: var(--text);
+}
+.nb-menu__trigger:disabled {
+  cursor: default;
+  opacity: 0;
+}
+.nb-tree__input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+.nb-tree__empty {
+  padding: 4px var(--space-2);
+  font-size: var(--text-sm);
+}
+.nb-tree__droplabel {
+  font-size: var(--text-xs);
+  color: var(--accent);
+}
+
+/* Kebab dropdown (portal, fixed position, above the tree's overflow). */
+.nb-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.nb-menu {
+  min-width: 168px;
+  max-width: 260px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--panel-3, var(--panel-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.45));
+}
+.nb-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.nb-menu__item:hover {
+  background: var(--panel-2);
+}
+.nb-menu__item--danger {
+  color: var(--danger);
+}
+.nb-menu__item--danger:hover {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+}
+
+/* Detail (viewer / editor) */
+.note-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.note-detail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.note-detail__crumb {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  min-width: 0;
+}
+/* Body is a flex column so the viewer and the editor each fill the panel. */
+.note-detail__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) var(--space-5);
+}
+.note-detail__view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.note-detail__note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+/* Editor fills the whole body — same footprint as the viewer, not a short box. */
+.note-detail__editor {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}

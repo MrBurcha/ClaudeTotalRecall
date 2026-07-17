@@ -97,7 +97,10 @@ export class Git {
 
   /** Ejecuta git crudo; no tira por code != 0. */
   async raw(args: string[], input?: string): Promise<ExecResult> {
-    return run(this.bin, args, { cwd: this.cwd, input })
+    // core.quotePath=false: emit non-ASCII paths (filenames with ñ, accents, …)
+    // verbatim as UTF-8 instead of git's octal-escaped `"\NNN"` quoting, so path
+    // parsing (activity feed, conflicts) and file lookup work for those names.
+    return run(this.bin, ['-c', 'core.quotePath=false', ...args], { cwd: this.cwd, input })
   }
 
   /** Ejecuta git y tira GitError si code != 0; devuelve stdout trimmeado. */
@@ -213,6 +216,21 @@ export class Git {
     if (!(await this.isDirty())) return { committed: false }
     await this.out(['commit', '-m', message])
     return { committed: true }
+  }
+
+  /**
+   * Commit LIMITED to a pathspec: records only changes under `paths`, ignoring
+   * anything else staged in the index (a git "partial commit"). Keeps a Notebook
+   * save from sweeping in a concurrent flow's staged changes. No-op if the pathspec
+   * has nothing to commit.
+   */
+  async commitPaths(message: string, paths: string[]): Promise<CommitResult> {
+    const r = await this.raw(['commit', '-m', message, '--', ...paths])
+    if (r.code === 0) return { committed: true }
+    if (/nothing to commit|no changes added|did not match/i.test(`${r.stdout}\n${r.stderr}`)) {
+      return { committed: false }
+    }
+    throw new GitError(`git commit -- falló (code ${r.code}): ${r.stderr.trim()}`, r)
   }
 
   /** push; detecta rechazo por non-fast-forward para el retry del registro. */

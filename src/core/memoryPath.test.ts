@@ -81,6 +81,30 @@ describe('parseMemoryPath', () => {
     })
   })
 
+  describe('notebook bucket', () => {
+    it('parses a General note', () => {
+      expect(parseMemoryPath('memories/notebook/general/sub/idea.md')).toEqual({
+        bucket: 'notebook',
+        scope: 'general',
+        rest: 'sub/idea.md',
+      })
+    })
+    it('parses a project note', () => {
+      expect(parseMemoryPath('memories/notebook/projects/Alpha/prompts/x.md')).toEqual({
+        bucket: 'notebook',
+        scope: 'project',
+        project: 'Alpha',
+        rest: 'prompts/x.md',
+      })
+    })
+    it('falls back to unknown for a malformed notebook path', () => {
+      expect(parseMemoryPath('memories/notebook/projects')).toEqual({
+        bucket: 'unknown',
+        path: 'memories/notebook/projects',
+      })
+    })
+  })
+
   describe('unknown bucket', () => {
     it.each(['claudetr.json', '.gitignore', '', 'memories/user'])(
       'returns unknown carrying the original path for %j',

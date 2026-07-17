@@ -9,7 +9,8 @@
     "edit": "Edit",
     "remove": "Remove",
     "retry": "Re-check",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "loading": "Loading…"
   },
   "titlebar": {
     "minimize": "Minimize",
@@ -20,6 +21,7 @@
   "nav": {
     "home": "Sync",
     "projects": "Projects",
+    "notebook": "Notebook",
     "settings": "Settings"
   },
   "sidebar": {
@@ -159,6 +161,7 @@
     },
     "goHome": "Go to Sync",
     "goProjects": "Go to Projects",
+    "goNotebook": "Go to Notebook",
     "goMachines": "Go to Machines",
     "goSettings": "Go to Settings",
     "newProject": "New project",
@@ -240,6 +243,16 @@
     },
     "plan": {
       "expired": "Plan expired; rebuild it (the preview is no longer valid)."
+    },
+    "notebook": {
+      "invalidName": "Invalid Notebook name: \"{{value}}\".",
+      "exists": "A Notebook entry already exists at \"{{value}}\".",
+      "notFound": "No Notebook entry at \"{{value}}\".",
+      "invalidMove": "Cannot move an entry into itself.",
+      "repoConflict": "Resolve the pending sync conflicts before editing the Notebook."
+    },
+    "sync": {
+      "pendingConflict": "Resolve the pending sync conflicts before continuing."
     }
   },
   "preflight": {
@@ -424,6 +437,34 @@
       "createEmptyInstead": "Create empty"
     }
   },
+  "notebook": {
+    "eyebrow": "Library",
+    "title": "Notebook",
+    "sub": "Notes and prompts stored in your memory repo, organized by project and a shared General space. Saved locally; synced with the rest.",
+    "general": "General",
+    "newNote": "New note",
+    "newFolder": "New folder",
+    "notePlaceholder": "note-name",
+    "folderPlaceholder": "folder-name",
+    "emptyFolder": "Empty — add a note or folder.",
+    "rename": "Rename",
+    "actions": "Actions",
+    "move": "Move",
+    "moveHere": "Move here",
+    "movingBanner": "Moving \"{{name}}\" — pick a destination folder",
+    "copy": "Copy",
+    "copied": "Copied to clipboard.",
+    "saved": "Note saved.",
+    "missing": "This note no longer exists.",
+    "pickTitle": "Select a note",
+    "pickHint": "Pick a note from the tree to view or edit it.",
+    "unsynced_one": "{{count}} unsynced",
+    "unsynced_other": "{{count}} unsynced",
+    "notConnected": "Connect your memory repo first",
+    "notConnectedHint": "The Notebook lives in your synced repo. Set it up in Settings to start writing.",
+    "deleteTitle": "Delete entry",
+    "deleteBody": "Delete \"{{name}}\"? This removes it from the Notebook on every machine after the next sync."
+  },
   "conflicts": {
     "title_one": "Resolve {{count}} conflict",
     "title_other": "Resolve {{count}} conflicts",
@@ -509,6 +550,8 @@
     "bucketUser": "User level",
     "bucketPinned": "Pinned files",
     "bucketUnknown": "Other",
+    "bucketNotebook": "Notebook",
+    "notebookChanged": "Notebook updated",
     "sourceUpdated": "Updated source {{slot}} in {{project}}",
     "sourceRemoved": "Removed source {{slot}} from {{project}}",
     "projectCreated": "Created project {{name}}",

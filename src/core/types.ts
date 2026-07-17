@@ -143,6 +143,7 @@ export type HistoryType =
   | 'pin'
   | 'unpin'
   | 'conflicts'
+  | 'notebook'
   | 'other'
 
 /** A single file touched by a commit, as reported by `git log --name-status`. */
@@ -170,6 +171,48 @@ export interface HistoryEntry {
   files: number
   /** the files touched (added/modified/deleted), for the activity detail (#8) */
   changes: FileChange[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notebook (#104): a cloud-native notes/prompts space stored under
+// memories/notebook/. Unlike the mirror buckets it has no per-machine path and
+// isn't part of the Plan — it lives only in the working copy and rides the normal
+// git sync. Paths below are relative to memories/notebook/ (POSIX, no leading slash).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** A file or folder inside a Notebook root. */
+export interface NotebookNode {
+  /** last path segment (the note title / folder name) */
+  name: string
+  /** path relative to memories/notebook/, e.g. "general/ideas.md" */
+  path: string
+  kind: 'file' | 'dir'
+  /** child nodes (dirs only; files omit it) */
+  children?: NotebookNode[]
+}
+
+/** A top-level container: the "general" bucket or one per project. */
+export interface NotebookRoot {
+  /** 'general' or the canonical project name */
+  id: string
+  kind: 'general' | 'project'
+  /** base path relative to memories/notebook/: "general" or "projects/<name>" */
+  path: string
+  children: NotebookNode[]
+}
+
+export interface NotebookTree {
+  roots: NotebookRoot[]
+}
+
+/** Content + metadata of a Notebook file, for the viewer/editor. */
+export interface NotebookFile {
+  /** UTF-8 content from the working copy; empty when binary or missing */
+  content: string
+  size: number
+  truncated: boolean
+  binary: boolean
+  exists: boolean
 }
 
 /** Content + machine location of a memories file, for the preview modal (#43). */

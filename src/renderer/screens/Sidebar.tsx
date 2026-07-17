@@ -13,6 +13,7 @@ import type { Route } from '../state/types'
 const NAV: { route: Route; labelKey: string; icon: IconName }[] = [
   { route: 'home', labelKey: 'nav.home', icon: 'sync' },
   { route: 'projects', labelKey: 'nav.projects', icon: 'folder' },
+  { route: 'notebook', labelKey: 'nav.notebook', icon: 'book' },
   { route: 'settings', labelKey: 'nav.settings', icon: 'sliders' },
 ]
 

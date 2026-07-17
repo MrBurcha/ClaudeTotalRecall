@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -79,6 +79,15 @@ describe('classifyCommit', () => {
   it('falls back to `other` for an unrecognized prefixed message', () => {
     expect(classifyCommit(`${PREFIX}something brand new`)).toEqual({ type: 'other' })
   })
+
+  it('classifies Notebook commits (their own `notebook:` prefix, no CTR prefix)', () => {
+    expect(classifyCommit('notebook: create general/idea.md')).toEqual({ type: 'notebook' })
+    expect(classifyCommit('notebook: update general/idea.md')?.type).toBe('notebook')
+    expect(classifyCommit('notebook: move general/a.md -> general/sub/a.md')?.type).toBe('notebook')
+    expect(classifyCommit('notebook: create folder general/prompts')?.type).toBe('notebook')
+    // A message that merely mentions the word must NOT be treated as a Notebook commit.
+    expect(classifyCommit('chore: notebook cleanup')).toBeNull()
+  })
 })
 
 describe('Git.log', () => {
@@ -146,5 +155,21 @@ describe('Git.log', () => {
   it('returns [] for a repo with no commits', async () => {
     const g = await repoWithCommits('log-empty')
     expect(await g.log()).toEqual([])
+  })
+
+  it('returns non-ASCII paths verbatim (no git octal-escape quoting)', async () => {
+    // Regression: a Notebook note with ñ appeared in activity as
+    // "…/Peque\303\261os Cambios.md" (git core.quotePath quoting), breaking
+    // bucket classification and file preview. It must come back as real UTF-8.
+    const g = await repoWithCommits('log-utf8')
+    const rel = 'memories/notebook/general/Prompts Base/Pequeños Cambios.md'
+    await mkdir(join(g.cwd, 'memories/notebook/general/Prompts Base'), { recursive: true })
+    await writeFile(join(g.cwd, rel), 'x\n')
+    await g.add()
+    await g.commit('notebook: create general/Prompts Base/Pequeños Cambios.md')
+
+    const log = await g.log()
+    expect(log[0].changes.map((c) => c.path)).toEqual([rel])
+    expect(log[0].subject).not.toContain('\\303')
   })
 })

@@ -26,6 +26,7 @@ import {
   type ScannedProject,
 } from './discovery'
 import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
+import { withRepoLock } from './repoLock'
 import { machinePathForLogical, machineSyncedPaths, pathsCollide } from './resolve'
 import {
   emptyConfig,
@@ -83,6 +84,10 @@ async function initStructure(dir: string, remote: string): Promise<void> {
     'memories/user/skills',
     'memories/projects',
     'memories/pinned',
+    // Notebook (#104): cloud-native notes space. Additive/back-compatible — an
+    // older app version simply ignores the extra tree.
+    'memories/notebook/general',
+    'memories/notebook/projects',
   ]
   for (const d of dirs) {
     await mkdir(join(dir, d), { recursive: true })
@@ -125,7 +130,13 @@ export interface RegisterResult {
   alreadyRegistered: boolean
 }
 
-export async function registerMachine(
+export function registerMachine(adapter: PlatformAdapter, name?: string): Promise<RegisterResult> {
+  // Serialize against Notebook saves and config edits so the reset loop below can't
+  // race with (and discard) an unpushed local commit (#104).
+  return withRepoLock(() => registerMachineLocked(adapter, name))
+}
+
+async function registerMachineLocked(
   adapter: PlatformAdapter,
   name?: string,
 ): Promise<RegisterResult> {
@@ -135,6 +146,9 @@ export async function registerMachine(
   const machineId = slug(name ?? hostname())
   if (!machineId) throw new AppError('machine.invalidName', 'Invalid machine name.')
   const machine: Machine = { os: adapter.os(), hostname: hostname(), home: adapter.home() }
+
+  // Protect unpushed Notebook commits from the hard reset in the retry loop (#104).
+  await pushPendingCommits(git)
 
   let alreadyRegistered = false
   const maxAttempts = 6
@@ -177,8 +191,53 @@ export async function registerMachine(
   return { machineId, machine, alreadyRegistered }
 }
 
+/**
+ * Pushes local commits that are ahead of origin before a caller runs
+ * `resetHard(origin)`. The mirror flows discard local state to stay conflict-free,
+ * but the Notebook (#104) introduces genuinely local commits (a save is a local
+ * commit, pushed later) that a hard reset would destroy. This lands them safely
+ * first: fetch, integrate the remote when behind, then push — surfacing a merge
+ * conflict instead of losing data. A no-op when nothing is ahead (the common case
+ * for every pre-Notebook flow), so existing behavior is unchanged.
+ */
+async function pushPendingCommits(git: Git): Promise<void> {
+  await git.fetch()
+  let st = await git.status()
+  if (st.ahead === 0) return
+  const conflict = (files: string[]): AppError =>
+    new AppError('sync.pendingConflict', 'Resolve the pending sync conflicts before continuing.', {
+      files: files.join(', '),
+    })
+  if (st.behind > 0) {
+    const pull = await git.pull()
+    if (!pull.ok) throw conflict(pull.conflicted)
+    st = await git.status()
+  }
+  if (st.ahead > 0) {
+    let push = await git.push()
+    if (!push.ok && push.rejected) {
+      const p2 = await git.pull()
+      if (!p2.ok) throw conflict(p2.conflicted)
+      push = await git.push()
+    }
+    if (!push.ok) {
+      throw new AppError('push.failed', `Push failed: ${push.stderr}`, { stderr: push.stderr })
+    }
+  }
+}
+
 // ── add project / slot (edits config in the repo, with retry) ───────────────
-async function commitConfigChange(
+function commitConfigChange(
+  adapter: PlatformAdapter,
+  message: string,
+  mutate: (config: Config) => void | Promise<void>,
+): Promise<void> {
+  // Serialize against Notebook saves so a save can't land between this flow's
+  // fetch and reset --hard and be silently discarded (#104).
+  return withRepoLock(() => commitConfigChangeLocked(adapter, message, mutate))
+}
+
+async function commitConfigChangeLocked(
   adapter: PlatformAdapter,
   message: string,
   mutate: (config: Config) => void | Promise<void>,
@@ -186,6 +245,8 @@ async function commitConfigChange(
   const dir = workingCopyDir(adapter)
   const git = new Git(dir)
   await ensureIdentity(git)
+  // Protect unpushed Notebook commits from the hard reset below (#104).
+  await pushPendingCommits(git)
   const maxAttempts = 6
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await git.fetch()
