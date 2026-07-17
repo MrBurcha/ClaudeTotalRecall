@@ -41,6 +41,7 @@ export type IconName =
   | 'book'
   | 'folder-plus'
   | 'copy'
+  | 'more-vertical'
   | 'minimize'
   | 'maximize'
   | 'restore'
@@ -188,6 +189,13 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <rect x="9" y="9" width="11" height="11" rx="2" />
       <path d="M5 15V5a2 2 0 0 1 2-2h8" />
+    </>
+  ),
+  'more-vertical': (
+    <>
+      <circle cx="12" cy="5" r="1.4" />
+      <circle cx="12" cy="12" r="1.4" />
+      <circle cx="12" cy="19" r="1.4" />
     </>
   ),
   // Controls for the custom title bar.

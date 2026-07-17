@@ -1,7 +1,8 @@
 import { useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { Icon } from '../../components/Icon'
-import { IconButton } from '../../components/IconButton'
+import { Menu, type MenuAction } from '../../components/Menu'
 import type { NotebookNode, NotebookRoot, NotebookTree } from '../../../core/types'
 
 export interface TreeCtx {
@@ -61,72 +62,44 @@ function InlineInput({
   )
 }
 
-/** Actions revealed on hover for a folder/root: add a note or a subfolder. */
-function AddActions({ ctx, parent }: { ctx: TreeCtx; parent: string }): JSX.Element {
-  const { t } = useTranslation()
-  return (
-    <span className="nb-tree__actions">
-      <IconButton
-        icon="file-plus"
-        size={15}
-        label={t('notebook.newNote')}
-        disabled={ctx.busy}
-        onClick={(e) => {
-          e.stopPropagation()
-          ctx.onStartCreate(parent, 'note')
-        }}
-      />
-      <IconButton
-        icon="folder-plus"
-        size={15}
-        label={t('notebook.newFolder')}
-        disabled={ctx.busy}
-        onClick={(e) => {
-          e.stopPropagation()
-          ctx.onStartCreate(parent, 'folder')
-        }}
-      />
-    </span>
-  )
-}
-
-/** Rename / move / delete, revealed on hover for a node (not roots). */
-function EntryActions({ ctx, path }: { ctx: TreeCtx; path: string }): JSX.Element {
-  const { t } = useTranslation()
-  return (
-    <span className="nb-tree__actions">
-      <IconButton
-        icon="pencil"
-        size={15}
-        label={t('common.edit')}
-        disabled={ctx.busy}
-        onClick={(e) => {
-          e.stopPropagation()
-          ctx.onStartRename(path)
-        }}
-      />
-      <IconButton
-        icon="arrow-right"
-        size={15}
-        label={t('notebook.move')}
-        disabled={ctx.busy}
-        onClick={(e) => {
-          e.stopPropagation()
-          ctx.onStartMove(path)
-        }}
-      />
-      <IconButton
-        icon="trash"
-        size={15}
-        label={t('common.remove')}
-        disabled={ctx.busy}
-        onClick={(e) => {
-          e.stopPropagation()
-          ctx.onDelete(path)
-        }}
-      />
-    </span>
-  )
+/**
+ * The kebab menu actions for a row. Containers (a root or a folder) can add a note
+ * or subfolder; anything but a root can also be renamed, moved or deleted.
+ */
+function rowActions(
+  ctx: TreeCtx,
+  t: TFunction,
+  path: string,
+  kind: 'root' | 'dir' | 'file',
+): MenuAction[] {
+  const actions: MenuAction[] = []
+  if (kind === 'root' || kind === 'dir') {
+    actions.push(
+      {
+        icon: 'file-plus',
+        label: t('notebook.newNote'),
+        onSelect: () => ctx.onStartCreate(path, 'note'),
+      },
+      {
+        icon: 'folder-plus',
+        label: t('notebook.newFolder'),
+        onSelect: () => ctx.onStartCreate(path, 'folder'),
+      },
+    )
+  }
+  if (kind !== 'root') {
+    actions.push(
+      { icon: 'pencil', label: t('notebook.rename'), onSelect: () => ctx.onStartRename(path) },
+      { icon: 'arrow-right', label: t('notebook.move'), onSelect: () => ctx.onStartMove(path) },
+      {
+        icon: 'trash',
+        label: t('common.remove'),
+        danger: true,
+        onSelect: () => ctx.onDelete(path),
+      },
+    )
+  }
+  return actions
 }
 
 /** The create-note/folder input, shown as the first child of its target container. */
@@ -204,10 +177,11 @@ function TreeNode({ node, ctx }: { node: NotebookNode; ctx: TreeCtx }): JSX.Elem
           <span className="grow truncate">{node.name}</span>
         )}
         {!renaming && !ctx.moving && (
-          <span className="nb-tree__hover">
-            {isDir && <AddActions ctx={ctx} parent={node.path} />}
-            <EntryActions ctx={ctx} path={node.path} />
-          </span>
+          <Menu
+            label={t('notebook.actions')}
+            actions={rowActions(ctx, t, node.path, isDir ? 'dir' : 'file')}
+            disabled={ctx.busy}
+          />
         )}
         {dropTarget && <span className="nb-tree__droplabel">{t('notebook.moveHere')}</span>}
       </div>
@@ -246,7 +220,13 @@ function RootRow({ root, ctx }: { root: NotebookRoot; ctx: TreeCtx }): JSX.Eleme
         <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} className="nb-tree__chev" />
         <Icon name={root.kind === 'general' ? 'book' : 'folder'} size={15} />
         <span className="grow truncate">{label}</span>
-        {!ctx.moving && <AddActions ctx={ctx} parent={root.path} />}
+        {!ctx.moving && (
+          <Menu
+            label={t('notebook.actions')}
+            actions={rowActions(ctx, t, root.path, 'root')}
+            disabled={ctx.busy}
+          />
+        )}
         {dropTarget && <span className="nb-tree__droplabel">{t('notebook.moveHere')}</span>}
       </div>
       {open && (

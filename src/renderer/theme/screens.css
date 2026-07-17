@@ -763,7 +763,7 @@
 }
 .notebook {
   display: grid;
-  grid-template-columns: minmax(220px, 300px) 1fr;
+  grid-template-columns: minmax(240px, 340px) 1fr;
   gap: var(--space-4);
   height: min(72vh, 680px);
   min-height: 380px;
@@ -838,18 +838,38 @@
   width: 14px;
   color: var(--muted);
 }
-.nb-tree__hover {
+/* Single kebab per row: one fixed slot (no name squeeze), revealed on hover. */
+.nb-menu__trigger {
+  flex: none;
   display: inline-flex;
-  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
   opacity: 0;
-  transition: opacity var(--dur-fast);
+  transition:
+    opacity var(--dur-fast),
+    background var(--dur-fast),
+    color var(--dur-fast);
 }
-.nb-tree__row:hover .nb-tree__hover {
+.nb-tree__row:hover .nb-menu__trigger,
+.nb-menu__trigger--open {
   opacity: 1;
 }
-.nb-tree__actions {
-  display: inline-flex;
-  gap: 2px;
+.nb-menu__trigger:hover,
+.nb-menu__trigger--open {
+  background: var(--panel-3, var(--panel-2));
+  color: var(--text);
+}
+.nb-menu__trigger:disabled {
+  cursor: default;
+  opacity: 0;
 }
 .nb-tree__input {
   flex: 1;
@@ -865,6 +885,49 @@
 .nb-tree__droplabel {
   font-size: var(--text-xs);
   color: var(--accent);
+}
+
+/* Kebab dropdown (portal, fixed position, above the tree's overflow). */
+.nb-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.nb-menu {
+  min-width: 168px;
+  max-width: 260px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--panel-3, var(--panel-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.45));
+}
+.nb-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.nb-menu__item:hover {
+  background: var(--panel-2);
+}
+.nb-menu__item--danger {
+  color: var(--danger);
+}
+.nb-menu__item--danger:hover {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
 }
 
 /* Detail (viewer / editor) */

@@ -447,6 +447,8 @@
     "notePlaceholder": "nombre-de-nota",
     "folderPlaceholder": "nombre-de-carpeta",
     "emptyFolder": "Vacío — agregá una nota o carpeta.",
+    "rename": "Renombrar",
+    "actions": "Acciones",
     "move": "Mover",
     "moveHere": "Mover acá",
     "movingBanner": "Moviendo \"{{name}}\" — elegí una carpeta de destino",

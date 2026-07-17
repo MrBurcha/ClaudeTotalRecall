@@ -447,6 +447,8 @@
     "notePlaceholder": "note-name",
     "folderPlaceholder": "folder-name",
     "emptyFolder": "Empty — add a note or folder.",
+    "rename": "Rename",
+    "actions": "Actions",
     "move": "Move",
     "moveHere": "Move here",
     "movingBanner": "Moving \"{{name}}\" — pick a destination folder",
