@@ -7,6 +7,39 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-07-17
+
+### Added
+
+- **Notebook — a cloud-synced space for notes & prompts (#104)**: a new "Cuaderno /
+  Notebook" section in the left nav — a two-pane tree + viewer/editor for free-form
+  notes and prompts, stored in your memories repo and organized by project plus a
+  shared "General" root.
+  - **Cloud-native.** Notes live only under `memories/notebook/` in the repo — never
+    mirrored to `~/.claude`, no per-machine paths. Project containers are the union of
+    your configured projects and folders already present on disk, so renaming or
+    deleting a project never loses its notes.
+  - **Viewer + editor.** Markdown preview (or plain text by extension) with a one-click
+    **Copy**, and a full-height source editor. Create, rename, move (via a "Move to…"
+    picker) and delete notes and folders; per-row actions live in a kebab (⋯) menu so
+    long names are never crowded. The detail pane always uses the full width and height.
+  - **Saves are local commits** — no push per keystroke. The normal sync cycle pushes
+    them, and the existing per-file conflict resolution already covers notebook paths.
+    A repo-wide mutex plus path-scoped commits keep a save from ever interleaving with,
+    and being discarded by, a config edit's `reset --hard`.
+  - Notebook edits now appear in **Recent activity** ("Notebook › General / <project>").
+  - Follow-ups tracked in #105–#111, #113 and #114.
+
+### Fixed
+
+- **Non-ASCII file names (ñ, accents) broke the activity feed and file preview**: git's
+  default `core.quotePath` octal-escapes and double-quotes non-ASCII bytes in
+  `git log`/`diff` output (e.g. `Peque\303\261os Cambios.md`), so those files fell into
+  "Other", showed the escaped name, and had no preview — even though the file on disk was
+  fine. The app now runs git with `core.quotePath=false` and decodes command output as
+  UTF-8 in a single pass (instead of per-chunk, which could split a multi-byte character),
+  so such names are handled verbatim everywhere: activity, conflicts and preview.
+
 ## [0.9.9] - 2026-07-10
 
 ### Fixed
