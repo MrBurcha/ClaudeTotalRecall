@@ -13,6 +13,7 @@ export type MemoryLocation =
   | { bucket: 'project'; project: string; slot: string; rest: string }
   | { bucket: 'user'; slot: string; rest: string }
   | { bucket: 'pinned'; pin: string }
+  | { bucket: 'notebook'; scope: 'general' | 'project'; project?: string; rest: string }
   | { bucket: 'unknown'; path: string }
 
 /**
@@ -44,6 +45,21 @@ export function parseMemoryPath(repoRelPath: string): MemoryLocation {
       // pinned/<pin…>
       if (segs.length < 2) return unknown
       return { bucket: 'pinned', pin: segs.slice(1).join('/') }
+    case 'notebook':
+      // notebook/general[/rest…] or notebook/projects/<project>[/rest…] (#104)
+      if (segs[1] === 'projects') {
+        if (segs.length < 3) return unknown
+        return {
+          bucket: 'notebook',
+          scope: 'project',
+          project: segs[2],
+          rest: segs.slice(3).join('/'),
+        }
+      }
+      if (segs[1] === 'general') {
+        return { bucket: 'notebook', scope: 'general', rest: segs.slice(2).join('/') }
+      }
+      return unknown
     default:
       return unknown
   }

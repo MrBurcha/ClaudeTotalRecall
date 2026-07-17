@@ -550,6 +550,8 @@
     "bucketUser": "Nivel de usuario",
     "bucketPinned": "Archivos fijados",
     "bucketUnknown": "Otros",
+    "bucketNotebook": "Cuaderno",
+    "notebookChanged": "Cuaderno actualizado",
     "sourceUpdated": "Se actualizó el origen {{slot}} en {{project}}",
     "sourceRemoved": "Se quitó el origen {{slot}} de {{project}}",
     "projectCreated": "Se creó el proyecto {{name}}",

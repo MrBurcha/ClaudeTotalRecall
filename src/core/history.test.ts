@@ -79,6 +79,15 @@ describe('classifyCommit', () => {
   it('falls back to `other` for an unrecognized prefixed message', () => {
     expect(classifyCommit(`${PREFIX}something brand new`)).toEqual({ type: 'other' })
   })
+
+  it('classifies Notebook commits (their own `notebook:` prefix, no CTR prefix)', () => {
+    expect(classifyCommit('notebook: create general/idea.md')).toEqual({ type: 'notebook' })
+    expect(classifyCommit('notebook: update general/idea.md')?.type).toBe('notebook')
+    expect(classifyCommit('notebook: move general/a.md -> general/sub/a.md')?.type).toBe('notebook')
+    expect(classifyCommit('notebook: create folder general/prompts')?.type).toBe('notebook')
+    // A message that merely mentions the word must NOT be treated as a Notebook commit.
+    expect(classifyCommit('chore: notebook cleanup')).toBeNull()
+  })
 })
 
 describe('Git.log', () => {

@@ -550,6 +550,8 @@
     "bucketUser": "User level",
     "bucketPinned": "Pinned files",
     "bucketUnknown": "Other",
+    "bucketNotebook": "Notebook",
+    "notebookChanged": "Notebook updated",
     "sourceUpdated": "Updated source {{slot}} in {{project}}",
     "sourceRemoved": "Removed source {{slot}} from {{project}}",
     "projectCreated": "Created project {{name}}",

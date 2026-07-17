@@ -143,6 +143,7 @@ export type HistoryType =
   | 'pin'
   | 'unpin'
   | 'conflicts'
+  | 'notebook'
   | 'other'
 
 /** A single file touched by a commit, as reported by `git log --name-status`. */

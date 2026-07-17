@@ -24,6 +24,10 @@ export interface ClassifiedCommit {
  * generic `[set ]<proj>/<slot> on <id>` catch, which would otherwise swallow them.
  */
 export function classifyCommit(subject: string): ClassifiedCommit | null {
+  // Notebook (#104) commits carry their own `notebook: <verb> <path>` subject (kept
+  // out of the CTR prefix so git log stays readable). Surface them in the ledger; the
+  // changed files come from the commit's name-status, so no fields are needed here.
+  if (/^notebook: /.test(subject)) return { type: 'notebook' }
   if (!subject.startsWith(PREFIX)) return null // merge / external commit
   const body = subject.slice(PREFIX.length).trim()
   if (body === 'initial structure') return null // onboarding seed → noise
