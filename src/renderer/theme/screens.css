@@ -775,6 +775,10 @@
 .notebook {
   display: grid;
   grid-template-columns: minmax(240px, 340px) 1fr;
+  /* Explicit single row that fills the flex container, so BOTH panes always take
+     the full height — even when the detail pane is empty or holds a flex textarea
+     (which has no intrinsic height and would otherwise collapse). */
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--space-4);
   flex: 1;
   min-height: 0;
