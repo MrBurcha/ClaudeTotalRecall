@@ -97,7 +97,10 @@ export class Git {
 
   /** Ejecuta git crudo; no tira por code != 0. */
   async raw(args: string[], input?: string): Promise<ExecResult> {
-    return run(this.bin, args, { cwd: this.cwd, input })
+    // core.quotePath=false: emit non-ASCII paths (filenames with ñ, accents, …)
+    // verbatim as UTF-8 instead of git's octal-escaped `"\NNN"` quoting, so path
+    // parsing (activity feed, conflicts) and file lookup work for those names.
+    return run(this.bin, ['-c', 'core.quotePath=false', ...args], { cwd: this.cwd, input })
   }
 
   /** Ejecuta git y tira GitError si code != 0; devuelve stdout trimmeado. */

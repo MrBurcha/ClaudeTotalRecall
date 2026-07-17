@@ -27,12 +27,21 @@ export function run(bin: string, args: string[], opts: ExecOptions = {}): Promis
 
   return new Promise((resolve, reject) => {
     const child = spawn(resolved, args, { cwd: opts.cwd, env })
-    let stdout = ''
-    let stderr = ''
-    child.stdout.on('data', (d) => (stdout += String(d)))
-    child.stderr.on('data', (d) => (stderr += String(d)))
+    // Collect raw Buffers and decode once: decoding per-chunk (`String(d)`) splits
+    // a multi-byte UTF-8 char that straddles a chunk boundary into replacement
+    // chars, which corrupts non-ASCII paths/content (e.g. a filename with ñ).
+    const outChunks: Buffer[] = []
+    const errChunks: Buffer[] = []
+    child.stdout.on('data', (d: Buffer) => outChunks.push(d))
+    child.stderr.on('data', (d: Buffer) => errChunks.push(d))
     child.on('error', reject)
-    child.on('close', (code) => resolve({ code: code ?? -1, stdout, stderr }))
+    child.on('close', (code) =>
+      resolve({
+        code: code ?? -1,
+        stdout: Buffer.concat(outChunks).toString('utf8'),
+        stderr: Buffer.concat(errChunks).toString('utf8'),
+      }),
+    )
     if (opts.input !== undefined) {
       child.stdin.write(opts.input)
       child.stdin.end()
