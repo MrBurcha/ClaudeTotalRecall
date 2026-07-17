@@ -769,6 +769,10 @@
 }
 .content--fill .view {
   max-width: none;
+  /* Drop the centering `margin: 0 auto`: in this flex column an auto cross-axis
+     margin makes the view shrink-to-content (narrow when empty or editing, wide
+     only with long markdown). margin:0 lets align-items:stretch fill the width. */
+  margin: 0;
   flex: 1;
   min-height: 0;
 }
