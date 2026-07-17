@@ -9,7 +9,8 @@
     "edit": "Editar",
     "remove": "Quitar",
     "retry": "Volver a revisar",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "loading": "Cargando…"
   },
   "titlebar": {
     "minimize": "Minimizar",
@@ -20,6 +21,7 @@
   "nav": {
     "home": "Sincronización",
     "projects": "Proyectos",
+    "notebook": "Cuaderno",
     "settings": "Ajustes"
   },
   "sidebar": {
@@ -159,6 +161,7 @@
     },
     "goHome": "Ir a Sincronización",
     "goProjects": "Ir a Proyectos",
+    "goNotebook": "Ir al Cuaderno",
     "goMachines": "Ir a Máquinas",
     "goSettings": "Ir a Ajustes",
     "newProject": "Nuevo proyecto",
@@ -240,6 +243,16 @@
     },
     "plan": {
       "expired": "El plan expiró; vuelve a generarlo (la vista previa ya no es válida)."
+    },
+    "notebook": {
+      "invalidName": "Nombre de Cuaderno inválido: \"{{value}}\".",
+      "exists": "Ya existe una entrada del Cuaderno en \"{{value}}\".",
+      "notFound": "No hay ninguna entrada del Cuaderno en \"{{value}}\".",
+      "invalidMove": "No se puede mover una entrada dentro de sí misma.",
+      "repoConflict": "Resolvé los conflictos de sincronización pendientes antes de editar el Cuaderno."
+    },
+    "sync": {
+      "pendingConflict": "Resolvé los conflictos de sincronización pendientes antes de continuar."
     }
   },
   "preflight": {
@@ -423,6 +436,32 @@
       "pickInstead": "Elegir una carpeta",
       "createEmptyInstead": "Crear vacío"
     }
+  },
+  "notebook": {
+    "eyebrow": "Biblioteca",
+    "title": "Cuaderno",
+    "sub": "Notas y prompts guardados en tu repo de memoria, organizados por proyecto y un espacio General compartido. Se guardan local; se sincronizan con el resto.",
+    "general": "General",
+    "newNote": "Nueva nota",
+    "newFolder": "Nueva carpeta",
+    "notePlaceholder": "nombre-de-nota",
+    "folderPlaceholder": "nombre-de-carpeta",
+    "emptyFolder": "Vacío — agregá una nota o carpeta.",
+    "move": "Mover",
+    "moveHere": "Mover acá",
+    "movingBanner": "Moviendo \"{{name}}\" — elegí una carpeta de destino",
+    "copy": "Copiar",
+    "copied": "Copiado al portapapeles.",
+    "saved": "Nota guardada.",
+    "missing": "Esta nota ya no existe.",
+    "pickTitle": "Seleccioná una nota",
+    "pickHint": "Elegí una nota del árbol para verla o editarla.",
+    "unsynced_one": "{{count}} sin sincronizar",
+    "unsynced_other": "{{count}} sin sincronizar",
+    "notConnected": "Conectá tu repo de memoria primero",
+    "notConnectedHint": "El Cuaderno vive en tu repo sincronizado. Configuralo en Ajustes para empezar a escribir.",
+    "deleteTitle": "Eliminar entrada",
+    "deleteBody": "¿Eliminar \"{{name}}\"? Se quita del Cuaderno en todas las máquinas tras la próxima sincronización."
   },
   "conflicts": {
     "title_one": "Resuelve {{count}} conflicto",

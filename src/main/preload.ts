@@ -3,6 +3,8 @@ import type {
   Config,
   FilePreview,
   HistoryEntry,
+  NotebookFile,
+  NotebookTree,
   Plan,
   PlanAction,
   PreflightResult,
@@ -102,6 +104,24 @@ const api = {
       slots: number
       created: number
     }>,
+
+  // Notebook (#104): tree + read/write/organize. Mutations commit locally; the
+  // normal sync pushes them later.
+  notebookTree: () => ipcRenderer.invoke('notebook:tree') as Promise<NotebookTree>,
+  notebookRead: (relPath: string) =>
+    ipcRenderer.invoke('notebook:read', relPath) as Promise<NotebookFile>,
+  notebookCreateNote: (relPath: string, content?: string) =>
+    ipcRenderer.invoke('notebook:createNote', { relPath, content }) as Promise<void>,
+  notebookWrite: (relPath: string, content: string) =>
+    ipcRenderer.invoke('notebook:write', { relPath, content }) as Promise<void>,
+  notebookCreateFolder: (relPath: string) =>
+    ipcRenderer.invoke('notebook:createFolder', relPath) as Promise<void>,
+  notebookRename: (relPath: string, newName: string) =>
+    ipcRenderer.invoke('notebook:rename', { relPath, newName }) as Promise<void>,
+  notebookMove: (relPath: string, toDir: string) =>
+    ipcRenderer.invoke('notebook:move', { relPath, toDir }) as Promise<void>,
+  notebookDelete: (relPath: string) =>
+    ipcRenderer.invoke('notebook:delete', relPath) as Promise<void>,
 
   filePreview: (repoRelPath: string) =>
     ipcRenderer.invoke('file:preview', repoRelPath) as Promise<FilePreview>,

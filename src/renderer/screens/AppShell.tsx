@@ -6,6 +6,7 @@ import { canSync, conflicts, needsOnboarding } from '../state/selectors'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 import { ModalHost } from './ModalHost'
+import { Notebook } from './Notebook'
 import { Projects } from './Projects'
 import { Settings } from './Settings'
 import { Sidebar } from './Sidebar'
@@ -59,6 +60,7 @@ export function AppShell(): JSX.Element {
       <main className="content">
         {state.route === 'home' && <SyncHome />}
         {state.route === 'projects' && <Projects />}
+        {state.route === 'notebook' && <Notebook />}
         {state.route === 'settings' && <Settings />}
       </main>
       {showWizard && <OnboardingWizard />}

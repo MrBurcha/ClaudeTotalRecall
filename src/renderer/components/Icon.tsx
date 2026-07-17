@@ -37,6 +37,10 @@ export type IconName =
   | 'file-plus'
   | 'file-diff'
   | 'file-minus'
+  | 'file-text'
+  | 'book'
+  | 'folder-plus'
+  | 'copy'
   | 'minimize'
   | 'maximize'
   | 'restore'
@@ -160,6 +164,30 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
       <path d="M14 3v5h5M9.5 14.5h5" />
+    </>
+  ),
+  'file-text': (
+    <>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h6M9 9h1" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M5 4a1 1 0 0 1 1-1h13v16H6a1 1 0 0 0-1 1z" />
+      <path d="M5 20a1 1 0 0 1 1-1h13" />
+    </>
+  ),
+  'folder-plus': (
+    <>
+      <path d="M3 7a2 2 0 0 1 2-2h3.5l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M12 11v4M10 13h4" />
+    </>
+  ),
+  copy: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h8" />
     </>
   ),
   // Controls for the custom title bar.

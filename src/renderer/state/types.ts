@@ -10,7 +10,7 @@ import type {
 import type { UpdateState } from '../../core/releaseCheck'
 
 /** Navigable sections of the steady-state (the wizard is a separate takeover). */
-export type Route = 'home' | 'projects' | 'settings'
+export type Route = 'home' | 'projects' | 'notebook' | 'settings'
 export type Theme = 'dark' | 'light'
 export type ToastKind = 'ok' | 'err' | 'info'
 

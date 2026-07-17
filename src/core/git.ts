@@ -215,6 +215,21 @@ export class Git {
     return { committed: true }
   }
 
+  /**
+   * Commit LIMITED to a pathspec: records only changes under `paths`, ignoring
+   * anything else staged in the index (a git "partial commit"). Keeps a Notebook
+   * save from sweeping in a concurrent flow's staged changes. No-op if the pathspec
+   * has nothing to commit.
+   */
+  async commitPaths(message: string, paths: string[]): Promise<CommitResult> {
+    const r = await this.raw(['commit', '-m', message, '--', ...paths])
+    if (r.code === 0) return { committed: true }
+    if (/nothing to commit|no changes added|did not match/i.test(`${r.stdout}\n${r.stderr}`)) {
+      return { committed: false }
+    }
+    throw new GitError(`git commit -- falló (code ${r.code}): ${r.stderr.trim()}`, r)
+  }
+
   /** push; detecta rechazo por non-fast-forward para el retry del registro. */
   async push(args: string[] = []): Promise<PushResult> {
     const r = await this.raw(['push', ...args])
