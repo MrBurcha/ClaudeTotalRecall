@@ -11,7 +11,7 @@ export type FlowDirection = 'up' | 'down'
  * falls back to a static state. rAF cleanup on every change → safe under StrictMode.
  */
 export function useConstellationMotion(
-  groupRef: RefObject<SVGGElement>,
+  groupRef: RefObject<SVGGElement | null>,
   link: ConstLink | null,
   direction: FlowDirection | null,
   enabled: boolean,
