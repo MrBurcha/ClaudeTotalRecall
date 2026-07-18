@@ -7,7 +7,7 @@ const FOCUSABLE =
  * Atrapa el foco dentro de `ref` mientras `active`. Enfoca el primer elemento al
  * montar y devuelve el foco al elemento previo al desmontar. Ciclado con Tab/Shift+Tab.
  */
-export function useFocusTrap(ref: RefObject<HTMLElement>, active = true): void {
+export function useFocusTrap(ref: RefObject<HTMLElement | null>, active = true): void {
   useEffect(() => {
     if (!active) return
     const root = ref.current
