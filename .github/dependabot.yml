@@ -1,22 +1,21 @@
-# Dependabot version updates. Security alerts/updates are enabled separately in
-# the repo's security settings.
+# Dependabot is report-only: it still resolves the dependency graph and powers
+# security ALERTS (enabled in the repo's security settings), but it never opens
+# version-update PRs — `open-pull-requests-limit: 0` disables them. Actionable
+# updates (majors, minors/patches, security) are surfaced instead as a single
+# weekly issue by .github/workflows/deps-report.yml (npm outdated + npm audit).
+# Rationale: the automatic per-dependency PRs were noise; a rolling digest is
+# reviewed on our own cadence. Dependabot security UPDATES (auto-PRs for CVEs)
+# are turned OFF in repo settings so nothing here opens a PR.
 version: 2
 updates:
-  # npm dependencies (app + CLI + toolchain). Minor/patch updates are grouped into
-  # a single weekly PR to keep the noise down; majors come as their own PRs.
   - package-ecosystem: npm
     directory: '/'
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      npm-minor-patch:
-        update-types:
-          - minor
-          - patch
+    open-pull-requests-limit: 0
 
-  # Keep the GitHub Actions used by CI and the release workflow up to date.
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
