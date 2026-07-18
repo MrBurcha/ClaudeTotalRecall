@@ -48,7 +48,9 @@ function handle<A extends unknown[], R>(
     try {
       return await fn(event, ...(args as A))
     } catch (e) {
-      if (e instanceof AppError) throw new Error(encodeAppError(e))
+      // Attach the original as `cause` so the error chain survives locally;
+      // only Error.message crosses the IPC boundary, so the wire format is unchanged.
+      if (e instanceof AppError) throw new Error(encodeAppError(e), { cause: e })
       throw e
     }
   })

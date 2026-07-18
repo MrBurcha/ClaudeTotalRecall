@@ -155,7 +155,7 @@ async function listSubdirNames(absDir: string): Promise<string[]> {
  */
 export async function notebookTree(adapter: PlatformAdapter): Promise<NotebookTree> {
   const root = notebookRoot(adapter)
-  let configured: string[] = []
+  let configured: string[]
   try {
     configured = Object.keys((await loadRepoConfig(adapter)).projects)
   } catch {
