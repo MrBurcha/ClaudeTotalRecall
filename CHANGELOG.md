@@ -7,6 +7,21 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-07-18
+
+### Changed
+
+- **Dependencies modernized to their latest majors.** React 18 → 19, ESLint 8 → 10
+  (migrated from the legacy `.eslintrc` to flat config), and zod 3 → 4, alongside
+  minor/patch bumps across the toolchain (electron, prettier, i18next, react-i18next,
+  typescript-eslint, happy-dom) and the CI/release GitHub Actions (setup-node v7,
+  github-script v9). No user-facing behaviour changes — the app builds and runs on the
+  new stack. TypeScript 7, Vite 8 and @vitejs/plugin-react 6 are held back until their
+  upstreams support them, and `@types/node` is pinned to the Node bundled by Electron.
+- **Dependabot is now report-only.** Version-update PRs are disabled; a weekly scheduled
+  workflow folds `npm outdated` and `npm audit` into a single rolling "dependency
+  dashboard" issue instead of opening a stream of per-dependency PRs.
+
 ## [0.10.1] - 2026-07-17
 
 ### Added
@@ -537,7 +552,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.9.3...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.10.2...HEAD
+[0.10.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.10.2
 [0.9.8]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.8
 [0.9.7]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.7
 [0.9.6]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.6
