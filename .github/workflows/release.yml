@@ -142,11 +142,63 @@ jobs:
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
 
-  # Both jobs upload their binaries to the Release as a draft (labeled inline via
-  # gh release upload's `file#label` syntax); this final job assembles the notes
-  # from the CHANGELOG and publishes it once, with all the assets present.
+  windows:
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      # See the macos job for why this keys on Electron/electron-builder's
+      # resolved versions rather than hashFiles('package-lock.json'). Runs under
+      # bash (Git Bash ships on windows-latest) so the jq/redirect syntax matches
+      # the other jobs verbatim.
+      - name: Resolve Electron/electron-builder versions for cache key
+        id: versions
+        shell: bash
+        run: |
+          echo "electron=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+          echo "builder=$(jq -r '.packages["node_modules/electron-builder"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+      - name: Cache Electron + electron-builder binaries
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: ${{ runner.os }}-electron-${{ steps.versions.outputs.electron }}-${{ steps.versions.outputs.builder }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+      - run: npm ci
+      - run: npm run build:app
+      # --publish never + manual upload, same rationale as the mac/linux jobs
+      # (label support; no electron-updater latest-*.yml manifest). Builds the
+      # unsigned NSIS installer + portable .exe (see electron-builder.yml win block).
+      - name: Build NSIS installer + portable (not published yet)
+        run: npx electron-builder --win --config electron-builder.yml --publish never
+      - name: Upload Windows binaries to the tag's draft Release
+        shell: bash
+        run: |
+          # NSIS emits "…Setup <version>.exe"; the portable target is named
+          # "…-<version>-portable.exe" (electron-builder.yml portable.artifactName),
+          # so the two globs never overlap.
+          SETUP=$(ls release/*Setup*.exe)
+          PORTABLE=$(ls release/*-portable.exe)
+          gh release upload "$TAG" \
+            "$SETUP#Windows — installer (.exe)" \
+            "$PORTABLE#Windows — portable (.exe)" \
+            --clobber -R "$REPO"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+
+  # All three build jobs upload their binaries to the Release as a draft (labeled
+  # inline via gh release upload's `file#label` syntax); this final job assembles
+  # the notes from the CHANGELOG and publishes it once, with all the assets present.
   publish:
-    needs: [macos, linux]
+    needs: [macos, linux, windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

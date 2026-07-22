@@ -34,10 +34,29 @@ async function cloneConfigured(remote: string, dir: string): Promise<Git> {
   return g
 }
 
+// Force core.autocrlf=false for EVERY git invocation in this file — including the
+// clone-time checkout — via GIT_CONFIG_* env vars (run() forwards process.env to git).
+// Git for Windows defaults autocrlf to true, so without this a clone materializes the
+// seeded '…\n' files as CRLF; they then read as "modified" against the LF index,
+// producing false-dirty trees and phantom merge conflicts that break these byte-exact
+// integration tests. Setting it via local `git config` (post-clone) is too late — the
+// checkout already happened. Restored in afterAll so other files are unaffected.
+const savedGitConfigEnv: Record<string, string | undefined> = {}
+const GIT_CONFIG_ENV_KEYS = ['GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0']
+
 beforeAll(async () => {
+  for (const k of GIT_CONFIG_ENV_KEYS) savedGitConfigEnv[k] = process.env[k]
+  process.env.GIT_CONFIG_COUNT = '1'
+  process.env.GIT_CONFIG_KEY_0 = 'core.autocrlf'
+  process.env.GIT_CONFIG_VALUE_0 = 'false'
   root = await mkdtemp(join(tmpdir(), 'claude-total-recall-git-'))
 })
 afterAll(async () => {
+  for (const k of GIT_CONFIG_ENV_KEYS) {
+    const v = savedGitConfigEnv[k]
+    if (v === undefined) delete process.env[k]
+    else process.env[k] = v
+  }
   await rm(root, { recursive: true, force: true })
 })
 

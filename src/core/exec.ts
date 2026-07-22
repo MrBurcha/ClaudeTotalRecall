@@ -25,8 +25,14 @@ export function run(bin: string, args: string[], opts: ExecOptions = {}): Promis
   const resolved = findExecutable(bin, envPath) ?? bin
   const env: NodeJS.ProcessEnv = { ...process.env, ...opts.env, PATH: envPath }
 
+  // On Windows, spawn() without a shell cannot launch a .cmd/.bat wrapper.
+  // findExecutable resolves git/gh to their .exe (PATHEXT puts .EXE before .CMD),
+  // so this only kicks in for a batch shim; the common .exe path keeps shell:false
+  // and its exact-quoting guarantee.
+  const needsShell = process.platform === 'win32' && /\.(cmd|bat)$/i.test(resolved)
+
   return new Promise((resolve, reject) => {
-    const child = spawn(resolved, args, { cwd: opts.cwd, env })
+    const child = spawn(resolved, args, { cwd: opts.cwd, env, shell: needsShell })
     // Collect raw Buffers and decode once: decoding per-chunk (`String(d)`) splits
     // a multi-byte UTF-8 char that straddles a chunk boundary into replacement
     // chars, which corrupts non-ASCII paths/content (e.g. a filename with ñ).

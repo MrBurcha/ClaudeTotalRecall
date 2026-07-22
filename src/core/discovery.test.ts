@@ -17,6 +17,13 @@ import {
 
 const FAKE_HOME = '/tmp/claude-total-recall-fake-home'
 
+// Some cases are POSIX-host-specific: symlink creation needs elevated privileges on
+// Windows, and the cross-machine remap (remapPath / isUnderClaudeProjects) works off
+// the local path separator against POSIX reference homes — cross-OS remap is a manual
+// fallback by design (not auto), so these validate POSIX behavior on the POSIX CI and
+// are skipped on a Windows host.
+const isWindows = process.platform === 'win32'
+
 const dirs: string[] = []
 
 async function tmp(): Promise<string> {
@@ -113,17 +120,20 @@ describe('discoverProjectSources', () => {
     expect(p.slots.map((s) => s.slot)).toEqual(['CLAUDE.md'])
   })
 
-  it('follows symlinks when recognizing (a symlinked dir is accepted)', async () => {
-    const base = await tmp()
-    const proj = join(base, 'p')
-    await mkdir(join(proj, 'realcmds'), { recursive: true })
-    await symlink(join(proj, 'realcmds'), join(proj, 'commands'))
+  it.skipIf(isWindows)(
+    'follows symlinks when recognizing (a symlinked dir is accepted)',
+    async () => {
+      const base = await tmp()
+      const proj = join(base, 'p')
+      await mkdir(join(proj, 'realcmds'), { recursive: true })
+      await symlink(join(proj, 'realcmds'), join(proj, 'commands'))
 
-    const p = await discoverProjectSources(proj, emptyConfig(), linuxAdapter(), 'this')
+      const p = await discoverProjectSources(proj, emptyConfig(), linuxAdapter(), 'this')
 
-    expect(p.slots.map((s) => s.slot)).toContain('commands')
-    expect(p.slots.find((s) => s.slot === 'commands')?.kind).toBe('dir')
-  })
+      expect(p.slots.map((s) => s.slot)).toContain('commands')
+      expect(p.slots.find((s) => s.slot === 'commands')?.kind).toBe('dir')
+    },
+  )
 
   it('marks a candidate that overlaps an already-synced path as excluded', async () => {
     const base = await tmp()
@@ -375,7 +385,7 @@ describe('correctProjectFolderPick', () => {
     expect(c.reason).toBe('noChild')
   })
 
-  it('follows a symlinked <slot> child', async () => {
+  it.skipIf(isWindows)('follows a symlinked <slot> child', async () => {
     const base = await tmp()
     const proj = join(base, 'p')
     await mkdir(join(proj, 'realmem'), { recursive: true })
@@ -416,7 +426,7 @@ describe('correctProjectFolderPick', () => {
 })
 
 describe('remapPath', () => {
-  it('swaps the reference home prefix for the target home', () => {
+  it.skipIf(isWindows)('swaps the reference home prefix for the target home', () => {
     expect(remapPath('/Users/x/.claude/projects/foo/memory', '/Users/x', '/home/y')).toBe(
       '/home/y/.claude/projects/foo/memory',
     )
@@ -493,26 +503,29 @@ describe('proposeMachineMapping', () => {
     }
   }
 
-  it('remaps to the target home and confirms an existing path on disk', async () => {
-    const home = await tmp()
-    const real = join(home, '.claude/projects/demo/memory')
-    await mkdir(real, { recursive: true })
+  it.skipIf(isWindows)(
+    'remaps to the target home and confirms an existing path on disk',
+    async () => {
+      const home = await tmp()
+      const real = join(home, '.claude/projects/demo/memory')
+      await mkdir(real, { recursive: true })
 
-    const proposal = await proposeMachineMapping(
-      'demo',
-      'lin',
-      baseConfig(home),
-      linuxAdapter(home),
-    )
-    const mem = proposal.slots.find((s) => s.slot === 'memory')!
-    expect(mem.status).toBe('ok')
-    expect(mem.proposedPath).toBe(real)
-    expect(mem.exists).toBe(true)
-    expect(mem.referenceMachine).toBe('mac')
-    expect(mem.alreadyConfigured).toBe(false)
-  })
+      const proposal = await proposeMachineMapping(
+        'demo',
+        'lin',
+        baseConfig(home),
+        linuxAdapter(home),
+      )
+      const mem = proposal.slots.find((s) => s.slot === 'memory')!
+      expect(mem.status).toBe('ok')
+      expect(mem.proposedPath).toBe(real)
+      expect(mem.exists).toBe(true)
+      expect(mem.referenceMachine).toBe('mac')
+      expect(mem.alreadyConfigured).toBe(false)
+    },
+  )
 
-  it('reports a remapped path that is missing on disk', async () => {
+  it.skipIf(isWindows)('reports a remapped path that is missing on disk', async () => {
     const home = await tmp()
     const proposal = await proposeMachineMapping(
       'demo',
@@ -546,20 +559,23 @@ describe('proposeMachineMapping', () => {
     expect(mem.alreadyConfigured).toBe(true)
   })
 
-  it('marks a slot whose reference path lives under ~/.claude/projects as claudeManaged', async () => {
-    const home = await tmp()
-    // baseConfig's reference path is /Users/x/.claude/projects/demo/memory (mac home /Users/x).
-    const proposal = await proposeMachineMapping(
-      'demo',
-      'lin',
-      baseConfig(home),
-      linuxAdapter(home),
-    )
-    const mem = proposal.slots.find((s) => s.slot === 'memory')!
-    // Claude names these dirs per-machine, so the home-prefix remap can't be trusted:
-    // the UI must let the user pick the local dir instead.
-    expect(mem.claudeManaged).toBe(true)
-  })
+  it.skipIf(isWindows)(
+    'marks a slot whose reference path lives under ~/.claude/projects as claudeManaged',
+    async () => {
+      const home = await tmp()
+      // baseConfig's reference path is /Users/x/.claude/projects/demo/memory (mac home /Users/x).
+      const proposal = await proposeMachineMapping(
+        'demo',
+        'lin',
+        baseConfig(home),
+        linuxAdapter(home),
+      )
+      const mem = proposal.slots.find((s) => s.slot === 'memory')!
+      // Claude names these dirs per-machine, so the home-prefix remap can't be trusted:
+      // the UI must let the user pick the local dir instead.
+      expect(mem.claudeManaged).toBe(true)
+    },
+  )
 
   it('does not mark a non-Claude reference path as claudeManaged', async () => {
     const home = await tmp()

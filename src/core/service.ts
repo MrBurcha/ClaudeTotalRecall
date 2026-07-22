@@ -1,4 +1,4 @@
-import { mkdir, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { hostname } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import type { PlatformAdapter } from '../platform'
@@ -95,6 +95,29 @@ async function initStructure(dir: string, remote: string): Promise<void> {
   }
   // Defense in depth, even though the Plan guard already excludes secrets.
   await writeFile(join(dir, '.gitignore'), '.DS_Store\n.credentials.json\n*.jsonl\n.claude.json\n')
+  await ensureGitAttributes(dir)
+}
+
+/**
+ * `* -text`: git stores every file's bytes verbatim and never converts line
+ * endings. Without it, a Windows machine (or core.autocrlf=true) rewrites LF↔CRLF
+ * on checkout, so a byte-identical file hashes differently across machines —
+ * phantom "overwrite" churn and false PlanDriftError. Idempotent: only writes when
+ * the attribute is missing, so an already-initialized working copy is backfilled.
+ */
+async function ensureGitAttributes(dir: string): Promise<void> {
+  const file = join(dir, '.gitattributes')
+  try {
+    const existing = await readFile(file, 'utf8')
+    if (/^\s*\*\s+-text\s*$/m.test(existing)) return
+    await writeFile(
+      file,
+      existing.endsWith('\n') ? `${existing}* -text\n` : `${existing}\n* -text\n`,
+    )
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+    await writeFile(file, '* -text\n')
+  }
 }
 
 export async function connectRepo(
@@ -119,6 +142,20 @@ export async function connectRepo(
     await git.commit('Claude Total Recall: initial structure')
     await git.push(['-u', 'origin', 'HEAD'])
     return { initialized: true }
+  }
+  // Backfill .gitattributes on repos initialized before it existed, so Windows
+  // machines joining an older working copy still get byte-verbatim EOL handling.
+  // pushPendingCommits pulls-then-pushes safely if origin has advanced; if it
+  // can't (offline/conflict) the local commit rides the next sync.
+  if (!(await pathExists(join(dir, '.gitattributes')))) {
+    await ensureGitAttributes(dir)
+    await git.add()
+    await git.commit('Claude Total Recall: add .gitattributes (verbatim EOL)')
+    try {
+      await pushPendingCommits(git)
+    } catch {
+      // best-effort: the committed .gitattributes propagates on the next sync
+    }
   }
   return { initialized: false }
 }

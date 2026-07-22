@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { createPlatformAdapter } from '../platform'
 import type { Config } from './types'
@@ -61,11 +62,17 @@ describe('userLevelItems', () => {
       expect(item.realPath.startsWith(a.claudeHome())).toBe(true)
     }
     const byLogical = new Map(items.map((i) => [i.logicalPath, i]))
-    expect(byLogical.get('memories/user/CLAUDE.md')?.realPath).toBe(`${HOME}/.claude/CLAUDE.md`)
-    expect(byLogical.get('memories/user/settings.json')?.realPath).toBe(
-      `${HOME}/.claude/settings.json`,
+    // Build expected paths with join() so they match the host separator (the code
+    // uses path.join): '/' on POSIX, '\' on Windows.
+    expect(byLogical.get('memories/user/CLAUDE.md')?.realPath).toBe(
+      join(HOME, '.claude', 'CLAUDE.md'),
     )
-    expect(byLogical.get('memories/user/commands')?.realPath).toBe(`${HOME}/.claude/commands`)
+    expect(byLogical.get('memories/user/settings.json')?.realPath).toBe(
+      join(HOME, '.claude', 'settings.json'),
+    )
+    expect(byLogical.get('memories/user/commands')?.realPath).toBe(
+      join(HOME, '.claude', 'commands'),
+    )
   })
 })
 
@@ -130,11 +137,11 @@ describe('machineSyncedPaths', () => {
     const set = machineSyncedPaths(sampleConfig(), adapter(), 'laptop').map((p) => p.path)
     expect(set).toContain('/home/me/code/demo/.claude')
     expect(set).toContain('/home/me/code/demo/docs')
-    expect(set).toContain(`${HOME}/.claude/commands`)
-    expect(set).toContain(`${HOME}/.claude/agents`)
-    expect(set).toContain(`${HOME}/.claude/skills`)
+    expect(set).toContain(join(HOME, '.claude', 'commands'))
+    expect(set).toContain(join(HOME, '.claude', 'agents'))
+    expect(set).toContain(join(HOME, '.claude', 'skills'))
     // user-level FILE roots (CLAUDE.md, settings.json) are not folders → excluded
-    expect(set).not.toContain(`${HOME}/.claude/CLAUDE.md`)
+    expect(set).not.toContain(join(HOME, '.claude', 'CLAUDE.md'))
   })
 
   it('excludes the (project, slot) being edited', () => {
@@ -159,17 +166,17 @@ describe('machinePathForLogical', () => {
   it('resolves user-level files under ~/.claude, with and without a rest path', () => {
     const c = sampleConfig()
     expect(machinePathForLogical('memories/user/CLAUDE.md', c, 'laptop', a)).toBe(
-      `${HOME}/.claude/CLAUDE.md`,
+      join(HOME, '.claude', 'CLAUDE.md'),
     )
     expect(machinePathForLogical('memories/user/commands/deploy.md', c, 'laptop', a)).toBe(
-      `${HOME}/.claude/commands/deploy.md`,
+      join(HOME, '.claude', 'commands', 'deploy.md'),
     )
   })
 
   it('joins a dir project slot with the rest of the path', () => {
     expect(
       machinePathForLogical('memories/projects/demo/memory/notes.md', sampleConfig(), 'laptop', a),
-    ).toBe('/home/me/code/demo/.claude/notes.md')
+    ).toBe(join('/home/me/code/demo/.claude', 'notes.md'))
   })
 
   it('resolves a file project slot to the configured path itself', () => {

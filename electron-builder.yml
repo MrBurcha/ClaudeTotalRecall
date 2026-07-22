@@ -125,6 +125,29 @@ pacman:
     - re2
     - snappy
     - libnotify
+win:
+  # Two artifacts, both unsigned (same posture as mac/linux — personal use, no
+  # Authenticate certificate). `nsis` is the classic installer (Start-menu entry,
+  # uninstaller); `portable` is a single self-contained .exe. afterPack.cjs
+  # early-returns off darwin, so no code-signing runs here.
+  target:
+    - nsis
+    - portable
+  # Point at the 1024px PNG: electron-builder auto-generates a multi-size
+  # icon.ico from it at packaging time (no separate .ico asset to maintain).
+  icon: build/icon.png
+nsis:
+  # A real installer (not oneClick): the user sees a wizard and can choose the
+  # install dir. perMachine:false installs per-user (no admin elevation needed).
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+portable:
+  # Distinct name so the portable .exe never collides with NSIS's
+  # "…Setup <version>.exe" in release/ (the workflow globs them separately).
+  artifactName: ${productName}-${version}-portable.${ext}
 # Chromium ships 55 locale files by default (measured: 47MB uncompressed,
 # ~1.8MB kept). The app's own UI is translated separately via react-i18next
 # (src/renderer/i18n, en/es only), so this only trims Chromium-native strings

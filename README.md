@@ -37,7 +37,7 @@ lives on one machine. Switch laptops, reinstall, or lose the disk, and it's gone
 second layer.
 
 It's a desktop app (Electron) that auto-syncs in the background, plus a headless CLI that shares the
-same core. **macOS and Linux** (Windows is deliberately deferred).
+same core. **macOS, Linux and Windows.**
 
 ## Screenshots
 
@@ -285,19 +285,20 @@ npm install
 npm run dev          # run the Electron app in dev mode
 ```
 
-| Script                | Does                                                              |
-| --------------------- | ----------------------------------------------------------------- |
-| `npm run dev`         | Run the app in dev mode (electron-vite).                          |
-| `npm test`            | Run the test suite (vitest).                                      |
-| `npm run typecheck`   | `tsc --noEmit`.                                                   |
-| `npm run lint`        | ESLint.                                                           |
-| `npm run build:cli`   | Build the headless CLI → `dist-cli/index.js`.                     |
-| `npm run build:mac`   | Unsigned `.dmg` ×2 (arm64 + x64) → `release/` (**run on macOS**). |
-| `npm run build:linux` | AppImage + deb + pacman → `release/` (**run on Linux or CI**).    |
+| Script                | Does                                                                         |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `npm run dev`         | Run the app in dev mode (electron-vite).                                     |
+| `npm test`            | Run the test suite (vitest).                                                 |
+| `npm run typecheck`   | `tsc --noEmit`.                                                              |
+| `npm run lint`        | ESLint.                                                                      |
+| `npm run build:cli`   | Build the headless CLI → `dist-cli/index.js`.                                |
+| `npm run build:mac`   | Unsigned `.dmg` ×2 (arm64 + x64) → `release/` (**run on macOS**).            |
+| `npm run build:linux` | AppImage + deb + pacman → `release/` (**run on Linux or CI**).               |
+| `npm run build:win`   | Unsigned NSIS installer + portable `.exe` → `release/` (**run on Windows**). |
 
-**No cross-build:** `build:mac` must run on macOS and `build:linux` on Linux. Pushing a `v*.*.*` tag
-runs [`.github/workflows/release.yml`](.github/workflows/release.yml), which builds the artifacts on
-macOS + Linux runners and publishes a GitHub Release.
+**No cross-build:** `build:mac` must run on macOS, `build:linux` on Linux and `build:win` on Windows.
+Pushing a `v*.*.*` tag runs [`.github/workflows/release.yml`](.github/workflows/release.yml), which
+builds the artifacts on macOS + Linux + Windows runners and publishes a GitHub Release.
 
 ## Architecture
 
@@ -305,7 +306,7 @@ macOS + Linux runners and publishes a GitHub Release.
 src/core/       pure logic (config, plan, outgoing/incoming, git wrapper, service,
                 preflight, sync engine, conflict resolution, settings merge, typed errors).
                 No Electron imports — tests run directly under Node.
-src/platform/   the only OS-specific code (linux/macos adapter).
+src/platform/   the only OS-specific code (linux/macos/windows adapter).
 src/cli/        headless entrypoint (English-only).
 src/main/       Electron bootstrap + IPC + preload + auto-sync scheduler + frameless window.
 src/renderer/   React UI (AppShell + screens/ + features/) with i18n/ for the bilingual catalog.
@@ -316,8 +317,24 @@ defaulting to your host locale and switchable in **Settings → Language**.
 
 ## Platform support
 
-**macOS and Linux.** Windows is deliberately deferred (the platform layer is the only OS-specific
-code, so adding it is one more adapter).
+**macOS, Linux and Windows.** All three share one on-disk layout: the memories working copy and the
+app's local state live under `~/.config/claudetr` (`C:\Users\<you>\.config\claudetr` on Windows),
+beside Claude Code's own `~/.claude` — home-relative via `os.homedir()`, never tied to the install
+dir (a portable `.exe` can be moved freely). Cross-OS fleets sync user-level memory (CLAUDE.md,
+commands, agents, skills, settings) transparently; project **folders** whose paths differ across
+OSes are picked manually when a machine adopts the project.
+
+### Windows prerequisites
+
+`git` and the GitHub CLI (`gh`) must be installed and on `PATH`, then authenticated once so git can
+push/pull without prompting:
+
+```powershell
+winget install --id Git.Git -e
+winget install --id GitHub.cli -e
+gh auth login          # choose GitHub.com → HTTPS
+gh auth setup-git      # installs gh as git's credential helper
+```
 
 ## Roadmap
 
