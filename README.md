@@ -55,9 +55,15 @@ same core. **macOS and Linux** (Windows is deliberately deferred).
 Grab the latest build from the [**Releases**](https://github.com/MrBurcha/ClaudeTotalRecall/releases/latest)
 page. Builds are **unsigned** (no paid Apple/OS code-signing) — see the notes below.
 
-### macOS (Apple Silicon)
+### macOS
 
-1. Download `Claude-Total-Recall-<version>-arm64.dmg`, open it, and drag the app to **Applications**.
+1. Download the `.dmg` for your Mac's chip, open it, and drag the app to **Applications**:
+   - **Apple Silicon** (M1/M2/M3/…): `Claude-Total-Recall-<version>-arm64.dmg`
+   - **Intel**: `Claude-Total-Recall-<version>-x64.dmg`
+
+   Not sure which you have? → **Apple menu → About This Mac**: a "Chip" line means Apple Silicon,
+   a "Processor" line means Intel.
+
 2. First open, because the build isn't notarized (macOS 15 Sequoia and later — the old
    _right-click → Open_ was removed):
    - Double-click the app → _"Apple could not verify…"_ → **Done**.
@@ -279,15 +285,15 @@ npm install
 npm run dev          # run the Electron app in dev mode
 ```
 
-| Script                | Does                                                           |
-| --------------------- | -------------------------------------------------------------- |
-| `npm run dev`         | Run the app in dev mode (electron-vite).                       |
-| `npm test`            | Run the test suite (vitest).                                   |
-| `npm run typecheck`   | `tsc --noEmit`.                                                |
-| `npm run lint`        | ESLint.                                                        |
-| `npm run build:cli`   | Build the headless CLI → `dist-cli/index.js`.                  |
-| `npm run build:mac`   | Unsigned `.dmg` → `release/` (**run on macOS**).               |
-| `npm run build:linux` | AppImage + deb + pacman → `release/` (**run on Linux or CI**). |
+| Script                | Does                                                              |
+| --------------------- | ----------------------------------------------------------------- |
+| `npm run dev`         | Run the app in dev mode (electron-vite).                          |
+| `npm test`            | Run the test suite (vitest).                                      |
+| `npm run typecheck`   | `tsc --noEmit`.                                                   |
+| `npm run lint`        | ESLint.                                                           |
+| `npm run build:cli`   | Build the headless CLI → `dist-cli/index.js`.                     |
+| `npm run build:mac`   | Unsigned `.dmg` ×2 (arm64 + x64) → `release/` (**run on macOS**). |
+| `npm run build:linux` | AppImage + deb + pacman → `release/` (**run on Linux or CI**).    |
 
 **No cross-build:** `build:mac` must run on macOS and `build:linux` on Linux. Pushing a `v*.*.*` tag
 runs [`.github/workflows/release.yml`](.github/workflows/release.yml), which builds the artifacts on

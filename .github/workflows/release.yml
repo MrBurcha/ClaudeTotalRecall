@@ -74,10 +74,17 @@ jobs:
       # electron-builder#3908 / #7145).
       - name: Hide DMG background resource from Finder (SetFile -a V)
         run: bash scripts/harden-dmg.sh release/*.dmg
-      - name: Upload dmg to the tag's draft Release
+      - name: Upload dmgs to the tag's draft Release
         run: |
-          DMG=$(ls release/*.dmg)
-          gh release upload "$TAG" "$DMG#macOS (Apple Silicon) — .dmg installer" --clobber -R "$REPO"
+          # Two dmgs now (see electron-builder.yml mac.target arch list):
+          # electron-builder tags each filename with its arch suffix, so resolve
+          # them separately and upload both with distinct labels.
+          ARM=$(ls release/*-arm64.dmg)
+          X64=$(ls release/*-x64.dmg)
+          gh release upload "$TAG" \
+            "$ARM#macOS (Apple Silicon) — .dmg installer" \
+            "$X64#macOS (Intel) — .dmg installer" \
+            --clobber -R "$REPO"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}

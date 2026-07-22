@@ -7,6 +7,13 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Native macOS Intel (x64) installer.** Each release now ships a second `.dmg` built natively
+  for Intel Macs (`-x64`) alongside the existing Apple Silicon one (`-arm64`), so Intel users get a
+  native build instead of no macOS artifact. Both are cross-built on the CI's Apple Silicon runner
+  and uploaded as separate, labelled assets.
+
 ## [0.10.2] - 2026-07-18
 
 ### Changed
