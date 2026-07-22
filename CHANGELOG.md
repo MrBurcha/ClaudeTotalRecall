@@ -7,6 +7,8 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-07-22
+
 ### Added
 
 - **Native macOS Intel (x64) installer.** Each release now ships a second `.dmg` built natively
@@ -559,7 +561,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.10.2...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.11.1
 [0.10.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.10.2
 [0.9.8]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.8
 [0.9.7]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.7
