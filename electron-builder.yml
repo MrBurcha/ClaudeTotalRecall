@@ -16,23 +16,42 @@ extraResources:
 # ad-hoc-signed in `afterPack` (below) so Apple Silicon macOS doesn't flag it as
 # "damaged".
 mac:
+  # Build a native .dmg per architecture: arm64 for Apple Silicon and x64 for
+  # Intel Macs. Both are cross-built in one run on the arm64 CI runner —
+  # electron-builder downloads the x64 Electron binary and the ad-hoc codesign
+  # in afterPack works cross-arch (it seals the Mach-O, not the host CPU). The
+  # dmg.artifactName below forces an -${arch} suffix onto both filenames so the
+  # two artifacts never collide.
   target:
-    - dmg
+    - target: dmg
+      arch:
+        - arm64
+        - x64
   category: public.app-category.developer-tools
   identity: null
 # The bundle ships without a cert; this hook ad-hoc-signs it after packaging
 # (before building the dmg) to seal the resources and avoid the "damaged" verdict.
 afterPack: scripts/afterPack.cjs
 dmg:
+  # Force ${arch} into every dmg filename. electron-builder OMITS the arch suffix
+  # for x64 by default (x64 is its default arch), so the Intel dmg would ship as
+  # "Claude Total Recall-<version>.dmg" with no arch tag — indistinguishable from a
+  # single-arch build and unmatched by the release workflow's `*-x64.dmg` glob. An
+  # explicit artifactName makes both dmgs deterministically named (…-arm64.dmg /
+  # …-x64.dmg). ${productName} keeps the spaces ("Claude Total Recall-…").
+  artifactName: ${productName}-${version}-${arch}.${ext}
   # Volume icon (#18): explicit `null` → electron-builder passes no `--icon` to dmgbuild,
   # so the mounted DMG shows macOS's generic removable-disk icon instead of the app icon
   # (the "square" reported in #18). dmg-builder distinguishes explicit `null` (no icon)
   # from `undefined` (which would re-default to the app icon). Stopgap until #18 ships a
   # branded drive icon aligned with the app's visual identity (#9).
   icon: null
-  # Versioned volume name (electron-builder default): each version mounts under a
-  # distinct name, so Finder reads a fresh .DS_Store without carrying over state.
-  title: Claude Total Recall ${version}
+  # Versioned, arch-tagged volume name: each version mounts under a distinct name
+  # (so Finder reads a fresh .DS_Store without carrying over state), and ${arch}
+  # keeps the arm64 and x64 dmgs distinguishable when mounted. harden-dmg.sh
+  # mounts via -mountpoint (it never parses this title), so the arch suffix here
+  # is safe.
+  title: Claude Total Recall ${version} (${arch})
   # Background with the install/open instructions (build/background.png +
   # background@2x.png for retina). Coords in px from the top-left, at the icon
   # center: the app on the left, the Applications alias on the right.
