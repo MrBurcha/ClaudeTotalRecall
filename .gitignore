@@ -6,4 +6,8 @@ release/
 .DS_Store
 .vite/
 coverage/
-/.idea/
+# Ignore the IDE folder EXCEPT the shared run configurations, so "npm dev/test/
+# typecheck/lint/build" are one-click in WebStorm on any machine (they're OS-agnostic:
+# $PROJECT_DIR$ + the project Node interpreter). Personal state (workspace.xml) stays local.
+/.idea/*
+!/.idea/runConfigurations/
