@@ -1,6 +1,6 @@
 {
   "name": "claude-total-recall",
-  "version": "0.11.1",
+  "version": "0.12.1",
   "description": "Claude Total Recall — sync Claude Code memory across machines via a private GitHub repo",
   "author": "MrBurcha",
   "license": "MIT",
@@ -29,6 +29,7 @@
     "background": "bash scripts/make-background.sh",
     "build:mac": "npm run build:app && electron-builder --mac --config electron-builder.yml",
     "build:linux": "npm run build:app && electron-builder --linux --config electron-builder.yml",
+    "build:win": "npm run build:app && electron-builder --win --config electron-builder.yml",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",

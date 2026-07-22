@@ -43,7 +43,9 @@ export abstract class BasePlatformAdapter implements PlatformAdapter {
 
   expandHome(p: string): string {
     if (p === '~') return this.homeDir
-    if (p.startsWith('~/')) return join(this.homeDir, p.slice(2))
+    // Accept both POSIX (`~/foo`) and Windows (`~\foo`) tilde forms; join then
+    // normalizes to the local separator.
+    if (p.startsWith('~/') || p.startsWith('~\\')) return join(this.homeDir, p.slice(2))
     return p
   }
 

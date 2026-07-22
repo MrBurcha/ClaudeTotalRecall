@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Claude Total Recall — an Electron + TypeScript desktop app (with a headless CLI sharing the same core) that syncs Claude Code memory (`~/.claude/…`) across machines through a private GitHub repo, using `git`/`gh` as transport. macOS and Linux; Windows deliberately deferred.
+Claude Total Recall — an Electron + TypeScript desktop app (with a headless CLI sharing the same core) that syncs Claude Code memory (`~/.claude/…`) across machines through a private GitHub repo, using `git`/`gh` as transport. macOS, Linux and Windows.
 
 Code identifiers, comments, commit messages, and docs are written in **English**. The UI is the only bilingual surface — English (the source language) and neutral Latin American Spanish (es-419) via react-i18next; user-facing strings live in `src/renderer/i18n/{en,es}.json`, never inline. (Releases through 0.1.4 were Spanish throughout; that convention changed with the i18n work — translate comments in files you touch.)
 
@@ -23,14 +23,14 @@ npm run build:mac      # unsigned .dmg (run on macOS)
 npm run build:linux    # AppImage + deb + pacman (run on Linux or CI, no cross-build)
 ```
 
-Releases: pushing a `v*.*.*` tag triggers `.github/workflows/release.yml`, which builds unsigned artifacts on macOS + Linux runners and publishes a GitHub Release.
+Releases: pushing a `v*.*.*` tag triggers `.github/workflows/release.yml`, which builds unsigned artifacts on macOS + Linux + Windows runners and publishes a GitHub Release.
 
 ## Architecture
 
 Layering rule: `src/core/` is pure Node/TypeScript with **no Electron imports** — everything else is a thin shell around it.
 
 - `src/core/` — all logic: config, plan build/execute, outgoing/incoming, git wrapper, service orchestration, preflight, settings merge, the auto-sync engine (`syncEngine.ts`), conflict resolution, and typed errors (`errors.ts`). Tests live next to sources (`*.test.ts`) and run directly under Node (vitest, aliases `@core`/`@platform`).
-- `src/platform/` — the ONLY OS-specific code. `PlatformAdapter` (linux/macos) resolves `home`, `~/.claude`, `~/.config/claudetr`, and expands `~`. Home dir is injectable for tests. Adding Windows = one more adapter + a branch in `index.ts`.
+- `src/platform/` — the ONLY OS-specific code. `PlatformAdapter` (linux/macos/windows) resolves `home`, `~/.claude`, `~/.config/claudetr`, and expands `~`. Home dir is injectable for tests. All three OSes share one layout — Windows keeps `~/.config/claudetr` too (home-relative via `os.homedir()`, never install-relative). A second OS-aware spot is `src/core/resolvePath.ts` (binary discovery: PATH delimiter + PATHEXT probing).
 - `src/cli/` — headless entrypoint (`claude-total-recall check|connect|status|register|outgoing|incoming`), built with tsup to CJS. English-only.
 - `src/main/` — Electron bootstrap, IPC handlers (`ipc.ts`), preload, the auto-sync scheduler (`syncScheduler.ts`), and the frameless window. IPC handlers are thin wrappers over `core/service.ts`.
 - `src/renderer/` — React UI (`AppShell` + `screens/` + `features/` + the i18n catalog under `i18n/`), talks to main only through the preload bridge.

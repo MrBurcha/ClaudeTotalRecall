@@ -50,6 +50,34 @@ jobs:
       - if: steps.cache.outputs.cache-hit != 'true'
         run: npx install-electron
 
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - name: Resolve Electron/electron-builder versions for cache key
+        id: versions
+        shell: bash
+        run: |
+          echo "electron=$(jq -r '.packages["node_modules/electron"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+          echo "builder=$(jq -r '.packages["node_modules/electron-builder"].version' package-lock.json)" >> "$GITHUB_OUTPUT"
+      - name: Cache Electron + electron-builder binaries
+        id: cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: ${{ runner.os }}-electron-${{ steps.versions.outputs.electron }}-${{ steps.versions.outputs.builder }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: npx install-electron
+
   linux:
     runs-on: ubuntu-latest
     timeout-minutes: 10

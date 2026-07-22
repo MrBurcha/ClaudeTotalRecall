@@ -4,7 +4,7 @@ import { z } from 'zod'
 // Config that lives in the repo (claudetr.json). See §7/§8 of the plan.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const OsSchema = z.enum(['linux', 'macos']) // 'windows' added later
+export const OsSchema = z.enum(['linux', 'macos', 'windows'])
 export type Os = z.infer<typeof OsSchema>
 
 export const MachineSchema = z.object({

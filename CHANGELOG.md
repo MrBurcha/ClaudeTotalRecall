@@ -7,6 +7,21 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-07-22
+
+### Added
+
+- **Windows is now a first-class platform**, alongside macOS and Linux. Each release ships
+  unsigned Windows artifacts — an **NSIS installer** (`…Setup.exe`, per-user, no admin
+  elevation) and a **portable `.exe`** — built on a `windows-latest` CI runner. The app keeps
+  the same home-relative `~/.config/claudetr` layout on Windows (resolved via `os.homedir()`,
+  install-independent, so the portable build can be moved freely).
+- Under the hood: a `WindowsAdapter` in the platform layer, Windows-aware binary discovery
+  (`;` PATH delimiter + `PATHEXT` probing so `git`/`gh` resolve to their `.exe`), a `.cmd`/`.bat`
+  shim spawn path, and `.gitattributes` (`* -text`) written into the memories working copy so
+  line endings don't churn across a mixed-OS fleet. Windows-specific tests were added and the
+  full suite runs green on a Windows host.
+
 ## [0.11.1] - 2026-07-22
 
 ### Added
@@ -561,7 +576,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.12.1
 [0.11.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.11.1
 [0.10.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.10.2
 [0.9.8]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.9.8

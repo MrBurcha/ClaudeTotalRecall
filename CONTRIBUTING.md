@@ -86,6 +86,7 @@ Releases are driven by tags:
    ```
 
 Pushing the `v*.*.*` tag triggers `.github/workflows/release.yml`, which builds the unsigned
-artifacts on macOS + Linux runners and publishes a GitHub Release, using the matching CHANGELOG
-section as the release notes. The macOS job cross-builds two `.dmg`s on the arm64 runner — one for
-Apple Silicon (`-arm64`) and one for Intel (`-x64`) — and uploads both as separate assets.
+artifacts on macOS + Linux + Windows runners and publishes a GitHub Release, using the matching
+CHANGELOG section as the release notes. The macOS job cross-builds two `.dmg`s on the arm64 runner —
+one for Apple Silicon (`-arm64`) and one for Intel (`-x64`) — and uploads both as separate assets.
+The Windows job builds an NSIS installer plus a portable `.exe`.
