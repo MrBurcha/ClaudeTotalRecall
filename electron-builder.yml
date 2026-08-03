@@ -33,13 +33,15 @@ mac:
 # (before building the dmg) to seal the resources and avoid the "damaged" verdict.
 afterPack: scripts/afterPack.cjs
 dmg:
-  # Force ${arch} into every dmg filename. electron-builder OMITS the arch suffix
-  # for x64 by default (x64 is its default arch), so the Intel dmg would ship as
-  # "Claude Total Recall-<version>.dmg" with no arch tag — indistinguishable from a
-  # single-arch build and unmatched by the release workflow's `*-x64.dmg` glob. An
-  # explicit artifactName makes both dmgs deterministically named (…-arm64.dmg /
-  # …-x64.dmg). ${productName} keeps the spaces ("Claude Total Recall-…").
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  # Shared artifact-naming scheme (#130) — see the note above `linux.artifactName`
+  # for why every target follows `${name}-${version}-<os>-…`. Setting artifactName
+  # also forces ${arch} into BOTH dmg filenames: electron-builder omits the arch
+  # suffix for x64 by default (x64 is its default arch), so the Intel dmg would
+  # otherwise ship with no arch tag — indistinguishable from a single-arch build
+  # and unmatched by the release workflow's `*-macos-x64.dmg` glob. (Any explicit
+  # artifactName marks the pattern user-forced, which switches that
+  # skip-arch-if-default behaviour off for the target it's set on.)
+  artifactName: ${name}-${version}-macos-${arch}.${ext}
   # Volume icon (#18): explicit `null` → electron-builder passes no `--icon` to dmgbuild,
   # so the mounted DMG shows macOS's generic removable-disk icon instead of the app icon
   # (the "square" reported in #18). dmg-builder distinguishes explicit `null` (no icon)
@@ -86,6 +88,29 @@ linux:
     - AppImage
     - deb
     - pacman
+    # Fedora / RHEL / openSUSE (#129). fpm shells out to `rpmbuild`, which is NOT
+    # installed on the ubuntu runner by default — see the apt step in release.yml.
+    # No `rpm:` block below: unlike pacman (whose default depends use Debian
+    # package names), electron-builder's rpm defaults are already Fedora-correct
+    # (gtk3, libnotify, nss, libXScrnSaver, (libXtst or libXtst6), xdg-utils,
+    # at-spi2-core, (libuuid or libuuid1)).
+    - rpm
+  # One naming scheme across every target and OS (#129, #130). GitHub renders a
+  # Release's assets sorted BY FILENAME (not by upload order — verified against
+  # the API), so putting the OS in the same position of every name is what makes
+  # the page group itself into a Linux block, a macOS block and a Windows block.
+  # This single key covers all four Linux targets; dmg/nsis/portable carry the
+  # equivalent pattern in their own sections.
+  #
+  # `${name}` (package.json's "claude-total-recall") rather than `${productName}`:
+  # the latter has spaces, and GitHub rewrites those to dots on upload
+  # ("Claude.Total.Recall-…"), which is half of why the old names sorted apart.
+  #
+  # `${arch}` stays a macro instead of a hardcoded "x86_64": electron-builder
+  # expands it to each target's NATIVE token (amd64 for deb, x86_64 for
+  # rpm/AppImage, x64 for pacman), and if an arm64 Linux build is ever added the
+  # filename must not keep claiming x86_64.
+  artifactName: ${name}-${version}-linux-${arch}.${ext}
   category: Development
   maintainer: MrBurcha
   # Multi-size icon set. Without this, electron-builder installs the single
@@ -137,6 +162,10 @@ win:
   # icon.ico from it at packaging time (no separate .ico asset to maintain).
   icon: build/icon.png
 nsis:
+  # Shared naming scheme (#130). "-windows-setup" instead of electron-builder's
+  # default "… Setup <version>.exe" (spaces → dots on GitHub), and it keeps the
+  # two Windows artifacts adjacent to each other on the Release page.
+  artifactName: ${name}-${version}-windows-setup.${ext}
   # A real installer (not oneClick): the user sees a wizard and can choose the
   # install dir. perMachine:false installs per-user (no admin elevation needed).
   oneClick: false
@@ -145,9 +174,10 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
 portable:
-  # Distinct name so the portable .exe never collides with NSIS's
-  # "…Setup <version>.exe" in release/ (the workflow globs them separately).
-  artifactName: ${productName}-${version}-portable.${ext}
+  # Distinct name so the portable .exe never collides with the NSIS installer in
+  # release/ (the workflow globs `*-windows-setup.exe` and `*-windows-portable.exe`
+  # separately).
+  artifactName: ${name}-${version}-windows-portable.${ext}
 # Chromium ships 55 locale files by default (measured: 47MB uncompressed,
 # ~1.8MB kept). The app's own UI is translated separately via react-i18next
 # (src/renderer/i18n, en/es only), so this only trims Chromium-native strings

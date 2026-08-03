@@ -58,8 +58,8 @@ page. Builds are **unsigned** (no paid Apple/OS code-signing) — see the notes 
 ### macOS
 
 1. Download the `.dmg` for your Mac's chip, open it, and drag the app to **Applications**:
-   - **Apple Silicon** (M1/M2/M3/…): `Claude-Total-Recall-<version>-arm64.dmg`
-   - **Intel**: `Claude-Total-Recall-<version>-x64.dmg`
+   - **Apple Silicon** (M1/M2/M3/…): `claude-total-recall-<version>-macos-arm64.dmg`
+   - **Intel**: `claude-total-recall-<version>-macos-x64.dmg`
 
    Not sure which you have? → **Apple menu → About This Mac**: a "Chip" line means Apple Silicon,
    a "Processor" line means Intel.
@@ -85,14 +85,17 @@ Pick the package for your distro:
 
 ```bash
 # AppImage (portable — any distro)
-chmod +x Claude-Total-Recall-<version>.AppImage
-./Claude-Total-Recall-<version>.AppImage
+chmod +x claude-total-recall-<version>-linux-x86_64.AppImage
+./claude-total-recall-<version>-linux-x86_64.AppImage
 
 # Debian / Ubuntu
-sudo dpkg -i claude-total-recall_<version>_amd64.deb
+sudo dpkg -i claude-total-recall-<version>-linux-amd64.deb
 
-# Arch
-sudo pacman -U claude-total-recall-<version>.pacman
+# Fedora / RHEL / openSUSE
+sudo dnf install ./claude-total-recall-<version>-linux-x86_64.rpm
+
+# Arch / Manjaro
+sudo pacman -U claude-total-recall-<version>-linux-x64.pacman
 ```
 
 Prefer to build the binaries yourself? See [Build from source](#build-from-source).
@@ -293,12 +296,16 @@ npm run dev          # run the Electron app in dev mode
 | `npm run lint`        | ESLint.                                                                      |
 | `npm run build:cli`   | Build the headless CLI → `dist-cli/index.js`.                                |
 | `npm run build:mac`   | Unsigned `.dmg` ×2 (arm64 + x64) → `release/` (**run on macOS**).            |
-| `npm run build:linux` | AppImage + deb + pacman → `release/` (**run on Linux or CI**).               |
+| `npm run build:linux` | AppImage + deb + pacman + rpm → `release/` (**run on Linux or CI**).         |
 | `npm run build:win`   | Unsigned NSIS installer + portable `.exe` → `release/` (**run on Windows**). |
 
 **No cross-build:** `build:mac` must run on macOS, `build:linux` on Linux and `build:win` on Windows.
 Pushing a `v*.*.*` tag runs [`.github/workflows/release.yml`](.github/workflows/release.yml), which
 builds the artifacts on macOS + Linux + Windows runners and publishes a GitHub Release.
+
+`build:linux` shells out through `fpm`, which needs two extra binaries for the distro packages:
+`bsdtar` for the `.pacman` and `rpmbuild` for the `.rpm` (`sudo apt install libarchive-tools rpm`
+on Debian/Ubuntu, `sudo pacman -S libarchive rpm-tools` on Arch). The AppImage needs neither.
 
 ## Architecture
 

@@ -7,6 +7,33 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-03
+
+### Added
+
+- **Fedora / RHEL installer (`.rpm`) (#129).** Every release now ships a native RPM package
+  alongside the AppImage, `.deb` and `.pacman`, so the Fedora family gets a real system package —
+  launcher entry, multi-size icons and a clean uninstall through the package manager — instead of
+  only the portable AppImage:
+
+  ```bash
+  sudo dnf install ./claude-total-recall-<version>-linux-x86_64.rpm
+  ```
+
+  Verified end to end on Fedora 41: `dnf` resolves every dependency, the desktop entry and the
+  full `hicolor` icon set install, and `dnf remove` leaves nothing behind.
+
+### Changed
+
+- **Release binaries are now grouped by OS (#130).** The assets on a Release page used to come out
+  interleaved (a `.pacman` first, then a `.dmg`, then an `.exe`…) because GitHub sorts them by
+  filename and each target carried a different electron-builder default. Every artifact now follows
+  one pattern — `claude-total-recall-<version>-<os>[-<arch>|-<flavour>].<ext>` — so the page reads
+  as three clean blocks: **Linux**, then **macOS**, then **Windows**. No filename contains a space
+  any more either, which is what used to turn them into `Claude.Total.Recall-…` on upload.
+
+  Download links from older releases keep working; only new releases use the new names.
+
 ## [0.12.1] - 2026-07-22
 
 ### Added
@@ -576,7 +603,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.13.0
 [0.12.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.12.1
 [0.11.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.11.1
 [0.10.2]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.10.2
