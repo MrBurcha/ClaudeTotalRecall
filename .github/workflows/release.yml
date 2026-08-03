@@ -79,11 +79,11 @@ jobs:
           # Two dmgs now (see electron-builder.yml mac.target arch list):
           # electron-builder tags each filename with its arch suffix, so resolve
           # them separately and upload both with distinct labels.
-          ARM=$(ls release/*-arm64.dmg)
-          X64=$(ls release/*-x64.dmg)
+          ARM=$(ls release/*-macos-arm64.dmg)
+          X64=$(ls release/*-macos-x64.dmg)
           gh release upload "$TAG" \
-            "$ARM#macOS (Apple Silicon) — .dmg installer" \
-            "$X64#macOS (Intel) — .dmg installer" \
+            "$ARM#macOS — Apple Silicon (.dmg)" \
+            "$X64#macOS — Intel (.dmg)" \
             --clobber -R "$REPO"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -118,24 +118,32 @@ jobs:
             ${{ runner.os }}-electron-
       - run: npm ci
       - run: npm run build:app
-      # fpm builds the pacman target with bsdtar (.MTREE); ubuntu doesn't ship it by default.
-      - name: Install bsdtar (required by fpm for the pacman target)
-        run: sudo apt-get update && sudo apt-get install -y libarchive-tools
+      # fpm shells out to two binaries ubuntu doesn't ship by default: bsdtar
+      # (libarchive-tools) to write the pacman package's .MTREE, and rpmbuild
+      # (rpm) to assemble the Fedora/RHEL package. Without them the corresponding
+      # target fails the whole job.
+      - name: Install bsdtar + rpmbuild (required by fpm for the pacman/rpm targets)
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools rpm
       # --publish never (not "always"): electron-builder's own GitHub publisher can't
       # set an asset label, and it also emits latest-linux.yml (an electron-updater
       # manifest the app doesn't use — no autoUpdater/electron-updater anywhere in
       # src/). Uploading by hand below, same as the macos job, skips both.
-      - name: Build AppImage + deb + pacman (not published yet)
+      - name: Build AppImage + deb + pacman + rpm (not published yet)
         run: npx electron-builder --linux --config electron-builder.yml --publish never
       - name: Upload Linux binaries to the tag's draft Release
         run: |
           APPIMAGE=$(ls release/*.AppImage)
           DEB=$(ls release/*.deb)
           PACMAN=$(ls release/*.pacman)
+          RPM=$(ls release/*.rpm)
+          # Labels all start with "Linux — " so the four rows read as one block on
+          # the Release page (which orders assets by filename — see the
+          # artifactName note in electron-builder.yml).
           gh release upload "$TAG" \
             "$APPIMAGE#Linux — AppImage (portable, any distro)" \
-            "$DEB#Linux — Debian/Ubuntu (.deb, amd64)" \
+            "$DEB#Linux — Debian/Ubuntu (.deb)" \
             "$PACMAN#Linux — Arch/Manjaro (.pacman)" \
+            "$RPM#Linux — Fedora/RHEL (.rpm)" \
             --clobber -R "$REPO"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -180,11 +188,11 @@ jobs:
       - name: Upload Windows binaries to the tag's draft Release
         shell: bash
         run: |
-          # NSIS emits "…Setup <version>.exe"; the portable target is named
-          # "…-<version>-portable.exe" (electron-builder.yml portable.artifactName),
+          # Both names come from electron-builder.yml (nsis/portable artifactName):
+          # "…-<version>-windows-setup.exe" and "…-<version>-windows-portable.exe",
           # so the two globs never overlap.
-          SETUP=$(ls release/*Setup*.exe)
-          PORTABLE=$(ls release/*-portable.exe)
+          SETUP=$(ls release/*-windows-setup.exe)
+          PORTABLE=$(ls release/*-windows-portable.exe)
           gh release upload "$TAG" \
             "$SETUP#Windows — installer (.exe)" \
             "$PORTABLE#Windows — portable (.exe)" \

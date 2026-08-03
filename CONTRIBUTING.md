@@ -89,4 +89,11 @@ Pushing the `v*.*.*` tag triggers `.github/workflows/release.yml`, which builds 
 artifacts on macOS + Linux + Windows runners and publishes a GitHub Release, using the matching
 CHANGELOG section as the release notes. The macOS job cross-builds two `.dmg`s on the arm64 runner —
 one for Apple Silicon (`-arm64`) and one for Intel (`-x64`) — and uploads both as separate assets.
-The Windows job builds an NSIS installer plus a portable `.exe`.
+The Linux job builds an AppImage plus `.deb`, `.pacman` and `.rpm` packages, and the Windows job an
+NSIS installer plus a portable `.exe`.
+
+Every artifact is named `claude-total-recall-<version>-<os>[-<arch>|-<flavour>].<ext>`
+(`artifactName` in `electron-builder.yml`). That's not cosmetic: GitHub sorts a Release's assets
+**by filename**, so keeping the OS in the same position of every name is what makes the page group
+itself into a Linux / macOS / Windows block instead of interleaving them. If you add a target, keep
+the pattern — and update the matching glob in `release.yml`, which resolves each file by name.
