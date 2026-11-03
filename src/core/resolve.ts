@@ -17,8 +17,8 @@ export interface UserLevelItem {
 }
 
 /**
- * Ranuras user-level fijas. `logicalPath` es relativo a la raíz del repo;
- * `realPath` se expande contra ~/.claude vía el adapter.
+ * Fixed user-level slots. `logicalPath` is relative to the repo root;
+ * `realPath` is expanded against ~/.claude via the adapter.
  */
 const USER_LEVEL_SPEC: ReadonlyArray<{ slot: string; kind: 'file' | 'dir' }> = [
   { slot: 'CLAUDE.md', kind: 'file' },
@@ -40,8 +40,8 @@ export function userLevelItems(adapter: PlatformAdapter): UserLevelItem[] {
 }
 
 /**
- * Path absoluto literal de una ranura de proyecto para una máquina, o null si
- * el proyecto, la ranura o el machineId no están mapeados.
+ * Literal absolute path of a project slot for a machine, or null if the
+ * project, the slot or the machineId is not mapped.
  */
 export function projectSlotPath(
   config: Config,
@@ -57,33 +57,33 @@ export function projectSlotPath(
   return path ?? null
 }
 
-/** Nombres de ranuras del proyecto, [] si no existe. */
+/** Slot names of the project, [] if it doesn't exist. */
 export function projectSlots(config: Config, projectName: string): string[] {
   const project = config.projects[projectName]
   if (!project) return []
   return Object.keys(project.folders)
 }
 
-/** logicalPath en el repo para una ranura de proyecto. */
+/** Repo logicalPath for a project slot. */
 export function projectSlotLogicalPath(projectName: string, slot: string): string {
   return `memories/projects/${projectName}/${slot}`
 }
 
-/** Tipo de una ranura de proyecto: archivo puntual vs carpeta espejada (default 'dir'). */
+/** Kind of a project slot: single file vs mirrored folder (default 'dir'). */
 export function projectSlotKind(config: Config, projectName: string, slot: string): 'file' | 'dir' {
   return config.projects[projectName]?.slotKinds?.[slot] ?? 'dir'
 }
 
-/** Un archivo fijado global mapeado para una máquina. */
+/** A global pinned file mapped for a machine. */
 export interface PinnedFileItem {
   pinId: string
-  /** ruta absoluta literal en esta máquina (ya expandida al guardarse) */
+  /** literal absolute path on this machine (already expanded when saved) */
   realPath: string
-  /** logicalPath en el repo (memories/pinned/<pinId>) */
+  /** logicalPath in the repo (memories/pinned/<pinId>) */
   logicalPath: string
 }
 
-/** Archivos fijados globales que tienen ruta en `machineId` (siempre kind 'file'). */
+/** Global pinned files that have a path on `machineId` (always kind 'file'). */
 export function pinnedFileItems(config: Config, machineId: string): PinnedFileItem[] {
   const out: PinnedFileItem[] = []
   for (const [pinId, byMachine] of Object.entries(config.pinnedFiles ?? {})) {
@@ -94,9 +94,9 @@ export function pinnedFileItems(config: Config, machineId: string): PinnedFileIt
 }
 
 /**
- * True si dos paths absolutos son el mismo o uno está anidado dentro del otro.
- * Normaliza ambos (colapsa `.`/`..`/trailing slash con `resolve`) y compara en el
- * LÍMITE del separador, así `/tmp/ab` NO colisiona con `/tmp/abc`. Case-sensitive.
+ * True if two absolute paths are the same or one is nested inside the other.
+ * Normalizes both (collapses `.`/`..`/trailing slash with `resolve`) and compares at
+ * the separator BOUNDARY, so `/tmp/ab` does NOT collide with `/tmp/abc`. Case-sensitive.
  */
 export function pathsCollide(a: string, b: string): boolean {
   const na = resolvePath(a)
@@ -107,19 +107,19 @@ export function pathsCollide(a: string, b: string): boolean {
   return nb.startsWith(aPrefix) || na.startsWith(bPrefix)
 }
 
-/** Un path ya sincronizado en una máquina, con una etiqueta para el mensaje de error. */
+/** A path already synced on a machine, with a label for the error message. */
 export interface SyncedPath {
   path: string
   where: string
-  /** Nombre canónico del proyecto dueño, si el path proviene de una ranura de proyecto. */
+  /** Canonical name of the owning project, if the path comes from a project slot. */
   project?: string
 }
 
 /**
- * Todos los paths que YA sincroniza `machineId`: las ranuras de proyecto de esa
- * máquina (excepto el `exclude` que se está editando, para no auto-colisionar) más
- * los roots dir user-level (`~/.claude/{commands,agents,skills}`, que se sincronizan
- * recursivos). Base para el chequeo anti-anidamiento de `setProjectFolder`.
+ * Every path that `machineId` ALREADY syncs: that machine's project slots
+ * (except the `exclude` being edited, so it doesn't collide with itself) plus the
+ * user-level dir roots (`~/.claude/{commands,agents,skills}`, which sync
+ * recursively). Basis for the anti-nesting check in `setProjectFolder`.
  */
 export function machineSyncedPaths(
   config: Config,
