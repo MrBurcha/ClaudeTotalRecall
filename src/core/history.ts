@@ -45,6 +45,7 @@ export function classifyCommit(subject: string): ClassifiedCommit | null {
   if ((m = /^pin (.+) on (.+)$/.exec(body))) return { type: 'pin', pin: m[1], machineId: m[2] }
   if ((m = /^unpin (.+)$/.exec(body))) return { type: 'unpin', pin: m[1] }
   if (body === 'resolve conflicts') return { type: 'conflicts' }
+  if (body === 'remove Claude Code managed cache') return { type: 'cleanup' } // #135
   // `set a/b on x` (current) or legacy `a/b on x` — kept last so the keyword forms win.
   if ((m = /^(?:set )?(.+)\/(.+) on (.+)$/.exec(body)))
     return { type: 'set-folder', project: m[1], slot: m[2], machineId: m[3] }

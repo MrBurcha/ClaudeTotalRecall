@@ -3,15 +3,23 @@ import type { PlatformAdapter } from '../platform'
 import { Git } from './git'
 import { loadBaseline, saveBaseline } from './localState'
 import { PlanDriftError } from './plan'
-import { buildVerbPlan, pullRepo, syncOutgoing, syncIncoming, workingCopyDir } from './service'
+import {
+  buildVerbPlan,
+  keepMachineEdits,
+  pullRepo,
+  purgeManagedFromRepo,
+  syncOutgoing,
+  syncIncoming,
+  workingCopyDir,
+} from './service'
 import type { Plan, PlanAction } from './types'
 
 /**
- * Resultado de un ciclo de auto-sync.
- * - `synced`: quedó todo al día (con detalle de qué se movió).
- * - `conflict`: hay un conflicto de merge (git) por resolver a mano ⇒ el scheduler
- *   se pausa y la UI se pone roja.
- * - `error`: fallo de red/git ⇒ el scheduler decide backoff y reintenta.
+ * Result of an auto-sync cycle.
+ * - `synced`: everything is up to date (with detail of what moved).
+ * - `conflict`: there's a (git) merge conflict to resolve by hand ⇒ the scheduler
+ *   pauses and the UI turns red.
+ * - `error`: network/git failure ⇒ the scheduler decides on backoff and retries.
  */
 export type SyncOutcome =
   | { kind: 'synced'; pushed: boolean; pulled: boolean; incoming: boolean }
@@ -27,12 +35,12 @@ function errorMessage(err: unknown): string {
 }
 
 /**
- * Filtra un Plan a las acciones "seguras" para auto-sync (modo aditivo + baseline):
- * `create`/`overwrite` siempre (nunca destruyen datos), y `delete` SÓLO si el path
- * estaba en el baseline — es decir, es una baja real de un archivo que ya estaba
- * sincronizado, y no un archivo que la contraparte todavía no vio. `noop`/`skip`
- * se descartan. Así una máquina recién conectada nunca vuela el repo y los borrados
- * locales se propagan sin resurrección. Ver la doc de `runSyncCycle`.
+ * Filters a Plan down to the actions that are "safe" for auto-sync (additive mode +
+ * baseline): `create`/`overwrite` always (they never destroy data), and `delete` ONLY
+ * if the path was in the baseline — i.e. it's a real removal of a file that was already
+ * synced, not a file the other side hasn't seen yet. `noop`/`skip` are dropped. This
+ * way a freshly connected machine never wipes the repo, and local deletions propagate
+ * without resurrection. See the `runSyncCycle` docs.
  */
 function safeActions(plan: Plan, baseline: Set<string>): PlanAction[] {
   return plan.actions.filter((a) => {
@@ -43,8 +51,8 @@ function safeActions(plan: Plan, baseline: Set<string>): PlanAction[] {
 }
 
 /**
- * Conjunto de logicalPaths presentes en el working copy, leído de un plan de
- * incoming (donde `from` = working copy). Es el nuevo baseline al cerrar el ciclo.
+ * Set of logicalPaths present in the working copy, read from an incoming plan
+ * (where `from` = working copy). It becomes the new baseline when the cycle closes.
  */
 function workingCopySnapshot(incomingPlan: Plan): Set<string> {
   const paths = new Set<string>()
@@ -55,24 +63,24 @@ function workingCopySnapshot(incomingPlan: Plan): Set<string> {
 }
 
 /**
- * "Firma" del lado MÁQUINA de una acción de un plan outgoing: el hash de lo que
- * hay en la máquina (`hashFrom`, seteado para create/overwrite/noop — lo único
- * que lo deja `undefined` es que la máquina no tenga el archivo, i.e. `delete`).
- * Sirve para distinguir "la máquina cambió" de "el working copy se movió debajo"
- * (p.ej. por el pull de la fase 1) sin que la máquina haya cambiado un bit.
+ * "Signature" of the MACHINE side of an outgoing plan action: the hash of what's
+ * on the machine (`hashFrom`, set for create/overwrite/noop — the only thing that
+ * leaves it `undefined` is the machine not having the file, i.e. `delete`).
+ * Used to tell "the machine changed" apart from "the working copy moved underneath"
+ * (e.g. through the phase 1 pull) without the machine having changed a single bit.
  */
 function machineSignature(a: PlanAction): string | null {
   return a.hashFrom ?? null
 }
 
 /**
- * True si algún archivo cambió de lado MÁQUINA entre dos snapshots outgoing del
- * mismo ciclo — nunca por una diferencia que viene del lado working copy (eso lo
- * resuelve incoming normalmente, no es una carrera). Compara por logicalPath;
- * `?? null` trata "no estaba en `before`" igual que "la máquina no lo tenía":
- * un archivo puede volverse "candidato" recién en `after` porque el pull de la
- * fase 1 lo agregó al working copy (la máquina nunca lo tuvo ni lo tiene) — eso
- * NO es un cambio de máquina, aunque el archivo no exista en `before.actions`.
+ * True if some file changed on the MACHINE side between two outgoing snapshots of
+ * the same cycle — never because of a difference coming from the working-copy side
+ * (incoming handles that normally; it isn't a race). Compares by logicalPath;
+ * `?? null` treats "wasn't in `before`" the same as "the machine didn't have it":
+ * a file can first become a "candidate" in `after` because the phase 1 pull added
+ * it to the working copy (the machine never had it and still doesn't) — that is
+ * NOT a machine change, even though the file doesn't exist in `before.actions`.
  */
 function machineChangedSince(before: Plan, after: Plan): boolean {
   const prev = new Map(before.actions.map((a) => [a.logicalPath, machineSignature(a)]))
@@ -85,32 +93,35 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
   let pushed = false
   let pulled = false
 
-  // ── Fase 1: subir (máquina → working copy), con borrados vetados por baseline ──
+  // ── Phase 1: push up (machine → working copy), with deletions vetoed by baseline ──
   const outgoingPlan = await buildVerbPlan(adapter, 'outgoing', newMeta())
   const up = safeActions(outgoingPlan, baseline)
   if (up.length > 0) {
     const r = await syncOutgoing(adapter, { ...outgoingPlan, actions: up })
     if (r.conflicts.length > 0) return { kind: 'conflict', files: r.conflicts }
-    // Commiteamos pero el push no entró (red caída o rechazo persistente): no es
-    // "al día" — el commit local quedó sin llegar al remoto. Salimos como error
-    // para reintentar en el próximo ciclo (sin tocar baseline ni scattear).
+    // We committed but the push didn't land (network down or persistent rejection):
+    // that's not "up to date" — the local commit never reached the remote. Exit as an
+    // error to retry on the next cycle (without touching the baseline or running incoming).
     if (r.committed && !r.pushed) {
       return { kind: 'error', message: 'No se pudo pushear el commit al remoto' }
     }
     pushed = r.pushed
-    pulled = true // syncOutgoing pullea (merge del remoto) tras commitear
+    pulled = true // syncOutgoing pulls (merges the remote) after committing
   } else {
-    // Nada para subir por cambios locales: sincronizar con el remoto igual.
+    // Nothing to push from local changes: still sync with the remote.
     await git.fetch()
     let st = await git.status()
     if (st.behind > 0) {
       const p = await pullRepo(adapter)
       if (p.conflicts.length > 0) return { kind: 'conflict', files: p.conflicts }
       pulled = true
-      st = await git.status()
     }
-    // Commits locales sin pushear (p.ej. un push que falló en un ciclo previo):
-    // reintentar acá para no quedar "al día" con algo que no llegó al remoto.
+    // Repo hygiene (#135) AFTER integrating the remote, so this cycle also cleans
+    // a cache an older version just pushed back. Its commit rides the push below.
+    await purgeManagedFromRepo(adapter)
+    st = await git.status()
+    // Local commits not pushed yet (e.g. a push that failed in a previous cycle):
+    // retry here so we never report "up to date" with something the remote lacks.
     if (st.ahead > 0) {
       const push = await git.push()
       if (!push.ok) return { kind: 'error', message: 'No se pudo pushear al remoto' }
@@ -118,33 +129,33 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
     }
   }
 
-  // ── Fase 1.5: re-chequeo — ¿la MÁQUINA cambió DESPUÉS de que fase 1 ya corrió? ──
-  // Fase 1 puede incluir un pull/push real (segundos de red). Un edit que aterriza
-  // en esa ventana nunca lo vio el outgoingPlan de arriba, así que si seguimos
-  // directo a construir el incoming, su propio hashTo ya reflejaría ese edit al
-  // armarse — destinationDrifted (TOCTOU de #77) no encuentra nada raro, porque
-  // no compara "esto es lo que outgoing ya capturó", solo "esto cambió desde que
-  // ESTE plan se armó". Sin este re-chequeo, incoming pisa el edit fresco con la
-  // versión vieja del working copy, sin error ni conflicto (bug real encontrado
-  // dogfooding, 2026-07-09 — ver plan.test.ts para la reproducción a nivel Plan).
+  // ── Phase 1.5: re-check — did the MACHINE change AFTER phase 1 already ran? ──
+  // Phase 1 may include a real pull/push (seconds of network). An edit that lands
+  // in that window was never seen by the outgoingPlan above, so if we went straight
+  // on to building the incoming plan, its own hashTo would already reflect that edit
+  // when built — destinationDrifted (the #77 TOCTOU guard) finds nothing odd, because
+  // it doesn't compare "this is what outgoing already captured", only "this changed
+  // since THIS plan was built". Without this re-check, incoming clobbers the fresh
+  // edit with the working copy's old version, with no error or conflict (real bug
+  // found while dogfooding, 2026-07-09 — see plan.test.ts for the Plan-level repro).
   //
-  // OJO: comparamos por `machineChangedSince`, NUNCA por "el outgoing de ahora
-  // tiene acciones" a secas — la rama de arriba (sin cambios locales) puede
-  // haber hecho un pull real que mueve el WORKING COPY (p.ej. trae un delete de
-  // otra máquina), lo que por sí solo ya genera diffs nuevos sin que la máquina
-  // haya cambiado un bit (un archivo que antes era `noop` pasa a verse como
-  // `create` porque el working copy lo perdió, no porque la máquina lo ganara).
-  // Tratar eso como "hay algo nuevo" saltearía el incoming que justamente tiene
-  // que borrar ese archivo — falso positivo que reproduce y rompe
-  // syncEngine.test.ts "propagates a directory deletion...". Por eso comparamos
-  // el lado MÁQUINA del outgoingPlan original contra el del re-chequeo: si no
-  // cambió ni un hash del lado máquina, seguimos con incoming normalmente.
+  // CAREFUL: we compare via `machineChangedSince`, NEVER by "the current outgoing
+  // has actions" alone — the branch above (no local changes) may have done a real
+  // pull that moves the WORKING COPY (e.g. brings in a delete from another
+  // machine), which on its own already produces new diffs without the machine
+  // having changed a bit (a file that used to be `noop` now shows up as `create`
+  // because the working copy lost it, not because the machine gained it).
+  // Treating that as "there's something new" would skip the very incoming that has
+  // to delete that file — a false positive that reproduces and breaks
+  // syncEngine.test.ts "propagates a directory deletion...". That's why we compare
+  // the MACHINE side of the original outgoingPlan against the re-check's: if not a
+  // single machine-side hash changed, we carry on with incoming as usual.
   const recheck = await buildVerbPlan(adapter, 'outgoing', newMeta())
   if (machineChangedSince(outgoingPlan, recheck)) {
     return { kind: 'synced', pushed, pulled, incoming: false }
   }
 
-  // ── Fase 2: bajar a la máquina (working copy → máquina), mismos vetos ──────────
+  // ── Phase 2: bring down to the machine (working copy → machine), same vetoes ───
   const incomingPlan = await buildVerbPlan(adapter, 'incoming', newMeta())
   const down = safeActions(incomingPlan, baseline)
   let incoming = false
@@ -153,20 +164,20 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
     incoming = true
   }
 
-  // ── Fase 3: baseline := estado sincronizado del working copy (post-pull) ───────
+  // ── Phase 3: baseline := the working copy's synced state (post-pull) ───────────
   await saveBaseline(adapter, workingCopySnapshot(incomingPlan))
 
   return { kind: 'synced', pushed, pulled, incoming }
 }
 
 /**
- * Corre un ciclo completo de auto-sync. Orquesta las primitivas de `service.ts`
- * en modo 3-vías con baseline: sube los cambios locales (mergeando el remoto vía
- * `syncOutgoing`), baja lo que trajo el merge, y actualiza el baseline. Los conflictos
- * de contenido entre máquinas los detecta el `pull` de git y se devuelven como
- * `conflict`. Nunca tira: los fallos de red/git salen como `error`, y un
- * `PlanDriftError` (el disco cambió entre armar y ejecutar el Plan) reintenta una
- * vez con un plan fresco.
+ * Runs a full auto-sync cycle. Orchestrates the `service.ts` primitives in 3-way
+ * mode with a baseline: pushes up local changes (merging the remote via
+ * `syncOutgoing`), brings down what the merge brought in, and updates the baseline.
+ * Content conflicts between machines are detected by git's `pull` and returned as
+ * `conflict`. Never throws: network/git failures come out as `error`, and a
+ * `PlanDriftError` (the disk changed between building and executing the Plan)
+ * retries once with a fresh plan.
  */
 export async function runSyncCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
   try {
@@ -184,15 +195,21 @@ export async function runSyncCycle(adapter: PlatformAdapter): Promise<SyncOutcom
 }
 
 /**
- * Tras resolver un conflicto (el working copy ya tiene el merge finalizado y
- * pusheado por `completeConflictMerge`), baja SÓLO ese resultado a la máquina —
- * sin subir cambios (outgoing), para no pisar la resolución con la versión vieja de la máquina —
- * y actualiza el baseline. La llama el scheduler al reanudar tras un conflicto.
+ * After a conflict is resolved (the working copy already holds the completed merge,
+ * pushed by `completeConflictMerge` or `healManagedConflicts`), lands ONLY that result
+ * on the machine — no outgoing first, which would push the machine's stale copies over
+ * the remote side of the merge — and refreshes the baseline. The scheduler calls it
+ * when resuming after a conflict.
+ *
+ * `keepMachineEdits` narrows it to files the machine hasn't touched since its last
+ * commit: a merge can sit unresolved for days while the user keeps working, and those
+ * edits were never committed. Overwriting them (as this used to) lost them for good;
+ * now they stay, and the next regular cycle pushes them.
  */
 export async function incomingResolved(adapter: PlatformAdapter): Promise<void> {
   const baseline = await loadBaseline(adapter)
   const incomingPlan = await buildVerbPlan(adapter, 'incoming', newMeta())
-  const down = safeActions(incomingPlan, baseline)
+  const down = await keepMachineEdits(adapter, safeActions(incomingPlan, baseline))
   if (down.length > 0) await syncIncoming(adapter, { ...incomingPlan, actions: down })
   await saveBaseline(adapter, workingCopySnapshot(incomingPlan))
 }

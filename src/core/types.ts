@@ -144,6 +144,7 @@ export type HistoryType =
   | 'unpin'
   | 'conflicts'
   | 'notebook'
+  | 'cleanup' // the app removed Claude Code's managed cache from the repo (#135)
   | 'other'
 
 /** A single file touched by a commit, as reported by `git log --name-status`. */

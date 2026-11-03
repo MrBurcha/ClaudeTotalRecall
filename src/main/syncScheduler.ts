@@ -1,15 +1,23 @@
 import { watch, type FSWatcher } from 'node:fs'
 import { createPlatformAdapter, type PlatformAdapter } from '../platform'
 import { loadAutoSyncPrefs, saveAutoSyncPrefs } from '../core/localState'
+import { isExcludedRel } from '../core/managedPaths'
 import { isSecretExcluded } from '../core/plan'
 import { projectSlotPath, projectSlots, userLevelItems } from '../core/resolve'
 import * as svc from '../core/service'
 import { runSyncCycle, incomingResolved, type SyncOutcome } from '../core/syncEngine'
 import type { AutoSyncPrefs, SyncEngineState } from '../core/types'
 
-// El watch usa notificaciones nativas del SO (inotify/FSEvents): ~0% CPU en
-// reposo. El debounce trailing coalescea ráfagas de guardado en un solo ciclo.
+// The watch uses native OS notifications (inotify/FSEvents): ~0% CPU when
+// idle. The trailing debounce coalesces bursts of saves into a single cycle.
 const DEBOUNCE_MS = 10_000
+
+/** A watched sync root; `exclude` = top-level entries whose changes are ignored (#135). */
+interface WatchTarget {
+  path: string
+  recursive: boolean
+  exclude: readonly string[]
+}
 const MIN_INTERVAL_MS = 15_000
 const MAX_INTERVAL_MS = 3_600_000
 
@@ -22,9 +30,9 @@ function errorMessage(err: unknown): string {
 }
 
 /**
- * Ruido que el watcher debe ignorar para no despertarse al pedo: secretos
- * (`*.jsonl`, `.credentials.json`, `.claude.json`) que además nunca se sincronizan,
- * y directorios que cambian mucho y no aportan (`.git`, `node_modules`).
+ * Noise the watcher must ignore so it doesn't wake up for nothing: secrets
+ * (`*.jsonl`, `.credentials.json`, `.claude.json`), which never sync anyway,
+ * and directories that change a lot and add nothing (`.git`, `node_modules`).
  */
 function isNoise(rel: string): boolean {
   if (isSecretExcluded(rel)) return true
@@ -33,9 +41,9 @@ function isNoise(rel: string): boolean {
 }
 
 /**
- * Motor de auto-sync del proceso main. Dueño del *timing* (watch de archivos +
- * poll del remoto), la máquina de estados y el push a la UI. NO tiene lógica de
- * git: delega en `runSyncCycle` (core). Corre sólo mientras la app está abierta.
+ * Auto-sync engine of the main process. Owns the *timing* (file watch + remote
+ * poll), the state machine, and pushing state to the UI. Has NO git logic: it
+ * delegates to `runSyncCycle` (core). Runs only while the app is open.
  */
 export class SyncScheduler {
   private readonly adapter: PlatformAdapter = createPlatformAdapter()
@@ -62,22 +70,22 @@ export class SyncScheduler {
     return this.state
   }
 
-  /** true si el motor está pausado esperando resolución de conflicto. */
+  /** true if the engine is paused waiting for a conflict resolution. */
   private get pausedByConflict(): boolean {
     return this.state.status === 'conflict'
   }
 
-  /** Arranca en whenReady: lee prefs, converge una vez y arma watch+poll si auto. */
+  /** Starts on whenReady: reads prefs, converges once, and arms watch+poll if auto. */
   async start(): Promise<void> {
     await this.reload()
   }
 
-  /** Frena todo (before-quit): cierra watchers y timers. */
+  /** Stops everything (before-quit): closes watchers and timers. */
   stop(): void {
     this.disarm()
   }
 
-  /** Re-lee prefs/readiness y re-arma. La llama machine:register al completarse. */
+  /** Re-reads prefs/readiness and re-arms. Called by machine:register once it completes. */
   async reload(): Promise<void> {
     const prefs = await loadAutoSyncPrefs(this.adapter)
     this.setState({ auto: prefs.enabled, intervalMs: clampInterval(prefs.intervalMs) })
@@ -86,25 +94,25 @@ export class SyncScheduler {
     this.reconcileTimers()
   }
 
-  /** Cambia las prefs (persiste), re-arma con el nuevo intervalo y converge si recién se activó. */
+  /** Changes the prefs (persisted), re-arms with the new interval, converges if just enabled. */
   async setAuto(prefs: AutoSyncPrefs): Promise<SyncEngineState> {
     const clamped = { enabled: prefs.enabled, intervalMs: clampInterval(prefs.intervalMs) }
     await saveAutoSyncPrefs(this.adapter, clamped)
     const wasOff = !this.state.auto
-    this.disarm() // forzar re-armado con el nuevo intervalo
+    this.disarm() // force re-arming with the new interval
     this.setState({ auto: clamped.enabled, intervalMs: clamped.intervalMs })
     this.reconcileTimers()
     if (wasOff && clamped.enabled && this.ready) void this.cycle()
     return this.state
   }
 
-  /** Disparo manual ("Sincronizar ahora"): corre aunque auto esté off; no en conflicto. */
+  /** Manual trigger ("Sync now"): runs even when auto is off; not while in conflict. */
   async syncNow(): Promise<SyncEngineState> {
     if (!this.pausedByConflict) await this.cycle()
     return this.state
   }
 
-  /** Tras finalizar un merge en el panel Avanzado: baja el resultado y reanuda. */
+  /** After finishing a merge in the Advanced panel: brings the result down and resumes. */
   async resumeAfterConflict(): Promise<void> {
     try {
       await incomingResolved(this.adapter)
@@ -120,7 +128,7 @@ export class SyncScheduler {
     this.reconcileTimers()
   }
 
-  // ── ciclo (mutex + pendiente) ────────────────────────────────────────────────
+  // ── cycle (mutex + pending) ──────────────────────────────────────────────────
   private async cycle(): Promise<void> {
     if (this.pausedByConflict) return
     if (this.inFlight) {
@@ -135,12 +143,20 @@ export class SyncScheduler {
         return
       }
       this.ready = true
-      // Guard: si el working copy ya tiene conflictos (de un flujo manual o un
-      // ciclo previo), no sincronizar; pedir resolución.
+      // Guard: if the working copy already has conflicts (from a manual flow or a
+      // previous cycle), don't sync; ask for a resolution — after self-healing the
+      // Claude-managed ones (#135). A merge stuck ONLY on those (e.g. left by an
+      // older version) completes here and lands like a manual resolution would.
       const existing = await svc.listConflicts(this.adapter)
       if (existing.length > 0) {
-        this.setState({ status: 'conflict', conflicts: existing })
-        this.reconcileTimers()
+        const heal = await svc.healManagedConflicts(this.adapter)
+        if (!heal.completed) {
+          this.setState({ status: 'conflict', conflicts: heal.remaining })
+          this.reconcileTimers()
+          return
+        }
+        await incomingResolved(this.adapter)
+        this.applyOutcome({ kind: 'synced', pushed: heal.pushed, pulled: true, incoming: true })
         return
       }
       this.setState({ status: 'syncing', lastError: null })
@@ -174,7 +190,7 @@ export class SyncScheduler {
     return !!config
   }
 
-  // ── armado/desarmado de watch + poll ─────────────────────────────────────────
+  // ── arming/disarming watch + poll ────────────────────────────────────────────
   private reconcileTimers(): void {
     const shouldRun = this.ready && this.state.auto && this.state.status !== 'conflict'
     if (shouldRun) this.arm()
@@ -195,7 +211,7 @@ export class SyncScheduler {
       try {
         w.close()
       } catch {
-        /* ya cerrado */
+        /* already closed */
       }
     }
     this.watchers = []
@@ -209,7 +225,7 @@ export class SyncScheduler {
     }
   }
 
-  /** Debounce trailing con reset: cada cambio reinicia los 10 s de calma. */
+  /** Trailing debounce with reset: every change restarts the 10 s quiet window. */
   private onLocalChange(): void {
     if (this.debounceTimer) clearTimeout(this.debounceTimer)
     this.debounceTimer = setTimeout(() => {
@@ -220,35 +236,39 @@ export class SyncScheduler {
   }
 
   /**
-   * Observa SÓLO las raíces sincronizadas (no el home entero): `~/.claude` no
-   * recursivo (capta CLAUDE.md y settings.json sin entrar a projects/*.jsonl),
-   * los dirs user-level recursivos, y las carpetas de proyecto de esta máquina.
+   * Watches ONLY the synced roots (not the whole home): `~/.claude` non-recursively
+   * (catches CLAUDE.md and settings.json without descending into projects/*.jsonl),
+   * the user-level dirs recursively, and this machine's project folders.
    */
   private async setupWatchers(): Promise<void> {
     for (const t of await this.watchTargets()) {
       try {
         const w = watch(t.path, { recursive: t.recursive }, (_evt, filename) => {
-          if (filename && isNoise(filename.toString())) return
+          if (filename) {
+            const rel = filename.toString()
+            // Claude Code refreshes its own skills cache on its own (#135): never a reason to sync.
+            if (isNoise(rel) || isExcludedRel(rel, t.exclude)) return
+          }
           this.onLocalChange()
         })
         w.on('error', () => {
-          /* path borrado o SO sin soporte: se ignora, el poll cubre igual */
+          /* path deleted or unsupported OS: ignored, the poll covers it anyway */
         })
         w.unref?.()
         this.watchers.push(w)
       } catch {
-        /* path inexistente u OS sin recursive watch: lo cubre el poll */
+        /* nonexistent path or OS without recursive watch: the poll covers it */
       }
     }
   }
 
-  private async watchTargets(): Promise<{ path: string; recursive: boolean }[]> {
+  private async watchTargets(): Promise<WatchTarget[]> {
     const a = this.adapter
-    const targets: { path: string; recursive: boolean }[] = [
-      { path: a.claudeHome(), recursive: false },
-    ]
+    const targets: WatchTarget[] = [{ path: a.claudeHome(), recursive: false, exclude: [] }]
     for (const item of userLevelItems(a)) {
-      if (item.kind === 'dir') targets.push({ path: item.realPath, recursive: true })
+      if (item.kind === 'dir') {
+        targets.push({ path: item.realPath, recursive: true, exclude: item.exclude })
+      }
     }
     const config = await svc.loadRepoConfig(a).catch(() => null)
     const machineId = await svc.currentMachineId(a).catch(() => null)
@@ -256,7 +276,7 @@ export class SyncScheduler {
       for (const name of Object.keys(config.projects)) {
         for (const slot of projectSlots(config, name)) {
           const p = projectSlotPath(config, name, slot, machineId)
-          if (p) targets.push({ path: p, recursive: true })
+          if (p) targets.push({ path: p, recursive: true, exclude: [] })
         }
       }
     }

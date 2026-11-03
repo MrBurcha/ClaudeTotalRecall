@@ -9,6 +9,8 @@
  * Pure string logic on purpose — NO `node:*` imports — so the renderer bundle
  * can import it directly (resolve.ts can't: it pulls `node:path`).
  */
+import { isManagedRepoPath } from './managedPaths'
+
 export type MemoryLocation =
   | { bucket: 'project'; project: string; slot: string; rest: string }
   | { bucket: 'user'; slot: string; rest: string }
@@ -66,13 +68,15 @@ export function parseMemoryPath(repoRelPath: string): MemoryLocation {
 }
 
 /**
- * True for repo-structure placeholders that aren't real memory content — the
- * `.gitkeep` files that seed the empty `memories/**` dirs. The activity feed
- * hides them so the first sync doesn't read as "removed a bunch of files".
+ * True for repo paths that aren't real memory content: the `.gitkeep` files that
+ * seed the empty `memories/**` dirs, and Claude Code's own skills cache, which older
+ * versions synced by mistake (#135) and which still fills past commits. The activity
+ * feed hides them so a sync doesn't read as "removed a bunch of files", nor a cache
+ * refresh as a user-level change.
  */
 export function isStructuralNoise(repoRelPath: string): boolean {
   const path = repoRelPath.replace(/\\/g, '/')
-  return path === '.gitkeep' || path.endsWith('/.gitkeep')
+  return path === '.gitkeep' || path.endsWith('/.gitkeep') || isManagedRepoPath(path)
 }
 
 /**

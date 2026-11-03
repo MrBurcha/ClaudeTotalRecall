@@ -139,7 +139,16 @@ describe('isStructuralNoise', () => {
     'memories/projects/demo/memory/foo.md',
     'memories/user/commands/gitkeep.md',
     '.gitkeeper',
+    'memories/user/skills/my-skill/synced/notes.md',
   ])('leaves real files alone (%j)', (p) => {
     expect(isStructuralNoise(p)).toBe(false)
+  })
+
+  it.each([
+    'memories/user/skills/synced/org_acct/.last-complete-round',
+    'memories/user/skills/synced/org_acct/manifest.json',
+    'memories/user/skills/synced/.bucket-org_acct',
+  ])("flags Claude Code's own skills cache, which older versions synced (#135) (%j)", (p) => {
+    expect(isStructuralNoise(p)).toBe(true)
   })
 })

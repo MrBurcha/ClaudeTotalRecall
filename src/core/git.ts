@@ -12,20 +12,20 @@ export class GitError extends Error {
 }
 
 export interface PullResult {
-  /** true si el pull (merge) quedó limpio; false si hay conflictos por resolver */
+  /** true if the pull (merge) came out clean; false if there are conflicts to resolve */
   ok: boolean
   conflicted: string[]
 }
 
 export interface PushResult {
   ok: boolean
-  /** true si el remoto rechazó por non-fast-forward (otra máquina empujó primero) */
+  /** true if the remote rejected as non-fast-forward (another machine pushed first) */
   rejected: boolean
   stderr: string
 }
 
 export interface CommitResult {
-  /** false si no había nada para commitear (working tree limpio) */
+  /** false if there was nothing to commit (clean working tree) */
   committed: boolean
 }
 
@@ -35,13 +35,13 @@ export interface RawLogEntry {
   at: string
   author: string
   subject: string
-  /** número de archivos cambiados (= changes.length) */
+  /** number of changed files (= changes.length) */
   files: number
-  /** archivos tocados por el commit (de --name-status) */
+  /** files touched by the commit (from --name-status) */
   changes: FileChange[]
 }
 
-/** Mapea la letra de estado de git (A/M/D/R###/C###/T) al estado semántico. */
+/** Maps git's status letter (A/M/D/R###/C###/T) to the semantic status. */
 function fileStatus(code: string): FileChange['status'] {
   switch (code[0]) {
     case 'A':
@@ -57,14 +57,14 @@ function fileStatus(code: string): FileChange['status'] {
   }
 }
 
-// Formato de `git log` compartido por `log()` y `logRange()`. El separador de
-// registro (REC) va al INICIO así cada bloque queda "<header>\n<name-status…>";
-// los campos del header van separados por US (\x1f).
+// `git log` format shared by `log()` and `logRange()`. The record separator
+// (REC) goes at the START so each block reads "<header>\n<name-status…>";
+// the header fields are separated by US (\x1f).
 const LOG_SEP = '\x1f'
 const LOG_REC = '\x1e'
 const LOG_FMT = `${LOG_REC}%H${LOG_SEP}%aI${LOG_SEP}%an${LOG_SEP}%s`
 
-/** Parsea la salida de `git log --name-status` con {@link LOG_FMT} en RawLogEntry[]. */
+/** Parses `git log --name-status` output in {@link LOG_FMT} into RawLogEntry[]. */
 function parseLog(stdout: string): RawLogEntry[] {
   const out: RawLogEntry[] = []
   for (const rec of stdout.split(LOG_REC)) {
@@ -85,9 +85,9 @@ function parseLog(stdout: string): RawLogEntry[] {
 }
 
 /**
- * Wrapper fino de git ligado a un working copy (cwd). Política de conflictos =
- * MERGE (no rebase): en un conflicto "ours" = local (HEAD) y "theirs" = remoto
- * (MERGE_HEAD), que es el mapeo intuitivo para la UI por-archivo.
+ * Thin git wrapper bound to a working copy (cwd). Conflict policy =
+ * MERGE (not rebase): in a conflict "ours" = local (HEAD) and "theirs" = remote
+ * (MERGE_HEAD), which is the intuitive mapping for the per-file UI.
  */
 export class Git {
   constructor(
@@ -95,7 +95,7 @@ export class Git {
     private readonly bin = 'git',
   ) {}
 
-  /** Ejecuta git crudo; no tira por code != 0. */
+  /** Runs raw git; does not throw on code != 0. */
   async raw(args: string[], input?: string): Promise<ExecResult> {
     // core.quotePath=false: emit non-ASCII paths (filenames with ñ, accents, …)
     // verbatim as UTF-8 instead of git's octal-escaped `"\NNN"` quoting, so path
@@ -103,7 +103,7 @@ export class Git {
     return run(this.bin, ['-c', 'core.quotePath=false', ...args], { cwd: this.cwd, input })
   }
 
-  /** Ejecuta git y tira GitError si code != 0; devuelve stdout trimmeado. */
+  /** Runs git and throws GitError if code != 0; returns trimmed stdout. */
   async out(args: string[]): Promise<string> {
     const r = await this.raw(args)
     if (r.code !== 0) {
@@ -133,12 +133,71 @@ export class Git {
     return out ? out.split('\n').filter(Boolean) : []
   }
 
+  /** True while a merge is in progress (MERGE_HEAD exists), resolved or not. */
+  async mergeInProgress(): Promise<boolean> {
+    const r = await this.raw(['rev-parse', '-q', '--verify', 'MERGE_HEAD'])
+    return r.code === 0
+  }
+
+  /** Object id of `path` (repo-relative, posix) as of `rev`, or null when it isn't there. */
+  async blobId(rev: string, path: string): Promise<string | null> {
+    const r = await this.raw(['rev-parse', '-q', '--verify', `${rev}:${path}`])
+    return r.code === 0 ? r.stdout.trim() : null
+  }
+
+  /**
+   * Object id git would give some bytes — a file on disk (read byte-exact, no
+   * filters) or a string — comparable with `blobId` without decoding blobs.
+   */
+  async hashObject(src: { file: string } | { content: string }): Promise<string> {
+    if ('file' in src) return this.out(['hash-object', '--no-filters', '--', src.file])
+    const r = await this.raw(['hash-object', '--no-filters', '--stdin'], src.content)
+    if (r.code !== 0) {
+      throw new GitError(`git hash-object --stdin falló (code ${r.code}): ${r.stderr.trim()}`, r)
+    }
+    return r.stdout.trim()
+  }
+
+  /** Tracked files under the given pathspecs (repo-relative); [] when none match. */
+  async lsFiles(paths: string[]): Promise<string[]> {
+    const out = await this.out(['ls-files', '-z', '--', ...paths])
+    return out.split('\0').filter(Boolean)
+  }
+
+  /**
+   * `git rm` from the index AND the working tree. `recursive` for directories,
+   * `force` to drop files even when they carry local modifications. Paths that
+   * match nothing are ignored, so it is safe to call on an already-clean tree.
+   */
+  async rm(paths: string[], opts: { recursive?: boolean; force?: boolean } = {}): Promise<void> {
+    const flags = ['-q', '--ignore-unmatch']
+    if (opts.recursive) flags.push('-r')
+    if (opts.force) flags.push('-f')
+    await this.out(['rm', ...flags, '--', ...paths])
+  }
+
+  /**
+   * Which sides of a merge conflict still have `file`, read from the index stages
+   * (`ls-files -u`: 2 = ours/local, 3 = theirs/remote). A modify/delete conflict
+   * lacks one of them — that side DELETED the file (#136).
+   */
+  async conflictSides(file: string): Promise<{ ours: boolean; theirs: boolean }> {
+    const out = await this.out(['ls-files', '-u', '-z', '--', file])
+    const stages = new Set<string>()
+    for (const entry of out.split('\0')) {
+      // "<mode> <sha> <stage>\t<path>"
+      const stage = entry.split('\t')[0]?.split(' ')[2]
+      if (stage) stages.add(stage)
+    }
+    return { ours: stages.has('2'), theirs: stages.has('3') }
+  }
+
   async isDirty(): Promise<boolean> {
     const out = await this.out(['status', '--porcelain'])
     return out.length > 0
   }
 
-  /** ahead/behind respecto del upstream; 0/0 si no hay upstream configurado. */
+  /** ahead/behind relative to the upstream; 0/0 if no upstream is configured. */
   private async aheadBehind(): Promise<{ ahead: number; behind: number }> {
     // left = upstream, right = HEAD → "<behind>\t<ahead>"
     const r = await this.raw(['rev-list', '--left-right', '--count', '@{upstream}...HEAD'])
@@ -156,8 +215,8 @@ export class Git {
   }
 
   /**
-   * Últimos `limit` commits con conteo de archivos. Usa `raw` (no tira) para
-   * tolerar un repo sin commits → [].
+   * Last `limit` commits with file counts. Uses `raw` (doesn't throw) to
+   * tolerate a repo with no commits → [].
    */
   async log(limit = 50): Promise<RawLogEntry[]> {
     const r = await this.raw(['log', `-n${limit}`, '--name-status', `--pretty=format:${LOG_FMT}`])
@@ -166,9 +225,9 @@ export class Git {
   }
 
   /**
-   * Commits en el rango `(fromExclusive, toInclusive]`, mismo formato que `log()`.
-   * Se usa para atribuir un incoming: los commits que trajo el pull entre el
-   * último HEAD registrado y el actual. [] si el rango es inválido/vacío.
+   * Commits in the range `(fromExclusive, toInclusive]`, same format as `log()`.
+   * Used to attribute an incoming: the commits the pull brought in between the
+   * last recorded HEAD and the current one. [] if the range is invalid/empty.
    */
   async logRange(fromExclusive: string, toInclusive: string): Promise<RawLogEntry[]> {
     const r = await this.raw([
@@ -181,7 +240,7 @@ export class Git {
     return parseLog(r.stdout)
   }
 
-  /** Resuelve un ref a su hash completo, o null (p.ej. un repo sin commits aún). */
+  /** Resolves a ref to its full hash, or null (e.g. a repo with no commits yet). */
   async revParse(ref = 'HEAD'): Promise<string | null> {
     const r = await this.raw(['rev-parse', ref])
     return r.code === 0 ? r.stdout.trim() : null
@@ -191,12 +250,12 @@ export class Git {
     await this.out(['fetch'])
   }
 
-  /** Descarta commits/cambios locales y alinea el working copy a `ref` (p.ej. origin/main). */
+  /** Discards local commits/changes and aligns the working copy to `ref` (e.g. origin/main). */
   async resetHard(ref: string): Promise<void> {
     await this.out(['reset', '--hard', ref])
   }
 
-  /** pull con MERGE explícito (nunca rebase). Detecta conflictos. */
+  /** pull with an explicit MERGE (never rebase). Detects conflicts. */
   async pull(): Promise<PullResult> {
     const r = await this.raw(['pull', '--no-rebase'])
     const conflicted = await this.listConflicts()
@@ -211,7 +270,7 @@ export class Git {
     await this.out(['add', ...paths])
   }
 
-  /** Commitea; si el working tree está limpio devuelve { committed: false }. */
+  /** Commits; if the working tree is clean, returns { committed: false }. */
   async commit(message: string): Promise<CommitResult> {
     if (!(await this.isDirty())) return { committed: false }
     await this.out(['commit', '-m', message])
@@ -233,7 +292,7 @@ export class Git {
     throw new GitError(`git commit -- falló (code ${r.code}): ${r.stderr.trim()}`, r)
   }
 
-  /** push; detecta rechazo por non-fast-forward para el retry del registro. */
+  /** push; detects a non-fast-forward rejection for the registration retry. */
   async push(args: string[] = []): Promise<PushResult> {
     const r = await this.raw(['push', ...args])
     if (r.code === 0) return { ok: true, rejected: false, stderr: r.stderr }
@@ -241,7 +300,9 @@ export class Git {
     return { ok: false, rejected, stderr: r.stderr }
   }
 
-  // ── Resolución de conflictos (merge: ours=local, theirs=remoto) ──────────────
+  // ── Conflict resolution (merge: ours=local, theirs=remote) ───────────────────
+  // These only work when that side HAS the file; `core/conflict.ts` picks `rm`
+  // instead for the side of a modify/delete conflict that deleted it (#136).
   async checkoutOurs(file: string): Promise<void> {
     await this.out(['checkout', '--ours', '--', file])
     await this.add([file])
@@ -252,7 +313,7 @@ export class Git {
     await this.add([file])
   }
 
-  /** Cierra el merge en curso (tras resolver todos los conflictos). */
+  /** Completes the merge in progress (once every conflict is resolved). */
   async completeMerge(message?: string): Promise<void> {
     const args = message ? ['commit', '-m', message] : ['commit', '--no-edit']
     await this.out(args)

@@ -145,6 +145,60 @@ describe('outgoing → incoming round-trip', () => {
   })
 })
 
+describe("Claude Code's managed skills cache (#135)", () => {
+  const CACHE = 'skills/synced/org_acct'
+
+  it('never plans ~/.claude/skills/synced in either direction, while user skills still sync', async () => {
+    const sb = await seed()
+    const c1 = join(sb.home1, '.claude')
+    // Claude Code's cache on m1…
+    await mkdir(join(c1, CACHE), { recursive: true })
+    await writeFile(join(c1, CACHE, 'manifest.json'), '{"m":1}')
+    await writeFile(join(c1, CACHE, '.last-complete-round'), 'round-m1 cli')
+    await writeFile(join(c1, 'skills/synced/.bucket-org_acct'), '')
+    // …next to a user skill that happens to contain its own `synced/` folder.
+    await mkdir(join(c1, 'skills/my-skill/synced'), { recursive: true })
+    await writeFile(join(c1, 'skills/my-skill/SKILL.md'), 'mine\n')
+    await writeFile(join(c1, 'skills/my-skill/synced/notes.md'), 'nested\n')
+    // A project folder with a `synced/` subfolder is plain user content too.
+    await mkdir(join(sb.p1, 'synced'), { recursive: true })
+    await writeFile(join(sb.p1, 'synced/x.md'), 'project synced\n')
+
+    const ctx1 = ctxFor(sb, sb.home1, 'm1')
+    const out = await buildOutgoingPlan(ctx1, META)
+    expect(out.actions.some((a) => a.logicalPath.startsWith('memories/user/skills/synced'))).toBe(
+      false,
+    )
+    await executeOutgoing(out, ctx1)
+    expect(await exists(join(sb.repoDir, 'memories/user/skills/synced'))).toBe(false)
+    expect(await read(join(sb.repoDir, 'memories/user/skills/my-skill/SKILL.md'))).toBe('mine\n')
+    expect(await read(join(sb.repoDir, 'memories/user/skills/my-skill/synced/notes.md'))).toBe(
+      'nested\n',
+    )
+    expect(await read(join(sb.repoDir, 'memories/projects/proj/memory/synced/x.md'))).toBe(
+      'project synced\n',
+    )
+
+    // Incoming: a leftover copy in the repo (left by an older version) is never
+    // written to m2, and m2's own cache is never deleted nor overwritten.
+    await mkdir(join(sb.repoDir, 'memories/user', CACHE), { recursive: true })
+    await writeFile(join(sb.repoDir, 'memories/user', CACHE, 'manifest.json'), '{"stale":1}')
+    const c2 = join(sb.home2, '.claude')
+    await mkdir(join(c2, 'skills/synced/other_acct'), { recursive: true })
+    await writeFile(join(c2, 'skills/synced/other_acct/manifest.json'), '{"m":2}')
+
+    const ctx2 = ctxFor(sb, sb.home2, 'm2')
+    const inc = await buildIncomingPlan(ctx2, META)
+    expect(inc.actions.some((a) => a.logicalPath.startsWith('memories/user/skills/synced'))).toBe(
+      false,
+    )
+    await executeIncoming(inc, ctx2)
+    expect(await read(join(c2, 'skills/my-skill/SKILL.md'))).toBe('mine\n')
+    expect(await exists(join(c2, CACHE))).toBe(false)
+    expect(await read(join(c2, 'skills/synced/other_acct/manifest.json'))).toBe('{"m":2}')
+  })
+})
+
 describe('Plan action types', () => {
   it('detects create / overwrite / noop / delete / skip', async () => {
     const sb = await seed()
