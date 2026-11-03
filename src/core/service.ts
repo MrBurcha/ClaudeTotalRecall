@@ -1,12 +1,13 @@
-import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { hostname } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import type { PlatformAdapter } from '../platform'
 import { loadActivityLog, recordIncoming, seedActivityHead } from './activityLog'
 import { loadConfig, saveConfig } from './config'
+import { resolveConflictFile } from './conflict'
 import { AppError } from './errors'
 import { readMemoryFilePreview } from './filePreview'
-import { Git } from './git'
+import { Git, type PullResult } from './git'
 import { classifyCommit } from './history'
 import {
   ensureSettingsLocal,
@@ -25,7 +26,14 @@ import {
   type MachineMappingProposal,
   type ScannedProject,
 } from './discovery'
-import { buildPlan, executePlan, type ExecResult, type SyncContext } from './plan'
+import { isManagedRepoPath, managedGitignoreLines, managedRepoPaths } from './managedPaths'
+import {
+  buildPlan,
+  executePlan,
+  machineSharedSettings,
+  type ExecResult,
+  type SyncContext,
+} from './plan'
 import { withRepoLock } from './repoLock'
 import { machinePathForLogical, machineSyncedPaths, pathsCollide } from './resolve'
 import {
@@ -36,6 +44,7 @@ import {
   type HistoryEntry,
   type Machine,
   type Plan,
+  type PlanAction,
   type PlanActionType,
   type RepoStatus,
   type Verb,
@@ -95,7 +104,30 @@ async function initStructure(dir: string, remote: string): Promise<void> {
   }
   // Defense in depth, even though the Plan guard already excludes secrets.
   await writeFile(join(dir, '.gitignore'), '.DS_Store\n.credentials.json\n*.jsonl\n.claude.json\n')
+  await ensureGitIgnore(dir)
   await ensureGitAttributes(dir)
+}
+
+/**
+ * Appends any missing Claude-managed path (`managedGitignoreLines`) to the repo's
+ * `.gitignore`, creating it if needed. Idempotent; true when the file changed.
+ * The entry is what keeps an OLDER app version from re-adding the purged cache:
+ * its `git add -A` skips untracked, ignored files (#135).
+ */
+async function ensureGitIgnore(dir: string): Promise<boolean> {
+  const file = join(dir, '.gitignore')
+  let existing = ''
+  try {
+    existing = await readFile(file, 'utf8')
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+  }
+  const present = new Set(existing.split(/\r?\n/).map((l) => l.trim()))
+  const missing = managedGitignoreLines().filter((l) => !present.has(l))
+  if (missing.length === 0) return false
+  const head = existing === '' || existing.endsWith('\n') ? existing : `${existing}\n`
+  await writeFile(file, `${head}${missing.join('\n')}\n`)
+  return true
 }
 
 /**
@@ -246,14 +278,14 @@ async function pushPendingCommits(git: Git): Promise<void> {
       files: files.join(', '),
     })
   if (st.behind > 0) {
-    const pull = await git.pull()
+    const pull = await pullMerge(git)
     if (!pull.ok) throw conflict(pull.conflicted)
     st = await git.status()
   }
   if (st.ahead > 0) {
     let push = await git.push()
     if (!push.ok && push.rejected) {
-      const p2 = await git.pull()
+      const p2 = await pullMerge(git)
       if (!p2.ok) throw conflict(p2.conflicted)
       push = await git.push()
     }
@@ -870,9 +902,136 @@ export async function resolveConflict(
   file: string,
   side: 'local' | 'remote',
 ): Promise<void> {
+  // Delegates so the modify/delete handling (#136) lives in exactly one place.
+  await resolveConflictFile(new Git(workingCopyDir(adapter)), file, side)
+}
+
+/**
+ * Resolves every conflict confined to a Claude-managed subtree as a DELETION —
+ * this version purges those paths from the repo anyway (#135) — and, when nothing
+ * else is left, completes the merge with git's default message (hidden from the
+ * activity feed: the user didn't resolve anything). Returns the conflicts that
+ * still need the user, and whether the merge got completed here.
+ */
+async function resolveManagedConflicts(
+  git: Git,
+): Promise<{ remaining: string[]; completed: boolean }> {
+  const conflicted = await git.listConflicts()
+  const managed = conflicted.filter((p) => isManagedRepoPath(p))
+  const remaining = conflicted.filter((p) => !isManagedRepoPath(p))
+  if (managed.length === 0) return { remaining, completed: false }
+  await git.rm(managed, { force: true })
+  if (remaining.length > 0 || !(await git.mergeInProgress())) return { remaining, completed: false }
+  await git.completeMerge()
+  return { remaining, completed: true }
+}
+
+/**
+ * `git pull` (merge) that never stalls on Claude-managed files (#135): their
+ * conflicts are auto-resolved (see `resolveManagedConflicts`), so the caller
+ * carries on exactly as after a clean pull. Real conflicts come back untouched.
+ */
+async function pullMerge(git: Git): Promise<PullResult> {
+  const r = await git.pull()
+  if (r.ok) return r
+  const { remaining } = await resolveManagedConflicts(git)
+  return remaining.length > 0 ? { ok: false, conflicted: remaining } : { ok: true, conflicted: [] }
+}
+
+export interface HealResult {
+  /** conflicts the user still has to resolve (none are Claude-managed) */
+  remaining: string[]
+  /** true when the stuck merge was completed here */
+  completed: boolean
+  /** true when that completed merge also reached the remote */
+  pushed: boolean
+}
+
+/**
+ * Self-heal for a working copy left stuck in a merge whose conflicts are, at least
+ * partly, Claude-managed files — e.g. by an older version before #135, which froze a
+ * real machine for days. Those are resolved as deletions; if nothing else is left the
+ * merge is completed and pushed. The caller must then land the result with
+ * `incomingResolved` (never an outgoing first — see there). No-op without conflicts.
+ */
+export async function healManagedConflicts(adapter: PlatformAdapter): Promise<HealResult> {
   const git = new Git(workingCopyDir(adapter))
-  if (side === 'local') await git.checkoutOurs(file)
-  else await git.checkoutTheirs(file)
+  const { remaining, completed } = await resolveManagedConflicts(git)
+  if (!completed) return { remaining, completed, pushed: false }
+  const push = await git.push()
+  return { remaining, completed, pushed: push.ok }
+}
+
+const CLEANUP_COMMIT = 'Claude Total Recall: remove Claude Code managed cache'
+
+/**
+ * Repo hygiene (#135): drops the Claude-managed subtrees (`managedRepoPaths`) from
+ * the working copy — index AND disk, untracked leftovers included — and git-ignores
+ * them, as ONE local commit limited to those paths (a concurrent flow's staged
+ * changes are never swept in). The caller's push carries it. History is NOT
+ * rewritten: past commits keep their copy. Idempotent: false when already clean.
+ * Never runs mid-merge — `resolveManagedConflicts` heals that case — so these
+ * deletions are never folded into somebody else's merge commit.
+ */
+async function purgeManaged(git: Git): Promise<boolean> {
+  if (await git.mergeInProgress()) return false
+  const roots = managedRepoPaths()
+  const tracked = await git.lsFiles(roots)
+  const ignoreChanged = await ensureGitIgnore(git.cwd)
+  if (tracked.length > 0) await git.rm(roots, { recursive: true, force: true })
+  for (const r of roots) await rm(join(git.cwd, r), { recursive: true, force: true })
+  if (tracked.length === 0 && !ignoreChanged) return false
+  await git.add(['.gitignore'])
+  const paths = tracked.length > 0 ? ['.gitignore', ...roots] : ['.gitignore']
+  return (await git.commitPaths(CLEANUP_COMMIT, paths)).committed
+}
+
+/**
+ * Removes the Claude-managed cache from the repo (see `purgeManaged`) and commits
+ * locally. True when it committed something the caller still has to push.
+ */
+export function purgeManagedFromRepo(adapter: PlatformAdapter): Promise<boolean> {
+  return purgeManaged(new Git(workingCopyDir(adapter)))
+}
+
+/**
+ * Narrows an incoming after a completed merge (a manual resolution or a heal) to
+ * the actions that don't destroy machine-side work: one applies only when the
+ * machine still holds exactly what it last committed — the merge's first parent.
+ * A file the machine changed AFTER that commit (e.g. edited while sync sat paused
+ * on the conflict) is left as is: those bytes exist nowhere else, and the next
+ * regular cycle pushes them. Before this, the post-resolution incoming silently
+ * reverted such edits to their pre-conflict version. HEAD not a merge → unchanged.
+ */
+export async function keepMachineEdits(
+  adapter: PlatformAdapter,
+  actions: PlanAction[],
+): Promise<PlanAction[]> {
+  const git = new Git(workingCopyDir(adapter))
+  const base = (await git.revParse('HEAD^2')) ? await git.revParse('HEAD^1') : null
+  if (!base) return actions
+  const ctx = await buildContext(adapter)
+  const kept: PlanAction[] = []
+  for (const a of actions) {
+    if (!a.to) continue
+    const committed = await git.blobId(base, a.logicalPath)
+    if ((await machineObjectId(git, ctx, a)) === committed) kept.push(a)
+  }
+  return kept
+}
+
+/**
+ * Git object id of what this machine would contribute for an incoming action's
+ * path right now — the shared split for settings.json, the raw bytes otherwise —
+ * or null when the machine doesn't have it.
+ */
+async function machineObjectId(git: Git, ctx: SyncContext, a: PlanAction): Promise<string | null> {
+  if (a.transform) {
+    const shared = await machineSharedSettings(ctx)
+    return shared === null ? null : git.hashObject({ content: shared })
+  }
+  if (!a.to || !(await pathExists(a.to))) return null
+  return git.hashObject({ file: a.to })
 }
 
 /** Completes the merge and pushes if it can. */
@@ -921,7 +1080,7 @@ export async function history(adapter: PlatformAdapter, limit = 50): Promise<His
 export async function pullRepo(
   adapter: PlatformAdapter,
 ): Promise<{ ok: boolean; conflicts: string[] }> {
-  const r = await new Git(workingCopyDir(adapter)).pull()
+  const r = await pullMerge(new Git(workingCopyDir(adapter)))
   return { ok: r.ok, conflicts: r.conflicted }
 }
 
@@ -969,19 +1128,23 @@ export async function syncOutgoing(
 ): Promise<OutgoingResult> {
   const git = new Git(workingCopyDir(adapter))
   const ctx = await buildContext(adapter)
+  // Repo hygiene first (#135): its own commit, carried by this flow's push.
+  const purged = await purgeManaged(git)
   const exec = await executePlan(plan, ctx, opts)
 
   await git.add()
   // Stamp the machine so the activity history (#8) can attribute and direct (↑/↓) it.
   const c = await git.commit(`Claude Total Recall: outgoing on ${ctx.machineId}`)
-  if (!c.committed) return { exec, conflicts: [], pushed: false, committed: false }
+  if (!c.committed && !purged) return { exec, conflicts: [], pushed: false, committed: false }
 
-  const pull = await git.pull()
+  const pull = await pullMerge(git)
   if (!pull.ok) return { exec, conflicts: pull.conflicted, pushed: false, committed: true }
+  // Again after integrating the remote: an older version may have pushed the cache back.
+  await purgeManaged(git)
 
   let push = await git.push()
   if (!push.ok && push.rejected) {
-    const p2 = await git.pull()
+    const p2 = await pullMerge(git)
     if (!p2.ok) return { exec, conflicts: p2.conflicted, pushed: false, committed: true }
     push = await git.push()
   }

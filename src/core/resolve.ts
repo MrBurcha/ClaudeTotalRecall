@@ -1,5 +1,6 @@
 import { join, resolve as resolvePath, sep } from 'node:path'
 import type { PlatformAdapter } from '../platform'
+import { USER_LEVEL_EXCLUDES } from './managedPaths'
 import { parseMemoryPath } from './memoryPath'
 import type { Config } from './types'
 
@@ -8,6 +9,11 @@ export interface UserLevelItem {
   realPath: string
   logicalPath: string
   kind: 'file' | 'dir'
+  /**
+   * Top-level entries of a dir slot that Claude Code manages itself and that never
+   * sync in either direction (e.g. `skills/synced`, #135). Empty for most slots.
+   */
+  exclude: readonly string[]
 }
 
 /**
@@ -29,6 +35,7 @@ export function userLevelItems(adapter: PlatformAdapter): UserLevelItem[] {
     realPath: join(claudeHome, slot),
     logicalPath: `memories/user/${slot}`,
     kind,
+    exclude: USER_LEVEL_EXCLUDES[slot] ?? [],
   }))
 }
 

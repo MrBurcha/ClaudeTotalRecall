@@ -59,8 +59,12 @@ async function hashFile(p: string): Promise<string> {
     .digest('hex')
 }
 
-/** Lists files (recursively) relative to `dir`, filtering out secrets. Empty if it doesn't exist. */
-async function listFiles(dir: string): Promise<string[]> {
+/**
+ * Lists files (recursively) relative to `dir`, filtering out secrets and the
+ * `exclude`d top-level entries (Claude-managed subtrees, never descended into).
+ * Empty if it doesn't exist.
+ */
+async function listFiles(dir: string, exclude: readonly string[] = []): Promise<string[]> {
   const out: string[] = []
   async function walk(cur: string, rel: string): Promise<void> {
     let entries
@@ -70,6 +74,7 @@ async function listFiles(dir: string): Promise<string[]> {
       return
     }
     for (const e of entries) {
+      if (!rel && exclude.includes(e.name)) continue
       const childRel = rel ? posix.join(rel, e.name) : e.name
       if (e.isDirectory()) {
         await walk(join(cur, e.name), childRel)
@@ -110,6 +115,11 @@ async function settingsWrite(ctx: SyncContext, verb: Verb): Promise<SettingsWrit
   return { from: sharedPath, to: realPath, content: JSON.stringify(merged, null, 2) + '\n' }
 }
 
+/** The shared settings.json this machine would contribute right now (outgoing split), or null. */
+export async function machineSharedSettings(ctx: SyncContext): Promise<string | null> {
+  return (await settingsWrite(ctx, 'outgoing'))?.content ?? null
+}
+
 async function settingsAction(ctx: SyncContext, verb: Verb): Promise<PlanAction> {
   const w = await settingsWrite(ctx, verb)
   if (!w) {
@@ -140,14 +150,21 @@ async function settingsAction(ctx: SyncContext, verb: Verb): Promise<PlanAction>
 }
 
 // ── directory sync (mirror with delete) ─────────────────────────────────────
+/**
+ * Mirrors `srcDir` onto `destDir`. `exclude` (top-level entries) is filtered on
+ * BOTH sides: an excluded subtree is never created, overwritten nor deleted, in
+ * either direction — so the repo's leftover copy stays inert for this version, and
+ * an older version never sees it vanish from under it because of us (#135).
+ */
 async function planDirSync(
   slotBase: string,
   srcDir: string,
   destDir: string,
   logicalPrefix: string,
+  exclude: readonly string[] = [],
 ): Promise<PlanAction[]> {
-  const srcFiles = new Set(await listFiles(srcDir))
-  const destFiles = new Set(await listFiles(destDir))
+  const srcFiles = new Set(await listFiles(srcDir, exclude))
+  const destFiles = new Set(await listFiles(destDir, exclude))
   const all = [...new Set([...srcFiles, ...destFiles])].sort()
   const actions: PlanAction[] = []
   for (const rel of all) {
@@ -249,7 +266,9 @@ export async function buildPlan(
     if (item.kind === 'file') {
       actions.push(await planFileSync(`user:${item.slot}`, src, dest, item.logicalPath))
     } else {
-      actions.push(...(await planDirSync(`user:${item.slot}`, src, dest, item.logicalPath)))
+      actions.push(
+        ...(await planDirSync(`user:${item.slot}`, src, dest, item.logicalPath, item.exclude)),
+      )
     }
   }
 

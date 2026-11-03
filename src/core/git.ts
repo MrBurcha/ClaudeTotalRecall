@@ -133,6 +133,65 @@ export class Git {
     return out ? out.split('\n').filter(Boolean) : []
   }
 
+  /** True while a merge is in progress (MERGE_HEAD exists), resolved or not. */
+  async mergeInProgress(): Promise<boolean> {
+    const r = await this.raw(['rev-parse', '-q', '--verify', 'MERGE_HEAD'])
+    return r.code === 0
+  }
+
+  /** Object id of `path` (repo-relative, posix) as of `rev`, or null when it isn't there. */
+  async blobId(rev: string, path: string): Promise<string | null> {
+    const r = await this.raw(['rev-parse', '-q', '--verify', `${rev}:${path}`])
+    return r.code === 0 ? r.stdout.trim() : null
+  }
+
+  /**
+   * Object id git would give some bytes — a file on disk (read byte-exact, no
+   * filters) or a string — comparable with `blobId` without decoding blobs.
+   */
+  async hashObject(src: { file: string } | { content: string }): Promise<string> {
+    if ('file' in src) return this.out(['hash-object', '--no-filters', '--', src.file])
+    const r = await this.raw(['hash-object', '--no-filters', '--stdin'], src.content)
+    if (r.code !== 0) {
+      throw new GitError(`git hash-object --stdin falló (code ${r.code}): ${r.stderr.trim()}`, r)
+    }
+    return r.stdout.trim()
+  }
+
+  /** Tracked files under the given pathspecs (repo-relative); [] when none match. */
+  async lsFiles(paths: string[]): Promise<string[]> {
+    const out = await this.out(['ls-files', '-z', '--', ...paths])
+    return out.split('\0').filter(Boolean)
+  }
+
+  /**
+   * `git rm` from the index AND the working tree. `recursive` for directories,
+   * `force` to drop files even when they carry local modifications. Paths that
+   * match nothing are ignored, so it is safe to call on an already-clean tree.
+   */
+  async rm(paths: string[], opts: { recursive?: boolean; force?: boolean } = {}): Promise<void> {
+    const flags = ['-q', '--ignore-unmatch']
+    if (opts.recursive) flags.push('-r')
+    if (opts.force) flags.push('-f')
+    await this.out(['rm', ...flags, '--', ...paths])
+  }
+
+  /**
+   * Which sides of a merge conflict still have `file`, read from the index stages
+   * (`ls-files -u`: 2 = ours/local, 3 = theirs/remote). A modify/delete conflict
+   * lacks one of them — that side DELETED the file (#136).
+   */
+  async conflictSides(file: string): Promise<{ ours: boolean; theirs: boolean }> {
+    const out = await this.out(['ls-files', '-u', '-z', '--', file])
+    const stages = new Set<string>()
+    for (const entry of out.split('\0')) {
+      // "<mode> <sha> <stage>\t<path>"
+      const stage = entry.split('\t')[0]?.split(' ')[2]
+      if (stage) stages.add(stage)
+    }
+    return { ours: stages.has('2'), theirs: stages.has('3') }
+  }
+
   async isDirty(): Promise<boolean> {
     const out = await this.out(['status', '--porcelain'])
     return out.length > 0
@@ -241,7 +300,9 @@ export class Git {
     return { ok: false, rejected, stderr: r.stderr }
   }
 
-  // ── Resolución de conflictos (merge: ours=local, theirs=remoto) ──────────────
+  // ── Conflict resolution (merge: ours=local, theirs=remote) ───────────────────
+  // These only work when that side HAS the file; `core/conflict.ts` picks `rm`
+  // instead for the side of a modify/delete conflict that deleted it (#136).
   async checkoutOurs(file: string): Promise<void> {
     await this.out(['checkout', '--ours', '--', file])
     await this.add([file])
@@ -252,7 +313,7 @@ export class Git {
     await this.add([file])
   }
 
-  /** Cierra el merge en curso (tras resolver todos los conflictos). */
+  /** Completes the merge in progress (once every conflict is resolved). */
   async completeMerge(message?: string): Promise<void> {
     const args = message ? ['commit', '-m', message] : ['commit', '--no-edit']
     await this.out(args)

@@ -195,3 +195,90 @@ describe('conflict resolution (merge: ours=local, theirs=remote)', () => {
     expect(await readFile(join(b.cwd, 'a.txt'), 'utf8')).toBe('B version\n')
   })
 })
+
+describe('modify/delete conflicts (#136)', () => {
+  /**
+   * `deleter` removes a.txt, `editor` modifies it; the one that pushes first wins
+   * the race and the other one pulls into a modify/delete conflict.
+   */
+  async function modifyDeleteConflict(
+    name: string,
+    localSide: 'deleted' | 'modified',
+  ): Promise<Git> {
+    const remote = await freshRemote(name)
+    const first = await cloneConfigured(remote, join(root, `${name}-first`))
+    const local = await cloneConfigured(remote, join(root, `${name}-local`))
+    const del = async (g: Git): Promise<void> => {
+      await g.rm(['a.txt'])
+      await g.commit('delete a.txt')
+    }
+    const edit = async (g: Git, text: string): Promise<void> => {
+      await writeFile(join(g.cwd, 'a.txt'), text)
+      await g.add()
+      await g.commit('edit a.txt')
+    }
+    if (localSide === 'deleted') {
+      await edit(first, 'remote edit\n')
+      await first.push()
+      await del(local)
+    } else {
+      await del(first)
+      await first.push()
+      await edit(local, 'local edit\n')
+    }
+    const pulled = await local.pull()
+    expect(pulled).toEqual({ ok: false, conflicted: ['a.txt'] })
+    return local
+  }
+
+  async function present(g: Git): Promise<boolean> {
+    return (await g.lsFiles(['a.txt'])).length > 0
+  }
+
+  it('reads which side still has the file from the index stages', async () => {
+    const du = await modifyDeleteConflict('md-sides-du', 'deleted')
+    expect(await du.conflictSides('a.txt')).toEqual({ ours: false, theirs: true })
+    const ud = await modifyDeleteConflict('md-sides-ud', 'modified')
+    expect(await ud.conflictSides('a.txt')).toEqual({ ours: true, theirs: false })
+  })
+
+  it('LOCAL on a file deleted locally keeps the deletion (used to fail: "does not have our version")', async () => {
+    const g = await modifyDeleteConflict('md-local-del', 'deleted')
+    await resolveConflictFile(g, 'a.txt', 'local')
+    await completeMerge(g)
+    expect(await present(g)).toBe(false)
+    expect(await g.mergeInProgress()).toBe(false)
+  })
+
+  it('REMOTE on a file deleted in the repo keeps the deletion', async () => {
+    const g = await modifyDeleteConflict('md-remote-del', 'modified')
+    await resolveConflictFile(g, 'a.txt', 'remote')
+    await completeMerge(g)
+    expect(await present(g)).toBe(false)
+  })
+
+  it('choosing the side that still has the file restores that version', async () => {
+    const du = await modifyDeleteConflict('md-remote-keep', 'deleted')
+    await resolveConflictFile(du, 'a.txt', 'remote')
+    await completeMerge(du)
+    expect(await readFile(join(du.cwd, 'a.txt'), 'utf8')).toBe('remote edit\n')
+
+    const ud = await modifyDeleteConflict('md-local-keep', 'modified')
+    await resolveConflictFile(ud, 'a.txt', 'local')
+    await completeMerge(ud)
+    expect(await readFile(join(ud.cwd, 'a.txt'), 'utf8')).toBe('local edit\n')
+  })
+})
+
+describe('object ids', () => {
+  it('blobId of a committed file matches hashObject of the same bytes, from disk or a string', async () => {
+    const remote = await freshRemote('oids')
+    const g = await cloneConfigured(remote, join(root, 'oids-A'))
+    const committed = await g.blobId('HEAD', 'a.txt')
+    expect(committed).toMatch(/^[0-9a-f]{40,64}$/)
+    expect(await g.hashObject({ file: join(g.cwd, 'a.txt') })).toBe(committed)
+    expect(await g.hashObject({ content: 'hello\n' })).toBe(committed)
+    expect(await g.hashObject({ content: 'other\n' })).not.toBe(committed)
+    expect(await g.blobId('HEAD', 'missing.txt')).toBeNull()
+  })
+})

@@ -46,6 +46,8 @@ function iconFor(e: HistoryEntry, currentMachine: string | null): IconName {
       return 'alert'
     case 'notebook':
       return 'book'
+    case 'cleanup':
+      return 'trash'
     default:
       return 'sync'
   }
@@ -84,9 +86,16 @@ function labelFor(e: HistoryEntry, currentMachine: string | null, t: TFunction):
       return t('activity.conflictsResolved')
     case 'notebook':
       return t('activity.notebookChanged')
+    case 'cleanup':
+      return t('activity.cacheCleanup')
     default:
       return t('activity.change')
   }
+}
+
+/** Entry types whose row is about the files they moved (sync verbs and Notebook edits). */
+function showsFileList(type: HistoryEntry['type']): boolean {
+  return type === 'outgoing' || type === 'incoming' || type === 'notebook'
 }
 
 function timeText(at: string, now: number, t: TFunction): string {
@@ -271,12 +280,11 @@ export function RecentActivity(): JSX.Element {
                 const visible = e.changes.filter((c) => !isStructuralNoise(c.path))
                 // File details for the sync verbs and Notebook edits: config commits
                 // also touch claudetr.json, which would be noise here.
-                const showFiles =
-                  (e.type === 'outgoing' || e.type === 'incoming' || e.type === 'notebook') &&
-                  visible.length > 0
-                // A Notebook "create folder" commit only touches a .gitkeep placeholder;
-                // with structural noise filtered there's nothing to show, so skip the row.
-                if (e.type === 'notebook' && visible.length === 0) return null
+                const showFiles = showsFileList(e.type) && visible.length > 0
+                // A Notebook "create folder" commit only touches a .gitkeep placeholder,
+                // and a pre-#135 sync often only touched Claude Code's skills cache: with
+                // structural noise filtered there's nothing to show, so skip the row.
+                if (showsFileList(e.type) && visible.length === 0) return null
                 const shown = visible.slice(0, FILE_CAP)
                 const overflow = visible.length - shown.length
                 const meta = metaBits(e, machineId, visible.length, t)

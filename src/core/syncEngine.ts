@@ -3,7 +3,15 @@ import type { PlatformAdapter } from '../platform'
 import { Git } from './git'
 import { loadBaseline, saveBaseline } from './localState'
 import { PlanDriftError } from './plan'
-import { buildVerbPlan, pullRepo, syncOutgoing, syncIncoming, workingCopyDir } from './service'
+import {
+  buildVerbPlan,
+  keepMachineEdits,
+  pullRepo,
+  purgeManagedFromRepo,
+  syncOutgoing,
+  syncIncoming,
+  workingCopyDir,
+} from './service'
 import type { Plan, PlanAction } from './types'
 
 /**
@@ -100,17 +108,20 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
     pushed = r.pushed
     pulled = true // syncOutgoing pullea (merge del remoto) tras commitear
   } else {
-    // Nada para subir por cambios locales: sincronizar con el remoto igual.
+    // Nothing to push from local changes: still sync with the remote.
     await git.fetch()
     let st = await git.status()
     if (st.behind > 0) {
       const p = await pullRepo(adapter)
       if (p.conflicts.length > 0) return { kind: 'conflict', files: p.conflicts }
       pulled = true
-      st = await git.status()
     }
-    // Commits locales sin pushear (p.ej. un push que falló en un ciclo previo):
-    // reintentar acá para no quedar "al día" con algo que no llegó al remoto.
+    // Repo hygiene (#135) AFTER integrating the remote, so this cycle also cleans
+    // a cache an older version just pushed back. Its commit rides the push below.
+    await purgeManagedFromRepo(adapter)
+    st = await git.status()
+    // Local commits not pushed yet (e.g. a push that failed in a previous cycle):
+    // retry here so we never report "up to date" with something the remote lacks.
     if (st.ahead > 0) {
       const push = await git.push()
       if (!push.ok) return { kind: 'error', message: 'No se pudo pushear al remoto' }
@@ -184,15 +195,21 @@ export async function runSyncCycle(adapter: PlatformAdapter): Promise<SyncOutcom
 }
 
 /**
- * Tras resolver un conflicto (el working copy ya tiene el merge finalizado y
- * pusheado por `completeConflictMerge`), baja SÓLO ese resultado a la máquina —
- * sin subir cambios (outgoing), para no pisar la resolución con la versión vieja de la máquina —
- * y actualiza el baseline. La llama el scheduler al reanudar tras un conflicto.
+ * After a conflict is resolved (the working copy already holds the completed merge,
+ * pushed by `completeConflictMerge` or `healManagedConflicts`), lands ONLY that result
+ * on the machine — no outgoing first, which would push the machine's stale copies over
+ * the remote side of the merge — and refreshes the baseline. The scheduler calls it
+ * when resuming after a conflict.
+ *
+ * `keepMachineEdits` narrows it to files the machine hasn't touched since its last
+ * commit: a merge can sit unresolved for days while the user keeps working, and those
+ * edits were never committed. Overwriting them (as this used to) lost them for good;
+ * now they stay, and the next regular cycle pushes them.
  */
 export async function incomingResolved(adapter: PlatformAdapter): Promise<void> {
   const baseline = await loadBaseline(adapter)
   const incomingPlan = await buildVerbPlan(adapter, 'incoming', newMeta())
-  const down = safeActions(incomingPlan, baseline)
+  const down = await keepMachineEdits(adapter, safeActions(incomingPlan, baseline))
   if (down.length > 0) await syncIncoming(adapter, { ...incomingPlan, actions: down })
   await saveBaseline(adapter, workingCopySnapshot(incomingPlan))
 }

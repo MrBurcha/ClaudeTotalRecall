@@ -1,6 +1,7 @@
 import { watch, type FSWatcher } from 'node:fs'
 import { createPlatformAdapter, type PlatformAdapter } from '../platform'
 import { loadAutoSyncPrefs, saveAutoSyncPrefs } from '../core/localState'
+import { isExcludedRel } from '../core/managedPaths'
 import { isSecretExcluded } from '../core/plan'
 import { projectSlotPath, projectSlots, userLevelItems } from '../core/resolve'
 import * as svc from '../core/service'
@@ -10,6 +11,13 @@ import type { AutoSyncPrefs, SyncEngineState } from '../core/types'
 // El watch usa notificaciones nativas del SO (inotify/FSEvents): ~0% CPU en
 // reposo. El debounce trailing coalescea ráfagas de guardado en un solo ciclo.
 const DEBOUNCE_MS = 10_000
+
+/** A watched sync root; `exclude` = top-level entries whose changes are ignored (#135). */
+interface WatchTarget {
+  path: string
+  recursive: boolean
+  exclude: readonly string[]
+}
 const MIN_INTERVAL_MS = 15_000
 const MAX_INTERVAL_MS = 3_600_000
 
@@ -135,12 +143,20 @@ export class SyncScheduler {
         return
       }
       this.ready = true
-      // Guard: si el working copy ya tiene conflictos (de un flujo manual o un
-      // ciclo previo), no sincronizar; pedir resolución.
+      // Guard: if the working copy already has conflicts (from a manual flow or a
+      // previous cycle), don't sync; ask for a resolution — after self-healing the
+      // Claude-managed ones (#135). A merge stuck ONLY on those (e.g. left by an
+      // older version) completes here and lands like a manual resolution would.
       const existing = await svc.listConflicts(this.adapter)
       if (existing.length > 0) {
-        this.setState({ status: 'conflict', conflicts: existing })
-        this.reconcileTimers()
+        const heal = await svc.healManagedConflicts(this.adapter)
+        if (!heal.completed) {
+          this.setState({ status: 'conflict', conflicts: heal.remaining })
+          this.reconcileTimers()
+          return
+        }
+        await incomingResolved(this.adapter)
+        this.applyOutcome({ kind: 'synced', pushed: heal.pushed, pulled: true, incoming: true })
         return
       }
       this.setState({ status: 'syncing', lastError: null })
@@ -228,7 +244,11 @@ export class SyncScheduler {
     for (const t of await this.watchTargets()) {
       try {
         const w = watch(t.path, { recursive: t.recursive }, (_evt, filename) => {
-          if (filename && isNoise(filename.toString())) return
+          if (filename) {
+            const rel = filename.toString()
+            // Claude Code refreshes its own skills cache on its own (#135): never a reason to sync.
+            if (isNoise(rel) || isExcludedRel(rel, t.exclude)) return
+          }
           this.onLocalChange()
         })
         w.on('error', () => {
@@ -242,13 +262,13 @@ export class SyncScheduler {
     }
   }
 
-  private async watchTargets(): Promise<{ path: string; recursive: boolean }[]> {
+  private async watchTargets(): Promise<WatchTarget[]> {
     const a = this.adapter
-    const targets: { path: string; recursive: boolean }[] = [
-      { path: a.claudeHome(), recursive: false },
-    ]
+    const targets: WatchTarget[] = [{ path: a.claudeHome(), recursive: false, exclude: [] }]
     for (const item of userLevelItems(a)) {
-      if (item.kind === 'dir') targets.push({ path: item.realPath, recursive: true })
+      if (item.kind === 'dir') {
+        targets.push({ path: item.realPath, recursive: true, exclude: item.exclude })
+      }
     }
     const config = await svc.loadRepoConfig(a).catch(() => null)
     const machineId = await svc.currentMachineId(a).catch(() => null)
@@ -256,7 +276,7 @@ export class SyncScheduler {
       for (const name of Object.keys(config.projects)) {
         for (const slot of projectSlots(config, name)) {
           const p = projectSlotPath(config, name, slot, machineId)
-          if (p) targets.push({ path: p, recursive: true })
+          if (p) targets.push({ path: p, recursive: true, exclude: [] })
         }
       }
     }

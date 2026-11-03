@@ -76,6 +76,12 @@ describe('classifyCommit', () => {
     expect(classifyCommit(`${PREFIX}initial structure`)).toBeNull()
   })
 
+  it("classifies the repo cleanup of Claude Code's managed cache (#135)", () => {
+    expect(classifyCommit(`${PREFIX}remove Claude Code managed cache`)).toEqual({
+      type: 'cleanup',
+    })
+  })
+
   it('falls back to `other` for an unrecognized prefixed message', () => {
     expect(classifyCommit(`${PREFIX}something brand new`)).toEqual({ type: 'other' })
   })

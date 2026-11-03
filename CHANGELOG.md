@@ -7,6 +7,51 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-11-03
+
+### Fixed
+
+- **Claude Code's own skills cache no longer syncs (#135).** Since mid-September, Claude Code keeps
+  a local cache of the skills attached to your claude.ai account in `~/.claude/skills/synced/`
+  (a manifest, a staging folder and a marker file it rewrites on every refresh). Because the whole
+  `skills/` folder was mirrored, that cache was synced as if it were yours: in a real two-machine
+  setup it accounted for over 90% of all commits, and two machines refreshing it at once produced
+  conflicts that **paused sync for days**. Now:
+  - `skills/synced/` never syncs, in either direction — not up to the repo, not down to a machine,
+    and a machine's own cache is never overwritten or deleted. Your own skills directly under
+    `~/.claude/skills/` keep syncing as before.
+  - On its first sync, 0.13.1 **removes the cache from your memories repo** and adds it to the
+    repo's `.gitignore` (shown once in Recent activity as _"Removed Claude Code's skills cache from
+    the repo"_). Git history is **not** rewritten — past commits keep their copy, which is what
+    keeps every other clone working.
+  - A conflict on those files never blocks sync again: it's resolved automatically. A machine that
+    is _already_ stuck on such a conflict heals itself on its first sync with 0.13.1.
+  - Changes Claude Code makes to that cache no longer wake the auto-sync up, and the activity feed
+    stops reporting them as "User level" changes.
+- **Resolving a conflict no longer reverts what you edited while it was open.** After a manual
+  resolution, the app used to copy the merged repo onto the machine wholesale — so any memory file
+  edited on that machine while sync sat paused (and therefore never committed) was silently put back
+  to its pre-conflict version. Now a file is only updated if the machine still holds exactly what it
+  last synced; anything you changed in the meantime is kept and goes out on the next sync. This
+  happened for real: a conflict left open for six days reverted that week's edits on one machine.
+- **Picking the side that deleted a file now works in the conflict resolver (#136).** In a
+  modify/delete conflict (the file was deleted on one side and edited on the other), choosing the
+  side that deleted it failed with _"does not have our version"_ and aborted the whole merge. It
+  now resolves as a deletion, as expected.
+
+### Upgrading
+
+Update **every** machine to 0.13.1. Until a machine is updated, it keeps the old behavior, and after
+an updated machine cleans the repo it may, once:
+
+- delete its local copy of Claude Code's skills cache — Claude Code rebuilds it on its own the next
+  time it refreshes your skills — or
+- show a conflict under `memories/user/skills/synced/`. Updating that machine resolves it
+  automatically (on the old version, only **Local** works for those files).
+
+Thanks to the new `.gitignore` entry, an older version can't push the cache back into the repo by
+itself, so the cleanup sticks.
+
 ## [0.13.0] - 2026-08-03
 
 ### Added
@@ -603,7 +648,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.13.1
 [0.13.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.13.0
 [0.12.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.12.1
 [0.11.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.11.1

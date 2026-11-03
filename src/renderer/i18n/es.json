@@ -561,6 +561,7 @@
     "filePinned": "Se fijó el archivo {{pin}}",
     "fileUnpinned": "Se dejó de fijar el archivo {{pin}}",
     "conflictsResolved": "Se resolvieron conflictos",
+    "cacheCleanup": "Se quitó del repo la caché de skills de Claude Code",
     "change": "Cambio",
     "files_one": "{{count}} archivo",
     "files_other": "{{count}} archivos",

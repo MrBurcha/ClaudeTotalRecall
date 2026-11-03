@@ -219,7 +219,7 @@ kept but out of your product repo.
 | **House rules**     | `~/.claude/CLAUDE.md`                    | single file → `memories/user/CLAUDE.md`                             |
 | **Custom commands** | `~/.claude/commands/`                    | folder, mirrored → `memories/user/commands/`                        |
 | **Subagents**       | `~/.claude/agents/`                      | folder, mirrored → `memories/user/agents/`                          |
-| **Skills**          | `~/.claude/skills/`                      | folder, mirrored → `memories/user/skills/`                          |
+| **Skills**          | `~/.claude/skills/`                      | folder, mirrored → `memories/user/skills/` (minus `synced/`, below) |
 | **Settings**        | `~/.claude/settings.json`                | **merged**, not copied — machine-local keys stay local (see below)  |
 | **Project memory**  | any folder(s) you declare, per project   | folder mirror _or_ single file → `memories/projects/<name>/<slot>/` |
 | **Pinned files**    | any single file, anywhere on the machine | **Settings → Pinned files** → `memories/pinned/<name>`              |
@@ -254,6 +254,13 @@ value (and sometimes real risk) in syncing it, so the app never touches it. That
 `daemon/`, `shell-snapshots/`, `file-history/`, `downloads/`, `session-env/`, `tasks/`, and the
 various `*-cache/` directories. If you want a full-disk safety copy of these anyway, that's what the
 **local backup** above is for — not this app.
+
+The same goes for **`~/.claude/skills/synced/`**, even though it sits inside the synced `skills/`
+folder: it's Claude Code's own cache of the skills attached to your claude.ai account, which every
+machine downloads and refreshes by itself. It never syncs in either direction, and the memories repo
+git-ignores it. Your own skills, directly under `~/.claude/skills/`, sync as usual. (Versions up to
+0.13.0 synced that cache by mistake; 0.13.1 removes it from the repo on its first sync — see the
+[changelog](CHANGELOG.md).)
 
 ### Backing up secrets you keep out of a repo (e.g. `.env`)
 
