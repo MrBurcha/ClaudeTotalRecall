@@ -62,6 +62,11 @@ export type AutoSyncPrefs = z.infer<typeof AutoSyncSchema>
 export const LocalStateSchema = z.object({
   machineId: z.string().min(1),
   autoSync: AutoSyncSchema.optional(),
+  /**
+   * gh login that reaches the memories repo, remembered after the active gh account
+   * couldn't (see core/gitAuth.ts). Per machine: accounts are a local matter.
+   */
+  githubAccount: z.string().min(1).optional(),
 })
 export type LocalState = z.infer<typeof LocalStateSchema>
 
@@ -289,8 +294,15 @@ export interface PreflightResult {
 export type SyncStatus =
   | 'idle' // up to date
   | 'syncing' // running a cycle
-  | 'offline' // network/git error; retries on the next poll (amber)
+  | 'offline' // the network failed; retries on the next poll (amber)
+  | 'error' // any other failure (no repo access, git, fs…); still retried, but shown as such (#132)
   | 'conflict' // merge conflict to resolve by hand (red, auto paused)
+
+/**
+ * Where a failed remote operation came from: the network itself, the remote refusing
+ * access (auth, missing repo, no permission), or anything else. See core/gitAuth.ts.
+ */
+export type RemoteErrorKind = 'network' | 'access' | 'other'
 
 export interface SyncEngineState {
   status: SyncStatus
@@ -302,6 +314,8 @@ export interface SyncEngineState {
   lastSyncedAt: number | null
   /** files in conflict (empty unless status is 'conflict') */
   conflicts: string[]
-  /** last network/git error (null unless status is 'offline') */
+  /** raw text of the last failure (null unless status is 'offline' or 'error') */
   lastError: string | null
+  /** what kind of failure `lastError` is (null when there's none) */
+  errorKind: RemoteErrorKind | null
 }

@@ -69,6 +69,8 @@
       "loading": "Cargando…",
       "syncing": "Sincronizando…",
       "offline": "Sin conexión",
+      "error": "Falló la sincronización",
+      "noAccess": "Sin acceso al repo",
       "upToDate": "Al día"
     },
     "meta": {
@@ -76,9 +78,17 @@
       "toResolve_other": "{{count}} archivos por resolver",
       "syncing": "poniendo todo en orden…",
       "offline": "sin conexión, reintenta solo",
+      "error": "la última sincronización falló, revisa el detalle",
+      "noAccess": "ninguna de tus cuentas de gh tiene acceso al repo de memoria",
       "lastChecked": "última verificación {{time}}",
       "autoOn": "automático activado",
       "autoOff": "automático desactivado"
+    },
+    "errorDetails": {
+      "show": "Ver detalle",
+      "hide": "Ocultar detalle",
+      "copy": "Copiar",
+      "copied": "Copiado"
     },
     "conflictCard_one": "La sincronización está frenada por {{count}} conflicto. Resuélvelo para que siga sola.",
     "conflictCard_other": "La sincronización está frenada por {{count}} conflictos. Resuélvelos para que siga sola.",

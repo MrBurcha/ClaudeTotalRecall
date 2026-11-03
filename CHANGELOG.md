@@ -7,6 +7,24 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-03
+
+### Fixed
+
+- **Sync no longer depends on which `gh` account is active.** If you're logged into more than one
+  GitHub account in the GitHub CLI (say, personal and work) and switch with `gh auth switch`, git
+  only ever authenticates as the _active_ one — so the moment the work account was active, the app
+  lost access to your memories repo and every sync failed. Now, when the active account can't reach
+  the repo, the app tries the other accounts `gh` is logged into, keeps the first one that can, and
+  remembers it for that machine (in `~/.config/claudetr/local.json`). Switching accounts back and
+  forth no longer affects sync, and the app never changes your active account. HTTPS GitHub remotes
+  only; SSH remotes keep using your SSH keys as before.
+- **The sync bar no longer says "Offline" for every failure (#132).** "Offline" now means the
+  network really failed. No access to the repo shows as **"No access to the repo"**, and any other
+  failure as **"Sync failed"**, both in red. A **Show details** toggle under the bar reveals the
+  actual error text with a **Copy** button — no DevTools needed. Failed pushes now keep git's own
+  message instead of a generic one, and background git commands never wait for a password prompt.
+
 ## [0.13.1] - 2026-11-03
 
 ### Fixed
@@ -648,7 +666,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.14.0
 [0.13.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.13.1
 [0.13.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.13.0
 [0.12.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.12.1

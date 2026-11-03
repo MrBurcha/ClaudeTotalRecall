@@ -69,6 +69,8 @@
       "loading": "Loading…",
       "syncing": "Syncing…",
       "offline": "Offline",
+      "error": "Sync failed",
+      "noAccess": "No access to the repo",
       "upToDate": "Up to date"
     },
     "meta": {
@@ -76,9 +78,17 @@
       "toResolve_other": "{{count}} files to resolve",
       "syncing": "putting everything in order…",
       "offline": "offline, retrying on its own",
+      "error": "the last sync failed, see the details",
+      "noAccess": "none of your gh accounts can reach the memories repo",
       "lastChecked": "last checked {{time}}",
       "autoOn": "automatic on",
       "autoOff": "automatic off"
+    },
+    "errorDetails": {
+      "show": "Show details",
+      "hide": "Hide details",
+      "copy": "Copy",
+      "copied": "Copied"
     },
     "conflictCard_one": "Sync is paused by {{count}} conflict. Resolve it so it keeps going on its own.",
     "conflictCard_other": "Sync is paused by {{count}} conflicts. Resolve them so it keeps going on its own.",

@@ -5,6 +5,30 @@ import { AppError } from './errors'
 import { LocalStateSchema, type AutoSyncPrefs, type LocalState, type SettingsObject } from './types'
 import type { PlatformAdapter } from '../platform'
 
+/**
+ * The gh login remembered for the memories repo (see core/gitAuth.ts), or undefined.
+ * Reads the raw file so a missing/older local.json never throws here.
+ */
+export async function loadGithubAccount(adapter: PlatformAdapter): Promise<string | undefined> {
+  const data = (await readJson(localStatePath(adapter)).catch(() => null)) as Record<
+    string,
+    unknown
+  > | null
+  const login = data?.githubAccount
+  return typeof login === 'string' && login ? login : undefined
+}
+
+/**
+ * Remembers the gh login for the memories repo. Only once the machine has its
+ * local.json (written on registration): creating one without a machineId would make
+ * it unreadable. Before that, the caller keeps the login in memory.
+ */
+export async function saveGithubAccount(adapter: PlatformAdapter, login: string): Promise<void> {
+  const prev = (await readJson(localStatePath(adapter))) as Record<string, unknown> | null
+  if (!prev) return
+  await writeJson(localStatePath(adapter), { ...prev, githubAccount: login })
+}
+
 /** Auto-sync default: enabled, poll the remote every 2 min (see plan). */
 export const DEFAULT_AUTOSYNC: AutoSyncPrefs = { enabled: true, intervalMs: 120_000 }
 

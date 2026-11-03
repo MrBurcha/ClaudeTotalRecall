@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import type { PlatformAdapter } from '../platform'
-import { Git } from './git'
 import { loadBaseline, saveBaseline } from './localState'
 import { PlanDriftError } from './plan'
 import {
@@ -8,9 +7,9 @@ import {
   keepMachineEdits,
   pullRepo,
   purgeManagedFromRepo,
+  repoGit,
   syncOutgoing,
   syncIncoming,
-  workingCopyDir,
 } from './service'
 import type { Plan, PlanAction } from './types'
 
@@ -88,7 +87,7 @@ function machineChangedSince(before: Plan, after: Plan): boolean {
 }
 
 async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
-  const git = new Git(workingCopyDir(adapter))
+  const git = repoGit(adapter)
   const baseline = await loadBaseline(adapter)
   let pushed = false
   let pulled = false
@@ -103,7 +102,7 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
     // that's not "up to date" — the local commit never reached the remote. Exit as an
     // error to retry on the next cycle (without touching the baseline or running incoming).
     if (r.committed && !r.pushed) {
-      return { kind: 'error', message: 'No se pudo pushear el commit al remoto' }
+      return { kind: 'error', message: `Push to the remote failed: ${r.pushError ?? ''}`.trim() }
     }
     pushed = r.pushed
     pulled = true // syncOutgoing pulls (merges the remote) after committing
@@ -124,7 +123,9 @@ async function attemptCycle(adapter: PlatformAdapter): Promise<SyncOutcome> {
     // retry here so we never report "up to date" with something the remote lacks.
     if (st.ahead > 0) {
       const push = await git.push()
-      if (!push.ok) return { kind: 'error', message: 'No se pudo pushear al remoto' }
+      if (!push.ok) {
+        return { kind: 'error', message: `Push to the remote failed: ${push.stderr.trim()}` }
+      }
       pushed = true
     }
   }

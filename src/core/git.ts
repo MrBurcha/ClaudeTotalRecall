@@ -1,4 +1,5 @@
 import { run, type ExecResult } from './exec'
+import { classifyRemoteError, type GitAuth, type GitEnv } from './gitAuth'
 import type { FileChange, RepoStatus } from './types'
 
 export class GitError extends Error {
@@ -9,6 +10,14 @@ export class GitError extends Error {
     super(message)
     this.name = 'GitError'
   }
+}
+
+/** Throws GitError when `r` failed; returns its trimmed stdout. */
+function checked(args: string[], r: ExecResult): string {
+  if (r.code !== 0) {
+    throw new GitError(`git ${args.join(' ')} failed (code ${r.code}): ${r.stderr.trim()}`, r)
+  }
+  return r.stdout.trim()
 }
 
 export interface PullResult {
@@ -90,34 +99,68 @@ function parseLog(stdout: string): RawLogEntry[] {
  * (MERGE_HEAD), which is the intuitive mapping for the per-file UI.
  */
 export class Git {
+  /**
+   * @param auth authenticates the network commands (fetch/pull/push/clone) — see
+   *   `gitAuth.ts`; without it git uses its own credentials, as before.
+   */
   constructor(
     readonly cwd: string,
     private readonly bin = 'git',
+    private readonly auth?: GitAuth,
   ) {}
 
   /** Runs raw git; does not throw on code != 0. */
-  async raw(args: string[], input?: string): Promise<ExecResult> {
+  async raw(args: string[], input?: string, env?: GitEnv): Promise<ExecResult> {
     // core.quotePath=false: emit non-ASCII paths (filenames with ñ, accents, …)
     // verbatim as UTF-8 instead of git's octal-escaped `"\NNN"` quoting, so path
     // parsing (activity feed, conflicts) and file lookup work for those names.
-    return run(this.bin, ['-c', 'core.quotePath=false', ...args], { cwd: this.cwd, input })
+    return run(this.bin, ['-c', 'core.quotePath=false', ...args], { cwd: this.cwd, input, env })
   }
 
   /** Runs git and throws GitError if code != 0; returns trimmed stdout. */
   async out(args: string[]): Promise<string> {
-    const r = await this.raw(args)
-    if (r.code !== 0) {
-      throw new GitError(`git ${args.join(' ')} falló (code ${r.code}): ${r.stderr.trim()}`, r)
-    }
-    return r.stdout.trim()
+    return checked(args, await this.raw(args))
   }
 
-  static async clone(remote: string, dir: string, bin = 'git'): Promise<Git> {
-    const r = await run(bin, ['clone', remote, dir])
+  /**
+   * Runs a command that talks to the remote. Never prompts (a background app has no
+   * terminal to answer on, and a dev-mode prompt would hang the cycle). When the
+   * remote refuses access, asks `auth` for an account that can reach it and retries
+   * once — the failed attempt never got past authentication, so a retry is safe.
+   */
+  private async net(args: string[], remote?: string, inRepo = true): Promise<ExecResult> {
+    const cwd = inRepo ? this.cwd : undefined
+    const url = remote ?? (await this.originUrl())
+    const exec = (env?: GitEnv): Promise<ExecResult> =>
+      run(this.bin, ['-c', 'core.quotePath=false', ...args], {
+        cwd,
+        env: { GIT_TERMINAL_PROMPT: '0', ...env },
+      })
+    const first = await exec(url && this.auth ? await this.auth.env(url) : undefined)
+    if (first.code === 0 || !url || !this.auth) return first
+    if (classifyRemoteError(first.stderr) !== 'access') return first
+    const env = await this.auth.recover(url, async (candidate) => {
+      const probe = await run(this.bin, ['ls-remote', url], {
+        env: { GIT_TERMINAL_PROMPT: '0', ...candidate },
+      })
+      return probe.code === 0
+    })
+    return env ? exec(env) : first
+  }
+
+  private async originUrl(): Promise<string | null> {
+    const r = await this.raw(['remote', 'get-url', 'origin'])
+    return r.code === 0 ? r.stdout.trim() : null
+  }
+
+  static async clone(remote: string, dir: string, bin = 'git', auth?: GitAuth): Promise<Git> {
+    const git = new Git(dir, bin, auth)
+    // Not run inside `dir`: it doesn't exist until git creates it.
+    const r = await git.net(['clone', remote, dir], remote, false)
     if (r.code !== 0) {
-      throw new GitError(`git clone falló: ${r.stderr.trim()}`, r)
+      throw new GitError(`git clone failed: ${r.stderr.trim()}`, r)
     }
-    return new Git(dir, bin)
+    return git
   }
 
   async init(): Promise<void> {
@@ -153,7 +196,7 @@ export class Git {
     if ('file' in src) return this.out(['hash-object', '--no-filters', '--', src.file])
     const r = await this.raw(['hash-object', '--no-filters', '--stdin'], src.content)
     if (r.code !== 0) {
-      throw new GitError(`git hash-object --stdin falló (code ${r.code}): ${r.stderr.trim()}`, r)
+      throw new GitError(`git hash-object --stdin failed (code ${r.code}): ${r.stderr.trim()}`, r)
     }
     return r.stdout.trim()
   }
@@ -247,7 +290,7 @@ export class Git {
   }
 
   async fetch(): Promise<void> {
-    await this.out(['fetch'])
+    checked(['fetch'], await this.net(['fetch']))
   }
 
   /** Discards local commits/changes and aligns the working copy to `ref` (e.g. origin/main). */
@@ -257,11 +300,11 @@ export class Git {
 
   /** pull with an explicit MERGE (never rebase). Detects conflicts. */
   async pull(): Promise<PullResult> {
-    const r = await this.raw(['pull', '--no-rebase'])
+    const r = await this.net(['pull', '--no-rebase'])
     const conflicted = await this.listConflicts()
     if (conflicted.length > 0) return { ok: false, conflicted }
     if (r.code !== 0) {
-      throw new GitError(`git pull falló: ${r.stderr.trim()}`, r)
+      throw new GitError(`git pull failed: ${r.stderr.trim()}`, r)
     }
     return { ok: true, conflicted: [] }
   }
@@ -289,12 +332,12 @@ export class Git {
     if (/nothing to commit|no changes added|did not match/i.test(`${r.stdout}\n${r.stderr}`)) {
       return { committed: false }
     }
-    throw new GitError(`git commit -- falló (code ${r.code}): ${r.stderr.trim()}`, r)
+    throw new GitError(`git commit -- failed (code ${r.code}): ${r.stderr.trim()}`, r)
   }
 
   /** push; detects a non-fast-forward rejection for the registration retry. */
   async push(args: string[] = []): Promise<PushResult> {
-    const r = await this.raw(['push', ...args])
+    const r = await this.net(['push', ...args])
     if (r.code === 0) return { ok: true, rejected: false, stderr: r.stderr }
     const rejected = /\b(rejected|non-fast-forward|fetch first)\b/i.test(r.stderr)
     return { ok: false, rejected, stderr: r.stderr }

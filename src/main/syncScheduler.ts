@@ -1,5 +1,6 @@
 import { watch, type FSWatcher } from 'node:fs'
 import { createPlatformAdapter, type PlatformAdapter } from '../platform'
+import { classifyRemoteError } from '../core/gitAuth'
 import { loadAutoSyncPrefs, saveAutoSyncPrefs } from '../core/localState'
 import { isExcludedRel } from '../core/managedPaths'
 import { isSecretExcluded } from '../core/plan'
@@ -45,6 +46,18 @@ function isNoise(rel: string): boolean {
  * poll), the state machine, and pushing state to the UI. Has NO git logic: it
  * delegates to `runSyncCycle` (core). Runs only while the app is open.
  */
+/**
+ * A failed cycle: "offline" only when the network really failed; anything else (no
+ * access to the repo, a git or disk error) is an "error" with its text, so a
+ * permanent problem doesn't pass for a blip that fixes itself (#132).
+ */
+function failureState(
+  message: string,
+): Pick<SyncEngineState, 'status' | 'lastError' | 'errorKind'> {
+  const kind = classifyRemoteError(message)
+  return { status: kind === 'network' ? 'offline' : 'error', lastError: message, errorKind: kind }
+}
+
 export class SyncScheduler {
   private readonly adapter: PlatformAdapter = createPlatformAdapter()
   private state: SyncEngineState = {
@@ -54,6 +67,7 @@ export class SyncScheduler {
     lastSyncedAt: null,
     conflicts: [],
     lastError: null,
+    errorKind: null,
   }
 
   private ready = false
@@ -120,10 +134,11 @@ export class SyncScheduler {
         status: 'idle',
         conflicts: [],
         lastError: null,
+        errorKind: null,
         lastSyncedAt: Date.now(),
       })
     } catch (e) {
-      this.setState({ status: 'offline', lastError: errorMessage(e) })
+      this.setState(failureState(errorMessage(e)))
     }
     this.reconcileTimers()
   }
@@ -159,7 +174,7 @@ export class SyncScheduler {
         this.applyOutcome({ kind: 'synced', pushed: heal.pushed, pulled: true, incoming: true })
         return
       }
-      this.setState({ status: 'syncing', lastError: null })
+      this.setState({ status: 'syncing', lastError: null, errorKind: null })
       this.applyOutcome(await runSyncCycle(this.adapter))
     } catch (e) {
       this.applyOutcome({ kind: 'error', message: errorMessage(e) })
@@ -174,11 +189,17 @@ export class SyncScheduler {
 
   private applyOutcome(o: SyncOutcome): void {
     if (o.kind === 'synced') {
-      this.setState({ status: 'idle', lastSyncedAt: Date.now(), conflicts: [], lastError: null })
+      this.setState({
+        status: 'idle',
+        lastSyncedAt: Date.now(),
+        conflicts: [],
+        lastError: null,
+        errorKind: null,
+      })
     } else if (o.kind === 'conflict') {
       this.setState({ status: 'conflict', conflicts: o.files })
     } else {
-      this.setState({ status: 'offline', lastError: o.message })
+      this.setState(failureState(o.message))
     }
     this.reconcileTimers()
   }
