@@ -3,10 +3,10 @@ import { dirname, join, posix } from 'node:path'
 import type { PlatformAdapter } from '../platform'
 import { AppError } from './errors'
 import { readMemoryFilePreview } from './filePreview'
-import { Git } from './git'
+import type { Git } from './git'
 import { isSecretExcluded } from './plan'
 import { withRepoLock } from './repoLock'
-import { loadRepoConfig, workingCopyDir } from './service'
+import { loadRepoConfig, repoGit, workingCopyDir } from './service'
 import type { NotebookFile, NotebookNode, NotebookRoot, NotebookTree } from './types'
 
 // Everything lives under memories/notebook/. Callers address files with paths
@@ -19,7 +19,7 @@ const GENERAL = 'general'
 const PROJECTS = 'projects'
 
 function notebookGit(adapter: PlatformAdapter): Git {
-  return new Git(workingCopyDir(adapter))
+  return repoGit(adapter)
 }
 
 function notebookRoot(adapter: PlatformAdapter): string {

@@ -7,10 +7,12 @@ import {
   DEFAULT_AUTOSYNC,
   ensureSettingsLocal,
   loadAutoSyncPrefs,
+  loadGithubAccount,
   loadLocalState,
   loadSettingsLocal,
   localStatePath,
   saveAutoSyncPrefs,
+  saveGithubAccount,
   saveLocalState,
   saveSettingsLocal,
   settingsLocalPath,
@@ -88,6 +90,35 @@ describe('auto-sync preferences', () => {
 
   it('saveAutoSyncPrefs fails if the machine is not registered', async () => {
     await expect(saveAutoSyncPrefs(adapter, DEFAULT_AUTOSYNC)).rejects.toThrow()
+  })
+})
+
+describe('remembered GitHub account', () => {
+  it('is undefined until one is saved', async () => {
+    expect(await loadGithubAccount(adapter)).toBeUndefined()
+    await saveLocalState(adapter, { machineId: 'm1' })
+    expect(await loadGithubAccount(adapter)).toBeUndefined()
+  })
+
+  it('round-trips without touching the identity or the prefs', async () => {
+    await saveLocalState(adapter, { machineId: 'm1' })
+    await saveAutoSyncPrefs(adapter, { enabled: false, intervalMs: 30_000 })
+    await saveGithubAccount(adapter, 'personal')
+    expect(await loadGithubAccount(adapter)).toBe('personal')
+    expect(await loadLocalState(adapter)).toEqual({
+      machineId: 'm1',
+      autoSync: { enabled: false, intervalMs: 30_000 },
+      githubAccount: 'personal',
+    })
+    // Saving prefs or re-registering keeps it.
+    await saveAutoSyncPrefs(adapter, { enabled: true, intervalMs: 60_000 })
+    await saveLocalState(adapter, { machineId: 'm1' })
+    expect(await loadGithubAccount(adapter)).toBe('personal')
+  })
+
+  it('is not persisted before registration (a local.json without machineId is unreadable)', async () => {
+    await saveGithubAccount(adapter, 'personal')
+    expect(await loadLocalState(adapter)).toBeNull()
   })
 })
 

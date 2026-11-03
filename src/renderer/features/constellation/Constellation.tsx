@@ -77,7 +77,7 @@ export function Constellation({
   status: RepoStatus | null
   activeOp: ActiveOp | null
   /** hero color according to the auto-sync engine */
-  tone?: 'ok' | 'syncing' | 'conflict' | 'offline'
+  tone?: 'ok' | 'syncing' | 'conflict' | 'offline' | 'error'
 }): JSX.Element {
   const { t } = useTranslation()
   const reduced = usePrefersReducedMotion()

@@ -106,6 +106,8 @@ Prefer to build the binaries yourself? See [Build from source](#build-from-sourc
 
 - **`git`** and **`gh`** (the [GitHub CLI](https://cli.github.com)) on your `PATH`, with `gh`
   authenticated: `gh auth login && gh auth setup-git`.
+  Logged into several GitHub accounts? Any active one works: if it can't reach the memories repo,
+  the app finds the `gh` account that can and remembers it for that machine.
 - An **empty private GitHub repo** to hold your memories — _separate from any code repo_. You don't
   have to initialize it; the app creates the structure on the first connect.
 

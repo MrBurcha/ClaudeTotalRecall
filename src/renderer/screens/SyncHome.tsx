@@ -9,6 +9,7 @@ import { Constellation } from '../features/constellation/Constellation'
 import { AdvancedSync } from '../features/sync/AdvancedSync'
 import { AutoToggle } from '../features/sync/AutoToggle'
 import { RecentActivity } from '../features/sync/RecentActivity'
+import { SyncErrorDetails } from '../features/sync/SyncErrorDetails'
 import { SyncNowButton } from '../features/sync/SyncNowButton'
 import { relativeParts } from '../features/sync/relativeTime'
 import { conflictFiles, engineTone, hasConflict, onboardingStep } from '../state/selectors'
@@ -22,6 +23,9 @@ function statusLabel(state: ReturnType<typeof useAppState>, t: TFunction): strin
   if (!eng) return t('home.status.loading')
   if (eng.status === 'syncing') return t('home.status.syncing')
   if (eng.status === 'offline') return t('home.status.offline')
+  if (eng.status === 'error') {
+    return eng.errorKind === 'access' ? t('home.status.noAccess') : t('home.status.error')
+  }
   return t('home.status.upToDate')
 }
 
@@ -44,6 +48,9 @@ function statusMeta(state: ReturnType<typeof useAppState>, now: number, t: TFunc
   if (!eng) return ''
   if (eng.status === 'syncing') return t('home.meta.syncing')
   if (eng.status === 'offline') return t('home.meta.offline')
+  if (eng.status === 'error') {
+    return eng.errorKind === 'access' ? t('home.meta.noAccess') : t('home.meta.error')
+  }
   const bits: string[] = []
   if (eng.lastSyncedAt) bits.push(lastCheckedText(eng.lastSyncedAt, now, t))
   bits.push(eng.auto ? t('home.meta.autoOn') : t('home.meta.autoOff'))
@@ -82,11 +89,18 @@ export function SyncHome(): JSX.Element {
 
   const dotTone = conflict
     ? 'danger'
-    : tone === 'offline'
-      ? 'warn'
-      : syncEngine?.auto
-        ? 'ok'
-        : 'muted'
+    : tone === 'error'
+      ? 'danger'
+      : tone === 'offline'
+        ? 'warn'
+        : syncEngine?.auto
+          ? 'ok'
+          : 'muted'
+  // The failure text, while the bar shows a failure (never stale under "syncing").
+  const failure =
+    !conflict && (syncEngine?.status === 'error' || syncEngine?.status === 'offline')
+      ? syncEngine.lastError
+      : null
 
   return (
     <div className="view">
@@ -124,6 +138,7 @@ export function SyncHome(): JSX.Element {
           <AutoToggle />
           <SyncNowButton />
         </div>
+        {failure && <SyncErrorDetails error={failure} />}
       </div>
 
       {conflict && (

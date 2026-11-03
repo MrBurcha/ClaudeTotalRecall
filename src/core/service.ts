@@ -8,11 +8,14 @@ import { resolveConflictFile } from './conflict'
 import { AppError } from './errors'
 import { readMemoryFilePreview } from './filePreview'
 import { Git, type PullResult } from './git'
+import { GhAccountAuth, type AccountStore } from './gitAuth'
 import { classifyCommit } from './history'
 import {
   ensureSettingsLocal,
+  loadGithubAccount,
   loadLocalState,
   loadSettingsLocal,
+  saveGithubAccount,
   saveLocalState,
 } from './localState'
 import {
@@ -51,6 +54,30 @@ import {
 } from './types'
 
 // ── local locations (working copy = clone of the repo under configHome) ─────
+// gh logins found this session, per config home — covers the window before
+// registration, when there's no local.json to persist them in yet.
+const sessionAccounts = new Map<string, string>()
+
+function accountStore(adapter: PlatformAdapter): AccountStore {
+  const key = adapter.configHome()
+  return {
+    load: async () => (await loadGithubAccount(adapter)) ?? sessionAccounts.get(key),
+    save: async (login) => {
+      sessionAccounts.set(key, login)
+      await saveGithubAccount(adapter, login)
+    },
+  }
+}
+
+/**
+ * The working copy's git, authenticating to GitHub with whichever gh account can
+ * reach the repo — not just the active one (see core/gitAuth.ts). Every flow that
+ * talks to the remote must use this rather than `new Git(dir)`.
+ */
+export function repoGit(adapter: PlatformAdapter): Git {
+  return new Git(workingCopyDir(adapter), 'git', new GhAccountAuth(accountStore(adapter)))
+}
+
 export function workingCopyDir(adapter: PlatformAdapter): string {
   return join(adapter.configHome(), 'repo')
 }
@@ -161,10 +188,10 @@ export async function connectRepo(
 
   let git: Git
   if (await pathExists(join(dir, '.git'))) {
-    git = new Git(dir)
+    git = repoGit(adapter)
     await git.fetch()
   } else {
-    git = await Git.clone(remote, dir)
+    git = await Git.clone(remote, dir, 'git', new GhAccountAuth(accountStore(adapter)))
   }
   await ensureIdentity(git)
 
@@ -209,8 +236,7 @@ async function registerMachineLocked(
   adapter: PlatformAdapter,
   name?: string,
 ): Promise<RegisterResult> {
-  const dir = workingCopyDir(adapter)
-  const git = new Git(dir)
+  const git = repoGit(adapter)
   await ensureIdentity(git)
   const machineId = slug(name ?? hostname())
   if (!machineId) throw new AppError('machine.invalidName', 'Invalid machine name.')
@@ -311,8 +337,7 @@ async function commitConfigChangeLocked(
   message: string,
   mutate: (config: Config) => void | Promise<void>,
 ): Promise<void> {
-  const dir = workingCopyDir(adapter)
-  const git = new Git(dir)
+  const git = repoGit(adapter)
   await ensureIdentity(git)
   // Protect unpushed Notebook commits from the hard reset below (#104).
   await pushPendingCommits(git)
@@ -894,7 +919,7 @@ export async function removePinnedFile(adapter: PlatformAdapter, pinId: string):
 
 // ── conflicts ───────────────────────────────────────────────────────────────
 export async function listConflicts(adapter: PlatformAdapter): Promise<string[]> {
-  return new Git(workingCopyDir(adapter)).listConflicts()
+  return repoGit(adapter).listConflicts()
 }
 
 export async function resolveConflict(
@@ -903,7 +928,7 @@ export async function resolveConflict(
   side: 'local' | 'remote',
 ): Promise<void> {
   // Delegates so the modify/delete handling (#136) lives in exactly one place.
-  await resolveConflictFile(new Git(workingCopyDir(adapter)), file, side)
+  await resolveConflictFile(repoGit(adapter), file, side)
 }
 
 /**
@@ -955,7 +980,7 @@ export interface HealResult {
  * `incomingResolved` (never an outgoing first — see there). No-op without conflicts.
  */
 export async function healManagedConflicts(adapter: PlatformAdapter): Promise<HealResult> {
-  const git = new Git(workingCopyDir(adapter))
+  const git = repoGit(adapter)
   const { remaining, completed } = await resolveManagedConflicts(git)
   if (!completed) return { remaining, completed, pushed: false }
   const push = await git.push()
@@ -991,7 +1016,7 @@ async function purgeManaged(git: Git): Promise<boolean> {
  * locally. True when it committed something the caller still has to push.
  */
 export function purgeManagedFromRepo(adapter: PlatformAdapter): Promise<boolean> {
-  return purgeManaged(new Git(workingCopyDir(adapter)))
+  return purgeManaged(repoGit(adapter))
 }
 
 /**
@@ -1007,7 +1032,7 @@ export async function keepMachineEdits(
   adapter: PlatformAdapter,
   actions: PlanAction[],
 ): Promise<PlanAction[]> {
-  const git = new Git(workingCopyDir(adapter))
+  const git = repoGit(adapter)
   const base = (await git.revParse('HEAD^2')) ? await git.revParse('HEAD^1') : null
   if (!base) return actions
   const ctx = await buildContext(adapter)
@@ -1038,7 +1063,7 @@ async function machineObjectId(git: Git, ctx: SyncContext, a: PlanAction): Promi
 export async function completeConflictMerge(
   adapter: PlatformAdapter,
 ): Promise<{ pushed: boolean }> {
-  const git = new Git(workingCopyDir(adapter))
+  const git = repoGit(adapter)
   await git.completeMerge('Claude Total Recall: resolve conflicts')
   const push = await git.push()
   return { pushed: push.ok }
@@ -1046,7 +1071,7 @@ export async function completeConflictMerge(
 
 // ── status ──────────────────────────────────────────────────────────────────
 export function repoStatus(adapter: PlatformAdapter): Promise<RepoStatus> {
-  return new Git(workingCopyDir(adapter)).status()
+  return repoGit(adapter).status()
 }
 
 /**
@@ -1056,7 +1081,7 @@ export function repoStatus(adapter: PlatformAdapter): Promise<RepoStatus> {
  * combined list is sorted newest-first and capped to `limit`.
  */
 export async function history(adapter: PlatformAdapter, limit = 50): Promise<HistoryEntry[]> {
-  const raw = await new Git(workingCopyDir(adapter)).log(limit)
+  const raw = await repoGit(adapter).log(limit)
   const out: HistoryEntry[] = []
   for (const r of raw) {
     const c = classifyCommit(r.subject)
@@ -1080,7 +1105,7 @@ export async function history(adapter: PlatformAdapter, limit = 50): Promise<His
 export async function pullRepo(
   adapter: PlatformAdapter,
 ): Promise<{ ok: boolean; conflicts: string[] }> {
-  const r = await pullMerge(new Git(workingCopyDir(adapter)))
+  const r = await pullMerge(repoGit(adapter))
   return { ok: r.ok, conflicts: r.conflicted }
 }
 
@@ -1118,6 +1143,8 @@ export interface OutgoingResult {
   conflicts: string[]
   pushed: boolean
   committed: boolean
+  /** git's stderr when the push failed (so the caller can tell why), else undefined */
+  pushError?: string
 }
 
 /** Runs the outgoing sync (machine → working copy) and syncs with the remote. */
@@ -1126,7 +1153,7 @@ export async function syncOutgoing(
   plan: Plan,
   opts: { force?: boolean } = {},
 ): Promise<OutgoingResult> {
-  const git = new Git(workingCopyDir(adapter))
+  const git = repoGit(adapter)
   const ctx = await buildContext(adapter)
   // Repo hygiene first (#135): its own commit, carried by this flow's push.
   const purged = await purgeManaged(git)
@@ -1148,7 +1175,13 @@ export async function syncOutgoing(
     if (!p2.ok) return { exec, conflicts: p2.conflicted, pushed: false, committed: true }
     push = await git.push()
   }
-  return { exec, conflicts: [], pushed: push.ok, committed: true }
+  return {
+    exec,
+    conflicts: [],
+    pushed: push.ok,
+    committed: true,
+    pushError: push.ok ? undefined : push.stderr.trim(),
+  }
 }
 
 export interface IncomingResult {
@@ -1206,7 +1239,7 @@ async function recordIncomingFromPlan(
   }
   if (changes.length === 0) return
 
-  const git = new Git(workingCopyDir(adapter))
+  const git = repoGit(adapter)
   const head = await git.revParse('HEAD')
   const { lastHead } = await loadActivityLog(adapter)
   const fromMachines = await incomingSources(git, lastHead, head, ctx.machineId)

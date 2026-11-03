@@ -152,6 +152,13 @@
   --node-current: var(--danger);
   border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
+/* error → rojo apagado: algo no anda y no es la red (#132), sin pausar como un conflicto. */
+.constellation--error {
+  --accent: var(--danger);
+  --accent-line: color-mix(in srgb, var(--danger) 36%, transparent);
+  --radar: color-mix(in srgb, var(--danger) 6%, transparent);
+  opacity: 0.9;
+}
 .constellation--offline {
   --accent: var(--warn);
   --accent-line: color-mix(in srgb, var(--warn) 42%, transparent);

@@ -29,12 +29,13 @@ export function hasConflict(s: Pick<AppState, 'status' | 'syncEngine'>): boolean
 }
 
 /** Constellation tone derived from the engine's state (hero color). */
-export type EngineTone = 'ok' | 'syncing' | 'conflict' | 'offline'
+export type EngineTone = 'ok' | 'syncing' | 'conflict' | 'offline' | 'error'
 export function engineTone(s: Pick<AppState, 'status' | 'syncEngine'>): EngineTone {
   if (hasConflict(s)) return 'conflict'
   const st = s.syncEngine?.status
   if (st === 'syncing') return 'syncing'
   if (st === 'offline') return 'offline'
+  if (st === 'error') return 'error'
   return 'ok'
 }
 
