@@ -276,7 +276,10 @@
       "exists": "Ya existe una entrada del Cuaderno en \"{{value}}\".",
       "notFound": "No hay ninguna entrada del Cuaderno en \"{{value}}\".",
       "invalidMove": "No se puede mover una entrada dentro de sí misma.",
-      "repoConflict": "Resolvé los conflictos de sincronización pendientes antes de editar el Cuaderno."
+      "repoConflict": "Resolvé los conflictos de sincronización pendientes antes de editar el Cuaderno.",
+      "invalidVersion": "Versión del Cuaderno no válida.",
+      "versionNotFound": "Esa versión de \"{{value}}\" no está disponible.",
+      "versionNotText": "Solo se pueden restaurar versiones de texto; esta es binaria o no es UTF-8."
     },
     "sync": {
       "pendingConflict": "Resolvé los conflictos de sincronización pendientes antes de continuar."
@@ -533,7 +536,52 @@
     "notConnected": "Conectá tu repo de memoria primero",
     "notConnectedHint": "El Cuaderno vive en tu repo sincronizado. Configuralo en Ajustes para empezar a escribir.",
     "deleteTitle": "Eliminar entrada",
-    "deleteBody": "¿Eliminar \"{{name}}\"? Se quita del Cuaderno en todas las máquinas tras la próxima sincronización."
+    "deleteBody": "¿Eliminar \"{{name}}\"? Se quita del Cuaderno en todas las máquinas tras la próxima sincronización.",
+    "history": {
+      "open": "Historial",
+      "title": "Historial de versiones",
+      "back": "Volver a la nota",
+      "empty": "Todavía no hay versiones guardadas.",
+      "current": "Actual",
+      "truncated": "Se muestran las últimas {{limit}} versiones.",
+      "listAria": "Versiones de esta nota",
+      "kind": {
+        "create": "Creada",
+        "update": "Editada",
+        "rename": "Renombrada o movida",
+        "restore": "Restaurada",
+        "delete": "Eliminada",
+        "other": "Otro cambio"
+      },
+      "modeAria": "Vista de la versión",
+      "modeVersion": "Esta versión",
+      "modeDiff": "Comparar con la actual",
+      "thenNamed": "Entonces se llamaba {{path}}",
+      "unavailable": "Esta versión no tiene contenido para mostrar (la nota se eliminó en ella).",
+      "pick": "Selecciona una versión para verla.",
+      "restore": "Restaurar esta versión",
+      "restoreTitle": "¿Restaurar esta versión?",
+      "restoreBody": "¿Reemplazar el contenido actual de \"{{name}}\" por la versión del {{date}} ({{hash}})? El contenido actual queda en el historial, así que puedes volver a restaurarlo más tarde.",
+      "restoreConfirm": "Restaurar",
+      "restored": "Versión restaurada.",
+      "alreadyCurrent": "La nota ya tiene este contenido; no hay nada que restaurar.",
+      "identical": "Esta versión es idéntica a la nota actual.",
+      "diffBinary": "Diferencia binaria: no hay comparación línea por línea.",
+      "diffTruncated": "Comparación extensa: se muestra solo la primera parte.",
+      "legendOld": "esta versión",
+      "legendNew": "nota actual"
+    },
+    "search": {
+      "placeholder": "Buscar notas",
+      "aria": "Buscar en el Cuaderno",
+      "clear": "Limpiar búsqueda",
+      "searching": "Buscando…",
+      "noResults": "Ninguna nota coincide con \"{{query}}\".",
+      "count_one": "{{count}} resultado",
+      "count_other": "{{count}} resultados",
+      "truncated": "Se muestran los primeros {{limit}} resultados; afina tu búsqueda.",
+      "hint": "Enter abre el primer resultado · Esc limpia"
+    }
   },
   "conflicts": {
     "title_one": "Resuelve {{count}} conflicto",

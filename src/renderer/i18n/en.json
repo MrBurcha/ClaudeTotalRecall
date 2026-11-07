@@ -276,7 +276,10 @@
       "exists": "A Notebook entry already exists at \"{{value}}\".",
       "notFound": "No Notebook entry at \"{{value}}\".",
       "invalidMove": "Cannot move an entry into itself.",
-      "repoConflict": "Resolve the pending sync conflicts before editing the Notebook."
+      "repoConflict": "Resolve the pending sync conflicts before editing the Notebook.",
+      "invalidVersion": "Invalid Notebook version.",
+      "versionNotFound": "That version of \"{{value}}\" is not available.",
+      "versionNotText": "Only text versions can be restored; this one is binary or not UTF-8."
     },
     "sync": {
       "pendingConflict": "Resolve the pending sync conflicts before continuing."
@@ -533,7 +536,52 @@
     "notConnected": "Connect your memory repo first",
     "notConnectedHint": "The Notebook lives in your synced repo. Set it up in Settings to start writing.",
     "deleteTitle": "Delete entry",
-    "deleteBody": "Delete \"{{name}}\"? This removes it from the Notebook on every machine after the next sync."
+    "deleteBody": "Delete \"{{name}}\"? This removes it from the Notebook on every machine after the next sync.",
+    "history": {
+      "open": "History",
+      "title": "Version history",
+      "back": "Back to note",
+      "empty": "No saved versions yet.",
+      "current": "Current",
+      "truncated": "Showing the latest {{limit}} versions.",
+      "listAria": "Versions of this note",
+      "kind": {
+        "create": "Created",
+        "update": "Edited",
+        "rename": "Renamed or moved",
+        "restore": "Restored",
+        "delete": "Deleted",
+        "other": "Changed"
+      },
+      "modeAria": "Version view",
+      "modeVersion": "This version",
+      "modeDiff": "Compare with current",
+      "thenNamed": "Then named {{path}}",
+      "unavailable": "This version has no content to show (the note was deleted in it).",
+      "pick": "Select a version to view it.",
+      "restore": "Restore this version",
+      "restoreTitle": "Restore this version?",
+      "restoreBody": "Replace the current content of \"{{name}}\" with the version from {{date}} ({{hash}})? The current content stays in the history, so you can restore it again later.",
+      "restoreConfirm": "Restore",
+      "restored": "Version restored.",
+      "alreadyCurrent": "The note already has this content — nothing to restore.",
+      "identical": "This version is identical to the current note.",
+      "diffBinary": "Binary difference — no line-by-line comparison.",
+      "diffTruncated": "Long comparison — showing the first part only.",
+      "legendOld": "this version",
+      "legendNew": "current note"
+    },
+    "search": {
+      "placeholder": "Search notes",
+      "aria": "Search the Notebook",
+      "clear": "Clear search",
+      "searching": "Searching…",
+      "noResults": "No notes match \"{{query}}\".",
+      "count_one": "{{count}} result",
+      "count_other": "{{count}} results",
+      "truncated": "Showing the first {{limit}} results — refine your search.",
+      "hint": "Enter opens the first result · Esc clears"
+    }
   },
   "conflicts": {
     "title_one": "Resolve {{count}} conflict",

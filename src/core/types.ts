@@ -221,6 +221,88 @@ export interface NotebookFile {
   exists: boolean
 }
 
+/** What a commit did to a note, for the version-history list (#107). */
+export type NotebookVersionKind = 'create' | 'update' | 'rename' | 'restore' | 'delete' | 'other'
+
+/** One commit in a note's history (newest first), following renames/moves. */
+export interface NotebookVersion {
+  hash: string
+  shortHash: string
+  /** ISO author date */
+  at: string
+  author: string
+  subject: string
+  kind: NotebookVersionKind
+  /** notebook-relative path of the note AT this commit (differs from today's after a rename) */
+  path: string
+  /** false for a deletion (or a path outside the Notebook): there is no content to show */
+  available: boolean
+  /** this version's bytes are identical to the note on disk right now */
+  current: boolean
+}
+
+export interface NotebookHistory {
+  versions: NotebookVersion[]
+  /** more commits exist than the ones listed (the list is capped) */
+  truncated: boolean
+}
+
+/** One line of a unified diff. `note` = git's "\ No newline at end of file" marker. */
+export interface DiffLine {
+  kind: 'add' | 'del' | 'ctx' | 'note'
+  text: string
+  /** 1-based line number on the old side (del/ctx) */
+  oldNo?: number
+  /** 1-based line number on the new side (add/ctx) */
+  newNo?: number
+}
+
+export interface DiffHunk {
+  /** the raw "@@ -a,b +c,d @@ …" header */
+  header: string
+  oldStart: number
+  oldLines: number
+  newStart: number
+  newLines: number
+  lines: DiffLine[]
+}
+
+/** A past version compared with the note's current content (old → current). */
+export interface NotebookDiff {
+  hunks: DiffHunk[]
+  /** no differences at all */
+  identical: boolean
+  /** git reported a binary difference (no line diff available) */
+  binary: boolean
+  /** the diff was longer than the display cap and was cut */
+  truncated: boolean
+}
+
+/** [start, end) UTF-16 offsets of a highlighted match inside a string. */
+export type TextRange = [number, number]
+
+/** A Notebook full-text search result (#108). */
+export interface NotebookSearchHit {
+  /** notebook-relative path, e.g. "general/ideas.md" */
+  path: string
+  /** the file name (last path segment) */
+  name: string
+  /** matches inside `name`, for highlighting */
+  nameRanges: TextRange[]
+  /** the query matched the note's name or folder path */
+  nameMatch: boolean
+  /** number of matches in the content */
+  contentMatches: number
+  /** a short line of context: the first content match (highlighted), else the first line */
+  snippet: { text: string; ranges: TextRange[] } | null
+}
+
+export interface NotebookSearchResult {
+  hits: NotebookSearchHit[]
+  /** more notes matched than the result cap */
+  truncated: boolean
+}
+
 /** Content + machine location of a memories file, for the preview modal (#43). */
 export interface FilePreview {
   /** UTF-8 content from the repo working copy; empty when binary or missing */

@@ -224,6 +224,22 @@ export function registerIpc(
     notebook.moveEntry(adapter(), p),
   )
   change('notebook:delete', (_e, rel: string) => notebook.deleteEntry(adapter(), rel))
+  // Version history (#107): read-only git lookups + a restore that commits locally
+  // like a Save. The hash and the path-at-commit are validated server-side.
+  handle('notebook:history', (_e, rel: string) => notebook.noteHistory(adapter(), rel))
+  handle('notebook:readVersion', (_e, p: { hash: string; path: string }) =>
+    notebook.readNoteVersion(adapter(), p),
+  )
+  handle('notebook:diffVersion', (_e, p: { relPath: string; hash: string; path: string }) =>
+    notebook.diffNoteVersion(adapter(), p),
+  )
+  change('notebook:restoreVersion', (_e, p: { relPath: string; hash: string; path: string }) =>
+    notebook.restoreNoteVersion(adapter(), p),
+  )
+  // Full-text search (#108) over the working copy's Notebook.
+  handle('notebook:search', (_e, p: { query: string; limit?: number }) =>
+    notebook.searchNotebook(adapter(), p),
+  )
 
   // Pinned files (global pinpoint files, outside any project)
   change('pinned:set', (_e, p: { pinId: string; path: string }) =>

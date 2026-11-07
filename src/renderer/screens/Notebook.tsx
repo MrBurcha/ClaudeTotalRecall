@@ -1,15 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { NoteDetail } from '../features/notebook/NoteDetail'
+import { NoteHistory, versionDate } from '../features/notebook/NoteHistory'
+import {
+  NotebookSearchBox,
+  NotebookSearchResults,
+  useNotebookSearch,
+} from '../features/notebook/NotebookSearch'
 import { NotebookTreeView, type TreeCtx } from '../features/notebook/NotebookTree'
+import { ancestorDirs } from '../features/notebook/notebookView'
 import { api, normalizeError } from '../state/api'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 import { ViewHeader } from './ViewHeader'
-import type { NotebookFile, NotebookTree } from '../../core/types'
+import type { NotebookFile, NotebookTree, NotebookVersion } from '../../core/types'
 
 const parentOf = (rel: string): string => rel.split('/').slice(0, -1).join('/')
 const baseOf = (rel: string): string => rel.split('/').slice(-1)[0]
@@ -19,7 +26,7 @@ const rewritePath = (p: string, from: string, to: string): string =>
   p === from ? to : p.startsWith(`${from}/`) ? to + p.slice(from.length) : p
 
 export function Notebook(): JSX.Element {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const state = useAppState()
   const actions = useActions()
 
@@ -33,6 +40,14 @@ export function Notebook(): JSX.Element {
   const [creating, setCreating] = useState<TreeCtx['creating']>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [moving, setMoving] = useState<string | null>(null)
+  // Version history (#107) replaces the note view in the detail pane while open.
+  const [historyOpen, setHistoryOpen] = useState(false)
+  // Full-text search (#108): results replace the tree while the query is non-empty.
+  const [query, setQuery] = useState('')
+  const [searchNonce, setSearchNonce] = useState(0)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const search = useNotebookSearch(query, searchNonce)
+  const searching = query.trim() !== ''
 
   const connected = !!state.config
 
@@ -55,6 +70,7 @@ export function Notebook(): JSX.Element {
     try {
       await fn()
       await loadTree()
+      setSearchNonce((n) => n + 1) // re-run an active search against the new content
       await actions.refresh()
       if (okMsg) actions.notify(okMsg, 'ok')
     } catch (e) {
@@ -67,6 +83,7 @@ export function Notebook(): JSX.Element {
   const openNote = async (rel: string): Promise<void> => {
     setSelected(rel)
     setEditing(false)
+    setHistoryOpen(false)
     setBusy(true)
     try {
       setFile(await api.notebookRead(rel))
@@ -106,6 +123,7 @@ export function Notebook(): JSX.Element {
         setSelected(rel)
         setFile({ content: '', size: 0, truncated: false, binary: false, exists: true })
         setDraft('')
+        setHistoryOpen(false)
         setEditing(true)
       }
     })
@@ -175,6 +193,51 @@ export function Notebook(): JSX.Element {
     }
   }
 
+  /**
+   * Restores a past version through the normal save path (a local commit). History
+   * is only reachable outside edit mode, so there is never an unsaved draft to lose;
+   * the guard below keeps that true even if the UI changes.
+   */
+  const restore = async (v: NotebookVersion): Promise<void> => {
+    const rel = selected
+    if (!rel || editing) return
+    const ok = await actions.confirm({
+      title: t('notebook.history.restoreTitle'),
+      body: t('notebook.history.restoreBody', {
+        name: baseOf(rel),
+        date: versionDate(v.at, i18n.resolvedLanguage),
+        hash: v.shortHash,
+      }),
+      confirmLabel: t('notebook.history.restoreConfirm'),
+    })
+    if (!ok) return
+    await runNb(async () => {
+      const r = await api.notebookRestoreVersion(rel, v.hash, v.path)
+      setFile(await api.notebookRead(rel))
+      setHistoryOpen(false)
+      actions.notify(
+        r.committed ? t('notebook.history.restored') : t('notebook.history.alreadyCurrent'),
+        r.committed ? 'ok' : 'info',
+      )
+    })
+  }
+
+  /** Opens a search result and expands the tree down to it (for when the search clears). */
+  const openFromSearch = (rel: string): void => {
+    setExpanded((prev) => new Set([...prev, ...ancestorDirs(rel)]))
+    void openNote(rel)
+  }
+
+  const openFirstResult = (): void => {
+    const first = search.result?.hits[0]
+    if (first) openFromSearch(first.path)
+  }
+
+  const clearSearch = (): void => {
+    setQuery('')
+    searchRef.current?.focus()
+  }
+
   const ctx: TreeCtx = {
     selected,
     expanded,
@@ -232,6 +295,12 @@ export function Notebook(): JSX.Element {
       ) : (
         <div className="notebook">
           <aside className="notebook__tree">
+            <NotebookSearchBox
+              value={query}
+              inputRef={searchRef}
+              onChange={setQuery}
+              onSubmit={openFirstResult}
+            />
             {moving && (
               <div className="notebook__moving">
                 <span className="grow truncate">
@@ -242,7 +311,15 @@ export function Notebook(): JSX.Element {
                 </Button>
               </div>
             )}
-            {tree ? (
+            {searching ? (
+              <NotebookSearchResults
+                query={query}
+                state={search}
+                selected={selected}
+                onOpen={openFromSearch}
+                onClear={clearSearch}
+              />
+            ) : tree ? (
               <NotebookTreeView tree={tree} ctx={ctx} />
             ) : (
               <p className="muted nb-tree__empty">{t('common.loading')}</p>
@@ -250,7 +327,15 @@ export function Notebook(): JSX.Element {
           </aside>
 
           <section className="notebook__detail">
-            {selected && file ? (
+            {selected && file && historyOpen ? (
+              <NoteHistory
+                path={selected}
+                name={baseOf(selected)}
+                busy={busy}
+                onBack={() => setHistoryOpen(false)}
+                onRestore={(v) => void restore(v)}
+              />
+            ) : selected && file ? (
               <NoteDetail
                 path={selected}
                 name={baseOf(selected)}
@@ -266,6 +351,7 @@ export function Notebook(): JSX.Element {
                 onCancelEdit={() => setEditing(false)}
                 onSave={() => void save()}
                 onCopy={() => void copy()}
+                onHistory={() => setHistoryOpen(true)}
               />
             ) : (
               <EmptyState icon="file-text" title={t('notebook.pickTitle')}>

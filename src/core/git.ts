@@ -20,6 +20,12 @@ function checked(args: string[], r: ExecResult): string {
   return r.stdout.trim()
 }
 
+/** Like {@link checked} but returns stdout untouched (diff output is whitespace-significant). */
+function checkedRaw(args: string[], r: ExecResult): string {
+  checked(args, r)
+  return r.stdout
+}
+
 export interface PullResult {
   /** true if the pull (merge) came out clean; false if there are conflicts to resolve */
   ok: boolean
@@ -89,6 +95,59 @@ function parseLog(stdout: string): RawLogEntry[] {
       changes.push({ status: fileStatus(cols[0]), path: cols[cols.length - 1] })
     }
     out.push({ hash, at, author, subject: subject ?? '', files: changes.length, changes })
+  }
+  return out
+}
+
+/** One commit of a single file's `--follow` history, from `git log --raw`. */
+export interface FileLogEntry {
+  hash: string
+  /** ISO author date (%aI) */
+  at: string
+  author: string
+  subject: string
+  /** the commit's status for this file; null for a merge (git prints no raw row) */
+  status: FileChange['status'] | null
+  /** repo-relative path of the file AT this commit (the new name for a rename); null for a merge */
+  path: string | null
+  /** for a rename, the path the file had BEFORE this commit; null otherwise */
+  fromPath: string | null
+  /** blob id of the file after this commit; null for a deletion or a merge */
+  blob: string | null
+}
+
+const NULL_OID = /^0+$/
+
+/** Parses `git log --raw --no-abbrev` output in {@link LOG_FMT} for one followed file. */
+function parseFileLog(stdout: string): FileLogEntry[] {
+  const out: FileLogEntry[] = []
+  for (const rec of stdout.split(LOG_REC)) {
+    if (!rec.trim()) continue
+    const lines = rec.split('\n')
+    const [hash, at, author, subject] = lines[0].split(LOG_SEP)
+    if (!hash) continue
+    const entry: FileLogEntry = {
+      hash,
+      at,
+      author,
+      subject: subject ?? '',
+      status: null,
+      path: null,
+      fromPath: null,
+      blob: null,
+    }
+    // raw rows: ":<mode> <mode> <oldsha> <newsha> <status>\t<path>[\t<newpath>]"
+    const row = lines.slice(1).find((l) => l.startsWith(':') && l.includes('\t'))
+    if (row) {
+      const cols = row.split('\t')
+      const meta = cols[0].split(' ')
+      const newSha = meta[3] ?? ''
+      entry.status = fileStatus(meta[4] ?? '')
+      entry.path = cols[cols.length - 1]
+      entry.fromPath = cols.length > 2 ? cols[1] : null
+      entry.blob = newSha && !NULL_OID.test(newSha) ? newSha : null
+    }
+    out.push(entry)
   }
   return out
 }
@@ -192,8 +251,11 @@ export class Git {
    * Object id git would give some bytes — a file on disk (read byte-exact, no
    * filters) or a string — comparable with `blobId` without decoding blobs.
    */
-  async hashObject(src: { file: string } | { content: string }): Promise<string> {
-    if ('file' in src) return this.out(['hash-object', '--no-filters', '--', src.file])
+  async hashObject(src: { file: string } | { content: string }, write = false): Promise<string> {
+    // `write` stores the blob in the object DB (content-addressed and inert; a no-op
+    // when the object already exists) so it can be named in e.g. `git diff`.
+    const w = write ? ['-w'] : []
+    if ('file' in src) return this.out(['hash-object', ...w, '--no-filters', '--', src.file])
     const r = await this.raw(['hash-object', '--no-filters', '--stdin'], src.content)
     if (r.code !== 0) {
       throw new GitError(`git hash-object --stdin failed (code ${r.code}): ${r.stderr.trim()}`, r)
@@ -281,6 +343,52 @@ export class Git {
     ])
     if (r.code !== 0) return []
     return parseLog(r.stdout)
+  }
+
+  /**
+   * The commits that touched ONE file, newest first, following renames/moves
+   * (`--follow`). Asks for `limit` commits; [] when the path has no history.
+   */
+  async logFollow(path: string, limit: number): Promise<FileLogEntry[]> {
+    const r = await this.raw([
+      'log',
+      '--follow',
+      `-n${limit}`,
+      '--raw',
+      '--no-abbrev',
+      `--pretty=format:${LOG_FMT}`,
+      '--',
+      path,
+    ])
+    if (r.code !== 0) return []
+    return parseFileLog(r.stdout)
+  }
+
+  /**
+   * Size in bytes of an object (`<rev>:<path>` or an object id), or null when it
+   * doesn't exist — so it doubles as an existence check.
+   */
+  async objectSize(spec: string): Promise<number | null> {
+    const r = await this.raw(['cat-file', '-s', spec])
+    if (r.code !== 0) return null
+    const n = Number(r.stdout.trim())
+    return Number.isFinite(n) ? n : null
+  }
+
+  /** Content of a blob (`<rev>:<path>` or a blob id) decoded as UTF-8, or null when missing. */
+  async showBlob(spec: string): Promise<string | null> {
+    const r = await this.raw(['cat-file', 'blob', spec])
+    return r.code === 0 ? r.stdout : null
+  }
+
+  /**
+   * Unified diff between two blobs (any `<rev>:<path>` or blob ids), as git prints
+   * it. Plain output regardless of the user's config: no color, no external diff
+   * driver, no textconv filter.
+   */
+  async diffBlobs(a: string, b: string): Promise<string> {
+    const args = ['diff', '--no-color', '--no-ext-diff', '--no-textconv', a, b]
+    return checkedRaw(args, await this.raw(args))
   }
 
   /** Resolves a ref to its full hash, or null (e.g. a repo with no commits yet). */

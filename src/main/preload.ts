@@ -3,7 +3,10 @@ import type {
   Config,
   FilePreview,
   HistoryEntry,
+  NotebookDiff,
   NotebookFile,
+  NotebookHistory,
+  NotebookSearchResult,
   NotebookTree,
   Plan,
   PlanAction,
@@ -122,6 +125,20 @@ const api = {
     ipcRenderer.invoke('notebook:move', { relPath, toDir }) as Promise<void>,
   notebookDelete: (relPath: string) =>
     ipcRenderer.invoke('notebook:delete', relPath) as Promise<void>,
+  // Version history (#107). `path` is the note's path AT that commit (from the history).
+  notebookHistory: (relPath: string) =>
+    ipcRenderer.invoke('notebook:history', relPath) as Promise<NotebookHistory>,
+  notebookReadVersion: (hash: string, path: string) =>
+    ipcRenderer.invoke('notebook:readVersion', { hash, path }) as Promise<NotebookFile>,
+  notebookDiffVersion: (relPath: string, hash: string, path: string) =>
+    ipcRenderer.invoke('notebook:diffVersion', { relPath, hash, path }) as Promise<NotebookDiff>,
+  notebookRestoreVersion: (relPath: string, hash: string, path: string) =>
+    ipcRenderer.invoke('notebook:restoreVersion', { relPath, hash, path }) as Promise<{
+      committed: boolean
+    }>,
+  // Full-text search (#108).
+  notebookSearch: (query: string) =>
+    ipcRenderer.invoke('notebook:search', { query }) as Promise<NotebookSearchResult>,
 
   filePreview: (repoRelPath: string) =>
     ipcRenderer.invoke('file:preview', repoRelPath) as Promise<FilePreview>,
