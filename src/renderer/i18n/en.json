@@ -268,7 +268,8 @@
       "notRegisteredLocal": "Machine not registered (local.json missing). Run `engram register`.",
       "notRegisteredPrefs": "Machine not registered; nowhere to save preferences.",
       "removeSelf": "This machine can't remove itself.",
-      "unknown": "Machine \"{{value}}\" isn't registered."
+      "unknown": "Machine \"{{value}}\" isn't registered.",
+      "notInRepo": "This machine ({{machineId}}) was removed from the repo. Join again to resume syncing."
     },
     "push": {
       "rejectedRegister": "Push failed while registering: {{stderr}}",
@@ -363,7 +364,7 @@
     "thisMachine": "this",
     "removeLabel": "Remove {{machineId}} from this repo",
     "removeTitle": "Remove {{machineId}}?",
-    "removeBody": "{{machineId}} stops being part of this repo: it disappears from the list and its folder paths are forgotten. The memory it already synced stays. If it's still in use, it'll have to register again.",
+    "removeBody": "{{machineId}} stops being part of this repo: it leaves the list and stops syncing. The memory it already synced stays. If you open Engram on it again, it asks to join again — with the same name it gets its folders back.",
     "removeConfirm": "Remove",
     "removed": "{{machineId}} removed from this repo."
   },
@@ -663,7 +664,12 @@
       "sub": "A logical id for this computer. If you leave it empty, we use the hostname.",
       "nameLabel": "Logical name (optional)",
       "submit": "Register this machine",
-      "registered": "Machine \"{{machineId}}\" registered."
+      "registered": "Machine \"{{machineId}}\" registered.",
+      "rejoinTitle": "This machine was removed from the repo",
+      "rejoinSub": "{{machineId}} was removed from this repo from another machine, so it stopped syncing. Join again to resume — keep the same name and it gets its project folders back.",
+      "rejoinSubmit": "Join again",
+      "restored_one": "Joined as {{machineId}} — {{count}} folder or file restored.",
+      "restored_other": "Joined as {{machineId}} — {{count}} folders and files restored."
     },
     "firstProject": {
       "title": "Add a project?",

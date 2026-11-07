@@ -422,4 +422,9 @@ export interface SyncEngineState {
    * this copy doesn't sync and refuses changes. null = this process owns the machine.
    */
   blockedBy: { kind: 'app' | 'cli'; pid: number } | null
+  /**
+   * This machine has an identity locally but another machine removed it from the
+   * repo: the engine stops and the app asks it to rejoin (register again).
+   */
+  removedFromRepo: boolean
 }

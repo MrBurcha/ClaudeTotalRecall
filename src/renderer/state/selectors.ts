@@ -45,6 +45,17 @@ export function engineTone(s: Pick<AppState, 'status' | 'syncEngine'>): EngineTo
   return 'ok'
 }
 
+/**
+ * This machine has an identity but the repo no longer lists it: another machine
+ * removed it. It doesn't sync until it rejoins (the wizard's register step).
+ */
+export function removedFromRepo(
+  s: Pick<AppState, 'config' | 'machineId'> & Partial<Pick<AppState, 'syncEngine'>>,
+): boolean {
+  if (s.syncEngine?.removedFromRepo) return true
+  return !!s.config && !!s.machineId && !s.config.machines[s.machineId]
+}
+
 export type OnboardingStep = 'preflight' | 'connect' | 'register' | 'first-project' | 'done'
 
 /**
@@ -52,11 +63,11 @@ export type OnboardingStep = 'preflight' | 'connect' | 'register' | 'first-proje
  * It's the hard chain of backend preconditions (register requires connect, etc).
  */
 export function onboardingStep(
-  s: Pick<AppState, 'preflight' | 'config' | 'machineId'>,
+  s: Pick<AppState, 'preflight' | 'config' | 'machineId'> & Partial<Pick<AppState, 'syncEngine'>>,
 ): OnboardingStep {
   if (!s.preflight?.ok) return 'preflight'
   if (!s.config) return 'connect'
-  if (!s.machineId) return 'register'
+  if (!s.machineId || removedFromRepo(s)) return 'register'
   if (Object.keys(s.config.projects).length === 0) return 'first-project'
   return 'done'
 }
@@ -65,7 +76,9 @@ export function onboardingStep(
  * Do we need to hijack the user with the wizard? 'first-project' does NOT block
  * (the app can be used without projects), so it doesn't count.
  */
-export function needsOnboarding(s: Pick<AppState, 'preflight' | 'config' | 'machineId'>): boolean {
+export function needsOnboarding(
+  s: Pick<AppState, 'preflight' | 'config' | 'machineId'> & Partial<Pick<AppState, 'syncEngine'>>,
+): boolean {
   const step = onboardingStep(s)
   return step === 'preflight' || step === 'connect' || step === 'register'
 }

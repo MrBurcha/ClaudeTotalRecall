@@ -1,6 +1,6 @@
 {
   "name": "engram",
-  "version": "0.15.1",
+  "version": "0.15.2",
   "description": "Engram — your agent's memory, everywhere: sync Claude Code memory across machines via a private GitHub repo",
   "author": "MrBurcha",
   "license": "MIT",

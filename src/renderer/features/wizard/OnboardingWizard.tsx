@@ -148,20 +148,29 @@ function ConnectPanel(): JSX.Element {
 
 function RegisterPanel(): JSX.Element {
   const { t } = useTranslation()
-  const { busy } = useAppState()
+  const { busy, machineId } = useAppState()
   const actions = useActions()
-  const [name, setName] = useState('')
+  // Rejoin: this machine already had a name in this repo until someone removed it.
+  // Offering that same name brings its project folders back.
+  const rejoin = !!machineId
+  const [name, setName] = useState(machineId ?? '')
   const register = (): Promise<void> =>
     actions.run(async () => {
       const r = await api.machineRegister(name.trim() || undefined)
-      return t('wizard.register.registered', { machineId: r.machineId })
+      return r.restored > 0
+        ? t('wizard.register.restored', { machineId: r.machineId, count: r.restored })
+        : t('wizard.register.registered', { machineId: r.machineId })
     })
   return (
     <div className="stack">
       <StepHeader
         icon="monitor"
-        title={t('wizard.register.title')}
-        sub={t('wizard.register.sub')}
+        title={rejoin ? t('wizard.register.rejoinTitle') : t('wizard.register.title')}
+        sub={
+          rejoin
+            ? t('wizard.register.rejoinSub', { machineId: machineId ?? '' })
+            : t('wizard.register.sub')
+        }
       />
       <form
         onSubmit={(e) => {
@@ -179,7 +188,7 @@ function RegisterPanel(): JSX.Element {
       </form>
       <div className="row">
         <Button variant="primary" icon="monitor" disabled={busy} onClick={register}>
-          {t('wizard.register.submit')}
+          {rejoin ? t('wizard.register.rejoinSubmit') : t('wizard.register.submit')}
         </Button>
       </div>
     </div>

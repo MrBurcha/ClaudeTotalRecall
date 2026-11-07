@@ -268,7 +268,8 @@
       "notRegisteredLocal": "La máquina no está registrada (falta local.json). Ejecuta `engram register`.",
       "notRegisteredPrefs": "La máquina no está registrada; no hay dónde guardar las preferencias.",
       "removeSelf": "Esta máquina no puede quitarse a sí misma.",
-      "unknown": "La máquina \"{{value}}\" no está registrada."
+      "unknown": "La máquina \"{{value}}\" no está registrada.",
+      "notInRepo": "Esta máquina ({{machineId}}) se quitó del repo. Vuelve a sumarla para seguir sincronizando."
     },
     "push": {
       "rejectedRegister": "Falló el push al registrar: {{stderr}}",
@@ -363,7 +364,7 @@
     "thisMachine": "esta",
     "removeLabel": "Quitar {{machineId}} de este repo",
     "removeTitle": "¿Quitar {{machineId}}?",
-    "removeBody": "{{machineId}} deja de ser parte de este repo: desaparece de la lista y se olvidan sus rutas. La memoria que ya sincronizó se queda. Si todavía la usas, tendrá que registrarse de nuevo.",
+    "removeBody": "{{machineId}} deja de ser parte de este repo: sale de la lista y deja de sincronizar. La memoria que ya sincronizó se queda. Si vuelves a abrir Engram en ella, te pide volver a sumarla; con el mismo nombre recupera sus carpetas.",
     "removeConfirm": "Quitar",
     "removed": "{{machineId}} se quitó de este repo."
   },
@@ -663,7 +664,12 @@
       "sub": "Un id lógico para esta computadora. Si lo dejas vacío, usamos el hostname.",
       "nameLabel": "Nombre lógico (opcional)",
       "submit": "Registrar esta máquina",
-      "registered": "Máquina \"{{machineId}}\" registrada."
+      "registered": "Máquina \"{{machineId}}\" registrada.",
+      "rejoinTitle": "Esta máquina se quitó del repo",
+      "rejoinSub": "Alguien quitó {{machineId}} de este repo desde otra máquina, así que dejó de sincronizar. Vuelve a sumarla para seguir: con el mismo nombre recupera sus carpetas de proyectos.",
+      "rejoinSubmit": "Volver a sumarse",
+      "restored_one": "Se sumó como {{machineId}} — se recuperó {{count}} carpeta o archivo.",
+      "restored_other": "Se sumó como {{machineId}} — se recuperaron {{count}} carpetas y archivos."
     },
     "firstProject": {
       "title": "¿Agregas un proyecto?",
