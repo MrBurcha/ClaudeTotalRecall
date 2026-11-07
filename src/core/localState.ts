@@ -40,6 +40,24 @@ export function settingsLocalPath(adapter: PlatformAdapter): string {
   return join(adapter.configHome(), 'settings.local.json')
 }
 
+/** Engine bookkeeping that must survive a restart (#139): when this machine last synced. */
+export function syncMetaPath(adapter: PlatformAdapter): string {
+  return join(adapter.configHome(), 'sync.local.json')
+}
+
+/** Epoch ms of the last successful sync, or null if unknown (never, or unreadable). */
+export async function loadLastSyncedAt(adapter: PlatformAdapter): Promise<number | null> {
+  const data = (await readJson(syncMetaPath(adapter)).catch(() => null)) as {
+    lastSyncedAt?: unknown
+  } | null
+  const at = data?.lastSyncedAt
+  return typeof at === 'number' && Number.isFinite(at) ? at : null
+}
+
+export async function saveLastSyncedAt(adapter: PlatformAdapter, at: number): Promise<void> {
+  await writeJson(syncMetaPath(adapter), { lastSyncedAt: at })
+}
+
 export function baselinePath(adapter: PlatformAdapter): string {
   return join(adapter.configHome(), 'baseline.json')
 }

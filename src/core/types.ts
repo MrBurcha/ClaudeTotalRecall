@@ -386,14 +386,30 @@ export type SyncStatus =
  */
 export type RemoteErrorKind = 'network' | 'access' | 'other'
 
+/**
+ * What's waiting to move, counted without touching the network or any file (#139).
+ * `up` = files edited on this machine plus files changed in local commits that never
+ * reached the remote (Notebook saves, a failed push). `down` = files the remote had
+ * changed as of the last fetch that aren't here yet — it can be stale while auto-sync
+ * is off, since nothing fetches then.
+ */
+export interface PendingSummary {
+  up: number
+  down: number
+  /** epoch ms of this count */
+  checkedAt: number
+}
+
 export interface SyncEngineState {
   status: SyncStatus
   /** preference: is auto-sync enabled? (poll/watch run only if true) */
   auto: boolean
   /** how often the remote is polled (ms) */
   intervalMs: number
-  /** epoch ms of the last successful cycle, or null if none yet this session */
+  /** epoch ms of the last successful cycle (persisted across restarts), or null if never */
   lastSyncedAt: number | null
+  /** what's waiting to move (#139); null until first counted */
+  pending: PendingSummary | null
   /** files in conflict (empty unless status is 'conflict') */
   conflicts: string[]
   /** raw text of the last failure (null unless status is 'offline' or 'error') */

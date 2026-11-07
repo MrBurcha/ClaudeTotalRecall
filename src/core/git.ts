@@ -311,6 +311,18 @@ export class Git {
     return { ahead: ahead || 0, behind: behind || 0 }
   }
 
+  /**
+   * Files changed in a range. With three dots (`a...b`) it is what `b` changed since
+   * it forked from `a`: `@{upstream}...HEAD` = what
+   * local commits changed that the remote doesn't have yet. Local refs only, never the
+   * network. [] when a ref is missing (no upstream yet, empty repo).
+   */
+  async changedFiles(range: string): Promise<string[]> {
+    const r = await this.raw(['diff', '--name-only', '--no-renames', range])
+    if (r.code !== 0) return []
+    return r.stdout.split(/\r?\n/).filter((l) => l.trim().length > 0)
+  }
+
   async status(): Promise<RepoStatus> {
     const branch = await this.currentBranch()
     const dirty = await this.isDirty()

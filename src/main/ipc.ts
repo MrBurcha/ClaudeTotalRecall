@@ -83,6 +83,18 @@ export function registerIpc(
     })
   }
 
+  /** A Notebook mutation commits to the working copy: let the engine count/upload it (#139). */
+  function notebookChange<A extends unknown[], R>(
+    channel: string,
+    fn: (event: IpcMainInvokeEvent, ...args: A) => R | Promise<R>,
+  ): void {
+    change<A, R>(channel, async (event, ...args: A) => {
+      const r = await fn(event, ...args)
+      scheduler.onWorkingCopyCommit()
+      return r
+    })
+  }
+
   handle('app:version', () => app.getVersion())
   handle('preflight:run', () => runPreflight())
   handle('clipboard:writeText', (_e, text: string) => {
@@ -212,20 +224,22 @@ export function registerIpc(
   // the normal sync cycle pushes them later. Paths are validated server-side.
   handle('notebook:tree', () => notebook.notebookTree(adapter()))
   handle('notebook:read', (_e, rel: string) => notebook.readNote(adapter(), rel))
-  change('notebook:createNote', (_e, p: { relPath: string; content?: string }) =>
+  notebookChange('notebook:createNote', (_e, p: { relPath: string; content?: string }) =>
     notebook.createNote(adapter(), p),
   )
-  change('notebook:write', (_e, p: { relPath: string; content: string }) =>
+  notebookChange('notebook:write', (_e, p: { relPath: string; content: string }) =>
     notebook.writeNote(adapter(), p),
   )
-  change('notebook:createFolder', (_e, rel: string) => notebook.createFolder(adapter(), rel))
-  change('notebook:rename', (_e, p: { relPath: string; newName: string }) =>
+  notebookChange('notebook:createFolder', (_e, rel: string) =>
+    notebook.createFolder(adapter(), rel),
+  )
+  notebookChange('notebook:rename', (_e, p: { relPath: string; newName: string }) =>
     notebook.renameEntry(adapter(), p),
   )
-  change('notebook:move', (_e, p: { relPath: string; toDir: string }) =>
+  notebookChange('notebook:move', (_e, p: { relPath: string; toDir: string }) =>
     notebook.moveEntry(adapter(), p),
   )
-  change('notebook:delete', (_e, rel: string) => notebook.deleteEntry(adapter(), rel))
+  notebookChange('notebook:delete', (_e, rel: string) => notebook.deleteEntry(adapter(), rel))
   // Version history (#107): read-only git lookups + a restore that commits locally
   // like a Save. The hash and the path-at-commit are validated server-side.
   handle('notebook:history', (_e, rel: string) => notebook.noteHistory(adapter(), rel))
@@ -235,8 +249,10 @@ export function registerIpc(
   handle('notebook:diffVersion', (_e, p: { relPath: string; hash: string; path: string }) =>
     notebook.diffNoteVersion(adapter(), p),
   )
-  change('notebook:restoreVersion', (_e, p: { relPath: string; hash: string; path: string }) =>
-    notebook.restoreNoteVersion(adapter(), p),
+  notebookChange(
+    'notebook:restoreVersion',
+    (_e, p: { relPath: string; hash: string; path: string }) =>
+      notebook.restoreNoteVersion(adapter(), p),
   )
   // Full-text search (#108) over the working copy's Notebook.
   handle('notebook:search', (_e, p: { query: string; limit?: number }) =>

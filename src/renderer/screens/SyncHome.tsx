@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
 import { StatusDot } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Icon } from '../components/Icon'
@@ -11,55 +10,10 @@ import { AutoToggle } from '../features/sync/AutoToggle'
 import { RecentActivity } from '../features/sync/RecentActivity'
 import { SyncErrorDetails } from '../features/sync/SyncErrorDetails'
 import { SyncNowButton } from '../features/sync/SyncNowButton'
-import { relativeParts } from '../features/sync/relativeTime'
+import { summarizeSync } from '../features/sync/syncSummary'
 import { conflictFiles, engineTone, hasConflict, onboardingStep } from '../state/selectors'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
-
-/** Sync-bar status text driven by the engine. */
-function statusLabel(state: ReturnType<typeof useAppState>, t: TFunction): string {
-  if (hasConflict(state)) return t('home.status.conflict')
-  const eng = state.syncEngine
-  if (!eng) return t('home.status.loading')
-  if (eng.blockedBy) return t('home.status.blocked')
-  if (eng.status === 'syncing') return t('home.status.syncing')
-  if (eng.status === 'offline') return t('home.status.offline')
-  if (eng.status === 'error') {
-    return eng.errorKind === 'access' ? t('home.status.noAccess') : t('home.status.error')
-  }
-  return t('home.status.upToDate')
-}
-
-/**
- * The sub-line reads "last checked", not "last synced": `lastSyncedAt` bumps on
- * every successful poll even when nothing changed, so it's really the last time
- * we verified the repo — being up to date isn't the same as having just changed
- * something. The "last change" story lives in Recent activity instead (#39).
- */
-function lastCheckedText(at: number, now: number, t: TFunction): string {
-  const p = relativeParts(at, now)
-  const time =
-    p.key === 'now' ? t('relativeTime.now') : t(`relativeTime.${p.key}`, { count: p.count })
-  return t('home.meta.lastChecked', { time })
-}
-
-function statusMeta(state: ReturnType<typeof useAppState>, now: number, t: TFunction): string {
-  const eng = state.syncEngine
-  if (hasConflict(state)) return t('home.meta.toResolve', { count: conflictFiles(state).length })
-  if (!eng) return ''
-  if (eng.blockedBy) {
-    return eng.blockedBy.kind === 'cli' ? t('home.meta.blockedCli') : t('home.meta.blockedApp')
-  }
-  if (eng.status === 'syncing') return t('home.meta.syncing')
-  if (eng.status === 'offline') return t('home.meta.offline')
-  if (eng.status === 'error') {
-    return eng.errorKind === 'access' ? t('home.meta.noAccess') : t('home.meta.error')
-  }
-  const bits: string[] = []
-  if (eng.lastSyncedAt) bits.push(lastCheckedText(eng.lastSyncedAt, now, t))
-  bits.push(eng.auto ? t('home.meta.autoOn') : t('home.meta.autoOff'))
-  return bits.join(' · ')
-}
 
 export function SyncHome(): JSX.Element {
   const { t } = useTranslation()
@@ -91,15 +45,9 @@ export function SyncHome(): JSX.Element {
     )
   }
 
-  const dotTone = conflict
-    ? 'danger'
-    : tone === 'error'
-      ? 'danger'
-      : tone === 'offline'
-        ? 'warn'
-        : syncEngine?.auto
-          ? 'ok'
-          : 'muted'
+  // What the bar says (#139): "Up to date" only when it's true.
+  const summary = summarizeSync(syncEngine, conflict ? files.length : 0, now, t)
+  const dotTone = summary.tone
   // The failure text, while the bar shows a failure (never stale under "syncing").
   const failure =
     !conflict && (syncEngine?.status === 'error' || syncEngine?.status === 'offline')
@@ -121,6 +69,7 @@ export function SyncHome(): JSX.Element {
           machines={config?.machines ?? {}}
           currentId={machineId}
           status={status}
+          pending={syncEngine?.pending ?? null}
           activeOp={activeOp}
           tone={tone}
         />
@@ -134,11 +83,16 @@ export function SyncHome(): JSX.Element {
             <StatusDot tone={dotTone} />
           )}
           <div className="stack stack-1">
-            <span className="sync-bar__state">{statusLabel(state, t)}</span>
-            <span className="sync-bar__meta muted mono">{statusMeta(state, now, t)}</span>
+            <span className="sync-bar__state">{summary.label}</span>
+            <span className="sync-bar__meta muted mono">{summary.meta}</span>
           </div>
         </div>
         <div className="cluster">
+          {summary.offerAutoOn && (
+            <Button variant="ghost" icon="sync" onClick={() => void actions.setAutoSync(true)}>
+              {t('home.turnAutoOn')}
+            </Button>
+          )}
           <AutoToggle />
           <SyncNowButton />
         </div>
