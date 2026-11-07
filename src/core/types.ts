@@ -318,4 +318,10 @@ export interface SyncEngineState {
   lastError: string | null
   /** what kind of failure `lastError` is (null when there's none) */
   errorKind: RemoteErrorKind | null
+  /**
+   * Another process holds this machine's sync lock (#141): a second app copy
+   * (`kind: 'app'`) or a CLI command (`'cli'`); pid 0 = unknown holder. While set,
+   * this copy doesn't sync and refuses changes. null = this process owns the machine.
+   */
+  blockedBy: { kind: 'app' | 'cli'; pid: number } | null
 }

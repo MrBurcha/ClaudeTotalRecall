@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { stdin, stdout } from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { createPlatformAdapter } from '../platform'
+import { acquireInstanceLock, type LockHolder } from '../core/instanceLock'
 import { runPreflight } from '../core/preflight'
 import type { Plan, PlanAction, Verb } from '../core/types'
 import {
@@ -61,6 +62,38 @@ function printPlan(plan: Plan): void {
     }
   }
   out('')
+}
+
+/** Why a mutating command can't run right now (#141). */
+export function lockedMessage(holder: LockHolder | null): string {
+  const pid = holder ? ` (pid ${holder.pid})` : ''
+  if (holder?.kind === 'cli') {
+    return `Another claude-total-recall command is running on this machine${pid}. Wait for it to finish and try again.`
+  }
+  return `The app is open on this machine and is syncing it${pid}. Use the app, or quit it and try again.`
+}
+
+/**
+ * Runs a command that changes the working copy or local state while holding this
+ * machine's sync lock, shared with the app (#141). Refuses (exit 1) if the app or
+ * another command holds it. The lock is released on every exit path.
+ */
+async function withMachineLock(fn: () => Promise<number>): Promise<number> {
+  const res = await acquireInstanceLock(createPlatformAdapter(), 'cli')
+  if (!res.acquired) {
+    out(lockedMessage(res.holder))
+    return 1
+  }
+  const { lock } = res
+  const onExit = (): void => lock.releaseSync()
+  process.once('exit', onExit)
+  lock.startHeartbeat()
+  try {
+    return await fn()
+  } finally {
+    process.off('exit', onExit)
+    await lock.release()
+  }
 }
 
 // ── commands ─────────────────────────────────────────────────────────────────
@@ -183,15 +216,20 @@ export async function main(argv: string[]): Promise<number> {
     case 'check':
       return cmdCheck()
     case 'connect':
-      return cmdConnect(args)
+      return withMachineLock(() => cmdConnect(args))
     case 'status':
       return cmdStatus()
     case 'register':
-      return cmdRegister(args)
+      return withMachineLock(() => cmdRegister(args))
+    // A --dry-run only reads (incoming skips its pull): no lock, so it works while the app is open.
     case 'outgoing':
-      return cmdSync('outgoing', args)
+      return hasFlag(args, '--dry-run')
+        ? cmdSync('outgoing', args)
+        : withMachineLock(() => cmdSync('outgoing', args))
     case 'incoming':
-      return cmdSync('incoming', args)
+      return hasFlag(args, '--dry-run')
+        ? cmdSync('incoming', args)
+        : withMachineLock(() => cmdSync('incoming', args))
     case undefined:
     case 'help':
     case '--help':

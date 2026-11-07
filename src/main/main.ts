@@ -1,12 +1,18 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, powerMonitor } from 'electron'
+import { createPlatformAdapter } from '../platform'
+import { InstanceGuard } from './instanceGuard'
 import { registerIpc } from './ipc'
 import { SyncScheduler } from './syncScheduler'
 import { UpdateScheduler } from './updateScheduler'
 
 let scheduler: SyncScheduler | null = null
 let updateScheduler: UpdateScheduler | null = null
+let guard: InstanceGuard | null = null
+let mainWindow: BrowserWindow | null = null
+
+const SMOKE = !!process.env.CLAUDE_TOTAL_RECALL_SMOKE
 
 /**
  * Ícono de la ventana (barra de tareas, alt-tab, overview) en Linux/Windows: lo
@@ -23,7 +29,7 @@ function resolveIcon(): string | undefined {
   return existsSync(p) ? p : undefined
 }
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   const icon = resolveIcon()
   const win = new BrowserWindow({
     width: 1100,
@@ -44,6 +50,9 @@ function createWindow(): void {
   })
 
   win.on('ready-to-show', () => win.show())
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null
+  })
 
   // La barra de título custom refleja maximizado/restaurado: le empujamos cada
   // cambio (mismo patrón de fan-out que el motor de sync).
@@ -51,7 +60,7 @@ function createWindow(): void {
   win.on('unmaximize', () => win.webContents.send('window:state', false))
 
   // Smoke test de arranque: cargar el renderer y salir (CI/headless).
-  if (process.env.CLAUDE_TOTAL_RECALL_SMOKE) {
+  if (SMOKE) {
     win.webContents.on('did-finish-load', () => {
       console.log('[claude-total-recall] renderer loaded OK')
       setTimeout(() => app.quit(), 300)
@@ -69,9 +78,28 @@ function createWindow(): void {
   } else {
     void win.loadFile(join(__dirname, '../renderer/index.html'))
   }
+  mainWindow = win
+  return win
 }
 
-void app.whenReady().then(() => {
+/**
+ * A second launch (#140) lands here instead of starting another full app: bring the
+ * existing window to the front. It may still be hidden (waiting for ready-to-show,
+ * which is exactly when an impatient second click happens) — then it shows itself.
+ */
+function revealMainWindow(): void {
+  const win = mainWindow ?? BrowserWindow.getAllWindows()[0] ?? null
+  if (!win) {
+    if (app.isReady()) createWindow() // macOS: app alive with no windows
+    return
+  }
+  if (win.isMinimized()) win.restore()
+  if (win.webContents.isLoading() && !win.isVisible()) return
+  win.show()
+  win.focus()
+}
+
+function boot(): void {
   // Linux/Windows muestran un menú nativo por defecto (File/Edit/View…) que no
   // aporta nada con chrome propio; lo removemos. En macOS el menú vive en la barra
   // global del sistema (Cmd+Q / Cmd+C/V), así que lo dejamos.
@@ -100,22 +128,48 @@ void app.whenReady().then(() => {
       if (!w.isDestroyed()) w.webContents.send('update:state', state)
     }
   })
-  registerIpc(scheduler, updateScheduler)
-  if (!process.env.CLAUDE_TOTAL_RECALL_SMOKE) {
-    void scheduler.start()
+  // Cross-process lock (#141): only the process holding it syncs this machine. The
+  // engine starts once it's ours; while another app copy or a CLI command holds it,
+  // the engine stays off and the sync bar says why (the guard retries on its own).
+  const engine = scheduler
+  guard = new InstanceGuard(createPlatformAdapter(), {
+    onAcquired: () => {
+      engine.setBlocked(null)
+      void engine.start()
+    },
+    onBlocked: (by) => engine.setBlocked(by),
+  })
+  const owner = guard
+  registerIpc(scheduler, updateScheduler, () => owner.held)
+  if (!SMOKE) {
+    void guard.start()
     updateScheduler.start()
+    // After sleep the heartbeat is minutes old: re-assert it before anyone takes over.
+    powerMonitor.on('resume', () => void owner.check())
   }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
-})
+}
 
-app.on('before-quit', () => {
-  scheduler?.stop()
-  updateScheduler?.stop()
-})
+// Single instance (#140): every launch used to start a complete app with its own
+// sync engine on the same working copy. Now a second launch hands over to the first
+// one (second-instance → revealMainWindow) and quits before touching any state. The
+// smoke test skips the lock so it can't be swallowed by a dev copy that's open.
+if (!SMOKE && !app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => revealMainWindow())
+  void app.whenReady().then(boot)
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+  app.on('before-quit', () => {
+    scheduler?.stop()
+    updateScheduler?.stop()
+    guard?.stop()
+  })
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit()
+  })
+}

@@ -28,13 +28,18 @@ export function hasConflict(s: Pick<AppState, 'status' | 'syncEngine'>): boolean
   return s.syncEngine?.status === 'conflict' || conflictFiles(s).length > 0
 }
 
+/** Another process owns this machine's sync lock (#141): this window only looks. */
+export function isBlocked(s: Pick<AppState, 'syncEngine'>): boolean {
+  return !!s.syncEngine?.blockedBy
+}
+
 /** Constellation tone derived from the engine's state (hero color). */
 export type EngineTone = 'ok' | 'syncing' | 'conflict' | 'offline' | 'error'
 export function engineTone(s: Pick<AppState, 'status' | 'syncEngine'>): EngineTone {
   if (hasConflict(s)) return 'conflict'
   const st = s.syncEngine?.status
   if (st === 'syncing') return 'syncing'
-  if (st === 'offline') return 'offline'
+  if (st === 'offline' || isBlocked(s)) return 'offline'
   if (st === 'error') return 'error'
   return 'ok'
 }

@@ -56,7 +56,31 @@ function handle<A extends unknown[], R>(
   })
 }
 
-export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateScheduler): void {
+export function registerIpc(
+  scheduler: SyncScheduler,
+  updateScheduler: UpdateScheduler,
+  canMutate: () => boolean = () => true,
+): void {
+  /**
+   * A handler that changes the working copy, the shared config or local state. While
+   * another process owns this machine's sync lock (#141) it's refused, so a second
+   * copy can look but never write over the one that's syncing.
+   */
+  function change<A extends unknown[], R>(
+    channel: string,
+    fn: (event: IpcMainInvokeEvent, ...args: A) => R | Promise<R>,
+  ): void {
+    handle<A, R>(channel, (event, ...args: A) => {
+      if (!canMutate()) {
+        throw new AppError(
+          'instance.busy',
+          'Another copy of the app (or a command-line sync) is syncing this machine right now. This one can make changes once it closes.',
+        )
+      }
+      return fn(event, ...args)
+    })
+  }
+
   handle('app:version', () => app.getVersion())
   handle('preflight:run', () => runPreflight())
   handle('clipboard:writeText', (_e, text: string) => {
@@ -84,8 +108,8 @@ export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateSch
 
   // Auto-sync engine (real-time state via webContents.send('sync:state'))
   handle('sync:getState', () => scheduler.getState())
-  handle('sync:setAuto', (_e, prefs: AutoSyncPrefs) => scheduler.setAuto(prefs))
-  handle('sync:now', () => scheduler.syncNow())
+  change('sync:setAuto', (_e, prefs: AutoSyncPrefs) => scheduler.setAuto(prefs))
+  change('sync:now', () => scheduler.syncNow())
 
   // Update check (real-time state via webContents.send('update:state'), #66).
   // openReleasePage just hands the URL to the OS default browser — no update is
@@ -95,13 +119,13 @@ export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateSch
 
   // Config / repo
   handle('config:load', () => svc.loadRepoConfig(adapter()).catch(() => null))
-  handle('repo:connect', (_e, remote: string) => svc.connectRepo(remote, adapter()))
+  change('repo:connect', (_e, remote: string) => svc.connectRepo(remote, adapter()))
   handle('repo:status', () => svc.repoStatus(adapter()))
   handle('repo:history', (_e, limit?: number) => svc.history(adapter(), limit))
-  handle('repo:pull', () => svc.pullRepo(adapter()))
+  change('repo:pull', () => svc.pullRepo(adapter()))
 
   // Machines
-  handle('machine:register', async (_e, name?: string) => {
+  change('machine:register', async (_e, name?: string) => {
     const r = await svc.registerMachine(adapter(), name)
     void scheduler.reload() // only now is there an identity ⇒ the engine can start
     return r
@@ -109,17 +133,17 @@ export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateSch
   handle('machine:current', () => svc.currentMachineId(adapter()))
 
   // Projects
-  handle('project:create', (_e, name: string) => svc.createProject(adapter(), name))
-  handle(
+  change('project:create', (_e, name: string) => svc.createProject(adapter(), name))
+  change(
     'project:setFolder',
     (_e, p: { name: string; slot: string; path: string; kind?: 'file' | 'dir' }) =>
       svc.setProjectFolder(adapter(), p.name, p.slot, p.path, undefined, p.kind),
   )
-  handle('project:removeFolder', (_e, p: { name: string; slot: string }) =>
+  change('project:removeFolder', (_e, p: { name: string; slot: string }) =>
     svc.removeProjectFolder(adapter(), p.name, p.slot),
   )
-  handle('project:delete', (_e, name: string) => svc.deleteProject(adapter(), name))
-  handle('project:rename', (_e, p: { oldName: string; newName: string }) =>
+  change('project:delete', (_e, name: string) => svc.deleteProject(adapter(), name))
+  change('project:rename', (_e, p: { oldName: string; newName: string }) =>
     svc.renameProject(adapter(), p.oldName, p.newName),
   )
   handle('project:pickFolder', async () => {
@@ -147,15 +171,15 @@ export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateSch
     (_e, p: { name: string; slot: string; path: string; kind: 'file' | 'dir' }) =>
       svc.suggestFolderCorrection(adapter(), p.name, p.slot, p.path, p.kind),
   )
-  handle('project:applyDiscovery', (_e, input: svc.ApplyDiscoveryInput) =>
+  change('project:applyDiscovery', (_e, input: svc.ApplyDiscoveryInput) =>
     svc.applyDiscovery(adapter(), input),
   )
   handle('project:proposeAdoption', (_e, name: string) => svc.proposeAdoption(adapter(), name))
-  handle('project:applyMapping', (_e, input: svc.ApplyMachineMappingInput) =>
+  change('project:applyMapping', (_e, input: svc.ApplyMachineMappingInput) =>
     svc.applyMachineMapping(adapter(), input),
   )
   handle('project:scan', () => svc.scanProjects(adapter()))
-  handle('project:applyScan', (_e, inputs: svc.ApplyDiscoveryInput[]) =>
+  change('project:applyScan', (_e, inputs: svc.ApplyDiscoveryInput[]) =>
     svc.applyScan(adapter(), inputs),
   )
 
@@ -179,26 +203,26 @@ export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateSch
   // the normal sync cycle pushes them later. Paths are validated server-side.
   handle('notebook:tree', () => notebook.notebookTree(adapter()))
   handle('notebook:read', (_e, rel: string) => notebook.readNote(adapter(), rel))
-  handle('notebook:createNote', (_e, p: { relPath: string; content?: string }) =>
+  change('notebook:createNote', (_e, p: { relPath: string; content?: string }) =>
     notebook.createNote(adapter(), p),
   )
-  handle('notebook:write', (_e, p: { relPath: string; content: string }) =>
+  change('notebook:write', (_e, p: { relPath: string; content: string }) =>
     notebook.writeNote(adapter(), p),
   )
-  handle('notebook:createFolder', (_e, rel: string) => notebook.createFolder(adapter(), rel))
-  handle('notebook:rename', (_e, p: { relPath: string; newName: string }) =>
+  change('notebook:createFolder', (_e, rel: string) => notebook.createFolder(adapter(), rel))
+  change('notebook:rename', (_e, p: { relPath: string; newName: string }) =>
     notebook.renameEntry(adapter(), p),
   )
-  handle('notebook:move', (_e, p: { relPath: string; toDir: string }) =>
+  change('notebook:move', (_e, p: { relPath: string; toDir: string }) =>
     notebook.moveEntry(adapter(), p),
   )
-  handle('notebook:delete', (_e, rel: string) => notebook.deleteEntry(adapter(), rel))
+  change('notebook:delete', (_e, rel: string) => notebook.deleteEntry(adapter(), rel))
 
   // Pinned files (global pinpoint files, outside any project)
-  handle('pinned:set', (_e, p: { pinId: string; path: string }) =>
+  change('pinned:set', (_e, p: { pinId: string; path: string }) =>
     svc.setPinnedFile(adapter(), p.pinId, p.path),
   )
-  handle('pinned:remove', (_e, pinId: string) => svc.removePinnedFile(adapter(), pinId))
+  change('pinned:remove', (_e, pinId: string) => svc.removePinnedFile(adapter(), pinId))
 
   // Plan
   handle('plan:build', async (_e, verb: Verb) => {
@@ -206,7 +230,7 @@ export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateSch
     planCache.set(plan.id, plan)
     return plan
   })
-  handle('plan:execute', async (_e, args: { verb: Verb; planId: string; force?: boolean }) => {
+  change('plan:execute', async (_e, args: { verb: Verb; planId: string; force?: boolean }) => {
     const plan = planCache.get(args.planId)
     if (!plan) {
       throw new AppError(
@@ -232,10 +256,10 @@ export function registerIpc(scheduler: SyncScheduler, updateScheduler: UpdateSch
 
   // Conflicts
   handle('conflict:list', () => svc.listConflicts(adapter()))
-  handle('conflict:resolve', (_e, a: { file: string; side: 'local' | 'remote' }) =>
+  change('conflict:resolve', (_e, a: { file: string; side: 'local' | 'remote' }) =>
     svc.resolveConflict(adapter(), a.file, a.side),
   )
-  handle('conflict:complete', async () => {
+  change('conflict:complete', async () => {
     const r = await svc.completeConflictMerge(adapter())
     await scheduler.resumeAfterConflict() // pull the resolved merge and resume auto
     return r
