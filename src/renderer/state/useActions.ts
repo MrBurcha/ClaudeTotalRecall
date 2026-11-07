@@ -93,7 +93,8 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     dispatch({ t: 'popModal' })
   }
 
-  const navigate = (route: Route): void => dispatch({ t: 'navigate', route })
+  /** Switches screens; `focus` optionally names an item the target screen should select. */
+  const navigate = (route: Route, focus?: string): void => dispatch({ t: 'navigate', route, focus })
 
   const setTheme = (theme: Theme): void => {
     dispatch({ t: 'theme', theme })

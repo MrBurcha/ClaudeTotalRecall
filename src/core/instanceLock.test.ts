@@ -138,8 +138,10 @@ describe('InstanceLock', () => {
     const r = await acquireInstanceLock(adapter, 'app', deps(10))
     if (!r.acquired) throw new Error('expected the lock')
     const lost = vi.fn()
-    r.lock.startHeartbeat(lost, 20)
+    // Taken over BEFORE the first beat: a beat racing this write could legitimately
+    // rewrite our token (a real takeover needs minutes without beats, so no race there).
     await writeFile(instanceLockPath(adapter), JSON.stringify(holder({ pid: 30, token: 'next' })))
+    r.lock.startHeartbeat(lost, 20)
     await vi.waitFor(() => expect(lost).toHaveBeenCalledTimes(1), { timeout: 2_000 })
     r.lock.stopHeartbeat()
     expect(HEARTBEAT_MS).toBeLessThan(STALE_MS)

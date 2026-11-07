@@ -1016,3 +1016,74 @@
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
 }
+
+/* ══ Pinned files (two-pane tree on the Notebook layout, #113) ════════════════ */
+.pinned-tree__entry {
+  padding-left: 22px;
+}
+.pinned-tree__empty {
+  padding-left: 34px;
+}
+.pinned-tree__count {
+  font-size: var(--text-xs);
+}
+.pinned-tree__missing {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent);
+}
+/* The group "+" stays faintly visible (not hover-only) so adding is discoverable. */
+.nb-menu__trigger.pinned-tree__add {
+  opacity: 0.55;
+}
+.pinned-detail__title {
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+.pinned-create {
+  max-width: 640px;
+}
+
+/* ══ Projects → "All paths" overview (read-only, #114) ═══════════════════════ */
+.overview-filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 220px;
+}
+.overview-filter .icon {
+  position: absolute;
+  left: 10px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.overview-filter .input {
+  width: 100%;
+  padding-left: 32px;
+}
+/* Machine → path pairs under each entry, aligned in two columns. */
+.overview-paths {
+  display: grid;
+  grid-template-columns: minmax(90px, max-content) minmax(0, 1fr);
+  column-gap: var(--space-3);
+  row-gap: 3px;
+  margin-top: var(--space-2);
+  padding-left: 22px;
+  font-size: var(--text-sm);
+}
+.overview-path {
+  display: contents;
+}
+.overview-path__machine {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-dim);
+}
+.overview-path__value {
+  min-width: 0;
+  color: var(--text-dim);
+}
+.overview-path--differs .overview-path__value {
+  color: var(--warn);
+}

@@ -7,11 +7,16 @@ import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 import { ModalHost } from './ModalHost'
 import { Notebook } from './Notebook'
+import { Pinned } from './Pinned'
 import { Projects } from './Projects'
 import { Settings } from './Settings'
 import { Sidebar } from './Sidebar'
 import { SyncHome } from './SyncHome'
 import { TitleBar } from './TitleBar'
+import type { Route } from '../state/types'
+
+/** Two-pane screens that fill the whole content area (their panes scroll internally). */
+const FILL_ROUTES: ReadonlySet<Route> = new Set(['pinned', 'notebook'])
 
 export function AppShell(): JSX.Element {
   const state = useAppState()
@@ -57,9 +62,10 @@ export function AppShell(): JSX.Element {
     <div className="app">
       <TitleBar />
       <Sidebar />
-      <main className={state.route === 'notebook' ? 'content content--fill' : 'content'}>
+      <main className={FILL_ROUTES.has(state.route) ? 'content content--fill' : 'content'}>
         {state.route === 'home' && <SyncHome />}
         {state.route === 'projects' && <Projects />}
+        {state.route === 'pinned' && <Pinned />}
         {state.route === 'notebook' && <Notebook />}
         {state.route === 'settings' && <Settings />}
       </main>

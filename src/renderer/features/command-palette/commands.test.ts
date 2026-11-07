@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { TFunction } from 'i18next'
 import { buildCommands } from './commands'
 import { initialState } from '../../state/reducer'
@@ -38,6 +38,17 @@ describe('buildCommands', () => {
   it('new project requires a registered machine', () => {
     expect(byId(stateWith({ config: cfg }), 'new-project')?.disabled).toBe(true)
     expect(byId(ready, 'new-project')?.disabled).toBe(false)
+  })
+
+  it('opens the Pinned files module, searchable in either language', () => {
+    const navigate = vi.fn()
+    const cmd = buildCommands(ready, { navigate } as unknown as Actions, t).find(
+      (c) => c.id === 'go-pinned',
+    )
+    expect(cmd?.title).toBe('palette.goPinned')
+    expect(cmd?.keywords).toEqual(expect.arrayContaining(['pinned', 'fijados']))
+    cmd?.run()
+    expect(navigate).toHaveBeenCalledWith('pinned')
   })
 
   it('the theme command reflects the current theme', () => {

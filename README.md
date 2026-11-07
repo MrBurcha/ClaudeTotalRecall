@@ -224,7 +224,7 @@ kept but out of your product repo.
 | **Skills**          | `~/.claude/skills/`                      | folder, mirrored → `memories/user/skills/` (minus `synced/`, below) |
 | **Settings**        | `~/.claude/settings.json`                | **merged**, not copied — machine-local keys stay local (see below)  |
 | **Project memory**  | any folder(s) you declare, per project   | folder mirror _or_ single file → `memories/projects/<name>/<slot>/` |
-| **Pinned files**    | any single file, anywhere on the machine | **Settings → Pinned files** → `memories/pinned/<name>`              |
+| **Pinned files**    | any single file, anywhere on the machine | **Pinned files** (left menu) → General → `memories/pinned/<name>`   |
 
 `settings.json` is the one exception to plain copying: a shared base is merged with per-key
 machine-local overrides you declare in `~/.config/claudetr/settings.local.json`. Those local keys
@@ -269,7 +269,7 @@ git-ignores it. Your own skills, directly under `~/.claude/skills/`, sync as usu
 A common case: a `.env` that's **git-ignored in your product repo**, but that you still want backed
 up and mirrored to your other machines. Two ways to opt it in:
 
-- **Pin it** — **Settings → Pinned files** → choose the `.env`. It syncs globally to
+- **Pin it** — **Pinned files** (left menu) → **Pin a file** → choose the `.env`. It syncs globally to
   `memories/pinned/<name>`, independent of any project.
 - **Add it as a project _file_ source** — when adding a source, pick **file** (not folder) and point
   it at the `.env`.
