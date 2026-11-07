@@ -143,7 +143,9 @@ export function NoteHistory(props: NoteHistoryProps): JSX.Element {
     }
     if (viewError) return <p className="muted note-detail__note">{viewError}</p>
     if (mode === 'diff') return diff ? <DiffView diff={diff} /> : <Skeleton h={160} radius={10} />
-    return file ? <NoteContent name={props.name} file={file} /> : <Skeleton h={160} radius={10} />
+    // Render by the name the note had THEN (a rename may have changed its extension).
+    const thenName = selected.path.split('/').pop() || props.name
+    return file ? <NoteContent name={thenName} file={file} /> : <Skeleton h={160} radius={10} />
   }
 
   // A version can be restored when it has content that differs from the note now.
