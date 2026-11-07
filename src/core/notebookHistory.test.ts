@@ -27,15 +27,15 @@ afterEach(async () => {
 })
 
 async function setup() {
-  const base = await mkdtemp(join(tmpdir(), 'claude-total-recall-nbh-'))
+  const base = await mkdtemp(join(tmpdir(), 'engram-nbh-'))
   bases.push(base)
   const a = createPlatformAdapter(process.platform, join(base, 'home'))
   const wc = workingCopyDir(a)
   await mkdir(wc, { recursive: true })
   const git = new Git(wc)
   await git.init()
-  await git.config('user.email', 'test@claude-total-recall.local')
-  await git.config('user.name', 'Claude Total Recall Test')
+  await git.config('user.email', 'test@engram.local')
+  await git.config('user.name', 'Engram Test')
   // Same verbatim-bytes policy as a real memories repo (see service.ts).
   await writeFile(join(wc, '.gitattributes'), '* -text\n')
   await git.add()

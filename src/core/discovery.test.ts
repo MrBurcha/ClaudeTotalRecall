@@ -15,7 +15,7 @@ import {
   slug,
 } from './discovery'
 
-const FAKE_HOME = '/tmp/claude-total-recall-fake-home'
+const FAKE_HOME = '/tmp/engram-fake-home'
 
 // Some cases are POSIX-host-specific: symlink creation needs elevated privileges on
 // Windows, and the cross-machine remap (remapPath / isUnderClaudeProjects) works off

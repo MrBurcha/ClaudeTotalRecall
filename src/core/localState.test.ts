@@ -22,7 +22,7 @@ let tmpHome: string
 let adapter: PlatformAdapter
 
 beforeEach(async () => {
-  tmpHome = await mkdtemp(join(tmpdir(), 'claude-total-recall-localstate-'))
+  tmpHome = await mkdtemp(join(tmpdir(), 'engram-localstate-'))
   adapter = createPlatformAdapter(process.platform, tmpHome)
 })
 

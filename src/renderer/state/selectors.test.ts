@@ -79,7 +79,7 @@ describe('conflicts', () => {
 })
 
 describe('sidebarNotice', () => {
-  const PAGE = 'https://github.com/MrBurcha/ClaudeTotalRecall/releases'
+  const PAGE = 'https://github.com/MrBurcha/Engram/releases'
   const currentArm: InstallerLink = {
     url: `${PAGE}/download/v0.14.0/x-macos-arm64.dmg`,
     variant: 'macos-arm64',

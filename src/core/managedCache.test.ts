@@ -49,7 +49,7 @@ async function git(dir: string, ...args: string[]): Promise<string> {
 }
 
 async function setup(): Promise<{ base: string; remote: string }> {
-  const base = await mkdtemp(join(tmpdir(), 'claude-total-recall-managed-'))
+  const base = await mkdtemp(join(tmpdir(), 'engram-managed-'))
   bases.push(base)
   const remote = join(base, 'remote.git')
   await run('git', ['init', '--bare', '--initial-branch=main', remote])

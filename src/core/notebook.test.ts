@@ -29,7 +29,7 @@ async function exists(p: string): Promise<boolean> {
 }
 
 async function newBase(): Promise<string> {
-  const base = await mkdtemp(join(tmpdir(), 'claude-total-recall-nb-'))
+  const base = await mkdtemp(join(tmpdir(), 'engram-nb-'))
   bases.push(base)
   return base
 }
