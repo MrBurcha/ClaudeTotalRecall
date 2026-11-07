@@ -46,6 +46,8 @@ export type IconName =
   | 'minimize'
   | 'maximize'
   | 'restore'
+  | 'history'
+  | 'rotate-ccw'
 
 const ICONS: Record<IconName, ReactNode> = {
   monitor: (
@@ -213,6 +215,21 @@ const ICONS: Record<IconName, ReactNode> = {
     <>
       <rect x="5" y="9" width="10" height="10" rx="1.5" />
       <path d="M9 9V6.5A1.5 1.5 0 0 1 10.5 5H18a1.5 1.5 0 0 1 1.5 1.5V13a1.5 1.5 0 0 1-1.5 1.5H15" />
+    </>
+  ),
+  // Clock with a counter-clockwise arrow: version history (#107).
+  history: (
+    <>
+      <path d="M3.5 12a8.5 8.5 0 1 0 2.5-6" />
+      <path d="M3 4v4.5h4.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  // Counter-clockwise arrow: restore a previous version.
+  'rotate-ccw': (
+    <>
+      <path d="M4 12a8 8 0 1 0 2.4-5.7" />
+      <path d="M4 4v4.5h4.5" />
     </>
   ),
 }

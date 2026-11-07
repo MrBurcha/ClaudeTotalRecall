@@ -19,6 +19,29 @@ function NoteView({ name, content }: { name: string; content: string }): JSX.Ele
   }
 }
 
+/**
+ * Read-only body of a note (current or a past version): the missing / binary /
+ * empty / truncated notices, else the content in its renderer.
+ */
+export function NoteContent({ name, file }: { name: string; file: NotebookFile }): JSX.Element {
+  const { t } = useTranslation()
+  if (!file.exists) return <p className="muted note-detail__note">{t('notebook.missing')}</p>
+  if (file.binary) {
+    return (
+      <p className="muted note-detail__note">
+        <Icon name="lock" size={15} /> {t('preview.binary')}
+      </p>
+    )
+  }
+  if (file.content === '') return <p className="muted note-detail__note">{t('preview.empty')}</p>
+  return (
+    <>
+      {file.truncated && <p className="muted note-detail__note">{t('preview.truncated')}</p>}
+      <NoteView name={name} content={file.content} />
+    </>
+  )
+}
+
 export interface NoteDetailProps {
   path: string
   name: string
@@ -31,6 +54,8 @@ export interface NoteDetailProps {
   onCancelEdit: () => void
   onSave: () => void
   onCopy: () => void
+  /** Opens the version history (#107). Only offered outside edit mode. */
+  onHistory: () => void
 }
 
 export function NoteDetail(props: NoteDetailProps): JSX.Element {
@@ -46,6 +71,18 @@ export function NoteDetail(props: NoteDetailProps): JSX.Element {
           {props.path}
         </div>
         <div className="cluster">
+          {/* Hidden while editing: restoring a version can then never discard a draft. */}
+          {!editing && file.exists && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon="history"
+              onClick={props.onHistory}
+              disabled={props.busy}
+            >
+              {t('notebook.history.open')}
+            </Button>
+          )}
           {!editing && (
             <Button
               size="sm"
@@ -92,22 +129,7 @@ export function NoteDetail(props: NoteDetailProps): JSX.Element {
           />
         ) : (
           <div className="note-detail__view">
-            {!file.exists ? (
-              <p className="muted note-detail__note">{t('notebook.missing')}</p>
-            ) : file.binary ? (
-              <p className="muted note-detail__note">
-                <Icon name="lock" size={15} /> {t('preview.binary')}
-              </p>
-            ) : file.content === '' ? (
-              <p className="muted note-detail__note">{t('preview.empty')}</p>
-            ) : (
-              <>
-                {file.truncated && (
-                  <p className="muted note-detail__note">{t('preview.truncated')}</p>
-                )}
-                <NoteView name={props.name} content={file.content} />
-              </>
-            )}
+            <NoteContent name={props.name} file={file} />
           </div>
         )}
       </div>

@@ -1087,3 +1087,294 @@
 .overview-path--differs .overview-path__value {
   color: var(--warn);
 }
+
+/* Search (#108): a box pinned to the top of the tree pane; results replace the
+   tree while a query is typed. Negative top + matching padding keep it flush with
+   the pane edge while the list scrolls under it. */
+.nb-search {
+  position: sticky;
+  top: calc(-1 * var(--space-2));
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) var(--space-2);
+  padding: var(--space-2);
+  background: var(--panel);
+}
+.nb-search__icon {
+  position: absolute;
+  left: calc(var(--space-2) + 10px);
+  color: var(--muted);
+  pointer-events: none;
+}
+.nb-search__input {
+  height: 32px;
+  padding: 0 32px 0 32px;
+  font-size: var(--text-sm);
+}
+.nb-search__input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  display: none;
+}
+.nb-search__clear {
+  position: absolute;
+  right: calc(var(--space-2) + 4px);
+  width: 24px;
+  height: 24px;
+}
+.nb-search__msg {
+  padding: 4px var(--space-2);
+  font-size: var(--text-sm);
+}
+.nb-search__results {
+  transition: opacity var(--dur-fast);
+}
+.nb-search__results--pending {
+  opacity: 0.6;
+}
+.nb-search__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.nb-search__hit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 7px var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.nb-search__hit:hover {
+  background: var(--panel-2);
+}
+.nb-search__hit:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.nb-search__hit--active {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.nb-search__hit--active:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.nb-search__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.nb-search__loc {
+  padding-left: 18px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.nb-search__snippet {
+  padding-left: 18px;
+  font-size: var(--text-sm);
+  color: var(--text-dim);
+  line-height: var(--leading);
+  /* Two lines max; the core already windows the snippet around the match. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.nb-search__mark {
+  background: color-mix(in srgb, var(--warn) 32%, transparent);
+  color: var(--text);
+  border-radius: 3px;
+  padding: 0 1px;
+}
+.nb-search__count {
+  padding: var(--space-2) var(--space-2) 0;
+  font-size: var(--text-xs);
+}
+
+/* Version history (#107): version list on the left, the selected version (or its
+   comparison with the current note) on the right — inside the detail pane. */
+.note-history__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--muted);
+}
+.note-history__title {
+  flex: none;
+  color: var(--text);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+}
+.note-history {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(170px, 230px) 1fr;
+  grid-template-rows: minmax(0, 1fr);
+}
+.note-history__list {
+  overflow-y: auto;
+  padding: var(--space-2);
+  border-right: 1px solid var(--border);
+}
+.note-history__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.note-history__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 7px var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+.note-history__item:hover {
+  background: var(--panel-2);
+}
+.note-history__item:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+.note-history__item--active {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.note-history__item--active:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.note-history__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.note-history__row.muted {
+  font-size: var(--text-xs);
+}
+.note-history__hash {
+  font-size: var(--text-xs);
+}
+.note-history__msg {
+  padding: 4px var(--space-2);
+  font-size: var(--text-sm);
+}
+.note-history__view {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.note-history__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.note-history__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+.note-history__content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-4) var(--space-5);
+}
+
+/* Unified diff: removed lines red, added lines green, git's own hunk headers. */
+.nb-diff {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.nb-diff__legend {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+}
+.nb-diff__key--del {
+  color: var(--danger);
+}
+.nb-diff__key--add {
+  color: var(--ok);
+}
+.nb-diff__body {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel-2);
+  overflow: hidden;
+  line-height: 1.55;
+}
+.nb-diff__hunk + .nb-diff__hunk {
+  border-top: 1px solid var(--border);
+}
+.nb-diff__header {
+  padding: 2px var(--space-3);
+  color: var(--muted);
+  background: var(--panel-3);
+  font-size: var(--text-xs);
+}
+.nb-diff__line {
+  display: grid;
+  grid-template-columns: 3.2em 3.2em 1.4em 1fr;
+}
+.nb-diff__line--add {
+  background: var(--ok-weak);
+}
+.nb-diff__line--del {
+  background: var(--danger-weak);
+}
+.nb-diff__line--note {
+  color: var(--muted);
+  font-style: italic;
+}
+.nb-diff__no {
+  padding-right: var(--space-2);
+  text-align: right;
+  color: var(--faint);
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+.nb-diff__sign {
+  text-align: center;
+  user-select: none;
+}
+.nb-diff__line--add .nb-diff__sign {
+  color: var(--ok);
+}
+.nb-diff__line--del .nb-diff__sign {
+  color: var(--danger);
+}
+.nb-diff__text {
+  padding-right: var(--space-3);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
