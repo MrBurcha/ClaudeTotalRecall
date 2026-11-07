@@ -31,6 +31,18 @@
     "updateBanner": {
       "message": "Nueva versión {{version}} disponible",
       "action": "Actualizar"
+    },
+    "wrongBuild": {
+      "message": "Estás usando la versión para Intel en una Mac con Apple Silicon.",
+      "messageWithUpdate": "Estás usando la versión para Intel en una Mac con Apple Silicon. Ya está disponible la versión {{version}}.",
+      "action": "Obtener la versión para Apple Silicon"
+    },
+    "download": {
+      "appleSilicon": "Descargar para Apple Silicon",
+      "intel": "Descargar para Intel",
+      "windows": "Descargar para Windows",
+      "windowsPortable": "Descargar versión portable",
+      "appImage": "Descargar AppImage"
     }
   },
   "interval": {
@@ -269,6 +281,9 @@
     },
     "instance": {
       "busy": "Otra copia de la app (o una sincronización por línea de comandos) está sincronizando esta máquina ahora. Esta podrá hacer cambios cuando se cierre."
+    },
+    "update": {
+      "invalidUrl": "No se puede abrir una URL fuera de las versiones publicadas de la app."
     }
   },
   "preflight": {

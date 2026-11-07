@@ -31,6 +31,18 @@
     "updateBanner": {
       "message": "New version {{version}} available",
       "action": "Update"
+    },
+    "wrongBuild": {
+      "message": "You're running the Intel build on an Apple Silicon Mac.",
+      "messageWithUpdate": "You're running the Intel build on an Apple Silicon Mac. Version {{version}} is available.",
+      "action": "Get the Apple Silicon version"
+    },
+    "download": {
+      "appleSilicon": "Download for Apple Silicon",
+      "intel": "Download for Intel",
+      "windows": "Download for Windows",
+      "windowsPortable": "Download portable version",
+      "appImage": "Download AppImage"
     }
   },
   "interval": {
@@ -269,6 +281,9 @@
     },
     "instance": {
       "busy": "Another copy of the app (or a command-line sync) is syncing this machine right now. This one can make changes once it closes."
+    },
+    "update": {
+      "invalidUrl": "Refusing to open a URL outside the app releases."
     }
   },
   "preflight": {

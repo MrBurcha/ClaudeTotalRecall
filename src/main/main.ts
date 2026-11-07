@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow, Menu, powerMonitor } from 'electron'
 import { createPlatformAdapter } from '../platform'
 import { InstanceGuard } from './instanceGuard'
+import { machineFacts } from '../core/releaseCheck'
 import { registerIpc } from './ipc'
 import { SyncScheduler } from './syncScheduler'
 import { UpdateScheduler } from './updateScheduler'
@@ -122,8 +123,16 @@ function boot(): void {
     }
   })
   // Checks GitHub for a newer stable release on open + every 24h (#66); never
-  // during the smoke test, same guard as the sync scheduler below.
-  updateScheduler = new UpdateScheduler(app.getVersion(), (state) => {
+  // during the smoke test, same guard as the sync scheduler below. The machine
+  // facts pick this machine's installer (#134): process.arch reports x64 under
+  // Rosetta, so the real chip comes from runningUnderARM64Translation (#133).
+  const facts = machineFacts({
+    platform: process.platform,
+    arch: process.arch,
+    translated: app.runningUnderARM64Translation,
+    env: process.env,
+  })
+  updateScheduler = new UpdateScheduler(app.getVersion(), facts, (state) => {
     for (const w of BrowserWindow.getAllWindows()) {
       if (!w.isDestroyed()) w.webContents.send('update:state', state)
     }

@@ -155,8 +155,9 @@ const api = {
     }
   },
 
-  // Update check (#66): current state (pull), live push, and opening the releases
-  // page in the OS default browser.
+  // Update check (#66) + wrong-build notice (#133): current state (pull), live push,
+  // and opening the notice's link (the releases page or this machine's installer,
+  // #134) in the OS default browser. Main only opens this repo's release URLs.
   updateGetState: () => ipcRenderer.invoke('update:getState') as Promise<UpdateState>,
   openReleasePage: (url: string) =>
     ipcRenderer.invoke('update:openReleasePage', url) as Promise<void>,
