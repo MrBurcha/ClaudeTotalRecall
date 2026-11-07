@@ -6,7 +6,7 @@ This is a personal project; only the **latest release** is supported. Please upd
 
 ## The secrets guarantee
 
-Claude Total Recall is built so that **secrets never leave your machine**:
+Engram is built so that **secrets never leave your machine**:
 
 - A hard guard excludes `.credentials.json`, `.claude.json`, and `*.jsonl` (Claude Code transcripts)
   from every sync, regardless of configuration.
@@ -21,6 +21,6 @@ the secret exclusions above still apply on top.
 
 If you believe you've found a security issue — for example, a way to make a secret sync that
 shouldn't — please **do not open a public issue**. Instead, use GitHub's private
-[**Report a vulnerability**](https://github.com/MrBurcha/ClaudeTotalRecall/security/advisories/new)
+[**Report a vulnerability**](https://github.com/MrBurcha/Engram/security/advisories/new)
 flow (the repo's **Security → Advisories** tab) so it can be handled privately. Thanks for helping
 keep users safe.

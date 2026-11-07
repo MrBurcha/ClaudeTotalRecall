@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in Claude Total Recall! This is a small project — issues and pull requests
+Thanks for your interest in Engram! This is a small project — issues and pull requests
 are welcome.
 
 ## Development setup
@@ -9,8 +9,8 @@ Requirements: [Node.js 20](https://nodejs.org), plus `git` and `gh` (authenticat
 `gh auth login && gh auth setup-git`).
 
 ```bash
-git clone https://github.com/MrBurcha/ClaudeTotalRecall.git
-cd ClaudeTotalRecall
+git clone https://github.com/MrBurcha/Engram.git
+cd Engram
 npm install
 npm run dev
 ```
@@ -92,7 +92,7 @@ one for Apple Silicon (`-arm64`) and one for Intel (`-x64`) — and uploads both
 The Linux job builds an AppImage plus `.deb`, `.pacman` and `.rpm` packages, and the Windows job an
 NSIS installer plus a portable `.exe`.
 
-Every artifact is named `claude-total-recall-<version>-<os>[-<arch>|-<flavour>].<ext>`
+Every artifact is named `engram-<version>-<os>[-<arch>|-<flavour>].<ext>`
 (`artifactName` in `electron-builder.yml`). That's not cosmetic: GitHub sorts a Release's assets
 **by filename**, so keeping the OS in the same position of every name is what makes the page group
 itself into a Linux / macOS / Windows block instead of interleaving them. If you add a target, keep

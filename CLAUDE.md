@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Claude Total Recall — an Electron + TypeScript desktop app (with a headless CLI sharing the same core) that syncs Claude Code memory (`~/.claude/…`) across machines through a private GitHub repo, using `git`/`gh` as transport. macOS, Linux and Windows.
+Engram (formerly Claude Total Recall, renamed in 0.15.0 — #123) — an Electron + TypeScript desktop app (with a headless CLI sharing the same core) that syncs Claude Code memory (`~/.claude/…`) across machines through a private GitHub repo, using `git`/`gh` as transport. macOS, Linux and Windows.
 
 Code identifiers, comments, commit messages, and docs are written in **English**. The UI is the only bilingual surface — English (the source language) and neutral Latin American Spanish (es-419) via react-i18next; user-facing strings live in `src/renderer/i18n/{en,es}.json`, never inline. (Releases through 0.1.4 were Spanish throughout; that convention changed with the i18n work — translate comments in files you touch.)
 
@@ -18,7 +18,7 @@ npx vitest run -t "test name"          # single test by name
 npm run typecheck      # tsc --noEmit
 npm run lint           # eslint . --ext .ts,.tsx
 npm run build:cli      # tsup → dist-cli/index.js (CLI, no Electron)
-npm run cli:check      # build CLI + run `claude-total-recall check` (preflight: git/gh/gh-auth)
+npm run cli:check      # build CLI + run `engram check` (preflight: git/gh/gh-auth)
 npm run build:mac      # unsigned .dmg (run on macOS)
 npm run build:linux    # AppImage + deb + pacman (run on Linux or CI, no cross-build)
 ```
@@ -30,14 +30,14 @@ Releases: pushing a `v*.*.*` tag triggers `.github/workflows/release.yml`, which
 Layering rule: `src/core/` is pure Node/TypeScript with **no Electron imports** — everything else is a thin shell around it.
 
 - `src/core/` — all logic: config, plan build/execute, outgoing/incoming, git wrapper, service orchestration, preflight, settings merge, the auto-sync engine (`syncEngine.ts`), conflict resolution, and typed errors (`errors.ts`). Tests live next to sources (`*.test.ts`) and run directly under Node (vitest, aliases `@core`/`@platform`).
-- `src/platform/` — the ONLY OS-specific code. `PlatformAdapter` (linux/macos/windows) resolves `home`, `~/.claude`, `~/.config/claudetr`, and expands `~`. Home dir is injectable for tests. All three OSes share one layout — Windows keeps `~/.config/claudetr` too (home-relative via `os.homedir()`, never install-relative). The other OS-aware spots are `src/core/resolvePath.ts` (binary discovery: PATH delimiter + PATHEXT probing) and `src/core/exec.ts` (Windows .cmd shims; on macOS under Rosetta, git/gh are launched natively via `/usr/bin/arch -arm64 -x86_64`, #133).
-- `src/cli/` — headless entrypoint (`claude-total-recall check|connect|status|register|outgoing|incoming`), built with tsup to CJS. English-only.
+- `src/platform/` — the ONLY OS-specific code. `PlatformAdapter` (linux/macos/windows) resolves `home`, `~/.claude`, `~/.config/engram`, and expands `~`. Home dir is injectable for tests. All three OSes share one layout — Windows keeps `~/.config/engram` too (home-relative via `os.homedir()`, never install-relative). The other OS-aware spots are `src/core/resolvePath.ts` (binary discovery: PATH delimiter + PATHEXT probing) and `src/core/exec.ts` (Windows .cmd shims; on macOS under Rosetta, git/gh are launched natively via `/usr/bin/arch -arm64 -x86_64`, #133).
+- `src/cli/` — headless entrypoint (`engram check|connect|status|register|outgoing|incoming`), built with tsup to CJS. English-only.
 - `src/main/` — Electron bootstrap, IPC handlers (`ipc.ts`), preload, the auto-sync scheduler (`syncScheduler.ts`), and the frameless window. IPC handlers are thin wrappers over `core/service.ts`.
 - `src/renderer/` — React UI (`AppShell` + `screens/` + `features/` + the i18n catalog under `i18n/`), talks to main only through the preload bridge.
 
 ### Core domain model
 
-Two verbs move files between the machine and a **working copy** (a clone of the memories repo at `~/.config/claudetr/repo`). The UI labels them **Outgoing / Saliente** and **Incoming / Entrante**; internally (the `Verb` type, CLI subcommands, commit messages) they are `outgoing`/`incoming` — renamed from the former `gather`/`scatter`:
+Two verbs move files between the machine and a **working copy** (a clone of the memories repo at `~/.config/engram/repo`). The UI labels them **Outgoing / Saliente** and **Incoming / Entrante**; internally (the `Verb` type, CLI subcommands, commit messages) they are `outgoing`/`incoming` — renamed from the former `gather`/`scatter`:
 
 - **outgoing** = machine → working copy → commit/pull/push
 - **incoming** = working copy → machine (never touches the remote; CLI pulls first)
@@ -48,16 +48,18 @@ Key invariants (preserve these when changing core):
 
 - **Every mutating verb builds a Plan first** (`plan.ts: buildPlan`) — a dry-run of typed actions (create/overwrite/delete/noop/skip) with SHA-256 hashes. `executePlan` revalidates both the source AND the destination hash before applying (TOCTOU guard) and throws `PlanDriftError` if either changed since the preview — a stale destination is just as unsafe to overwrite as a stale source (checking only the source let an auto-sync cycle's incoming step silently clobber a machine-side edit made between preview and execute). The Electron IPC layer caches Plans by id so `plan:execute` runs exactly what the user confirmed.
 - **Secrets never sync**: `plan.ts: isSecretExcluded` hard-excludes `.credentials.json`, `.claude.json`, and `*.jsonl` regardless of configuration. Defense in depth: the repo's `.gitignore` (written on init) excludes them too.
-- **settings.json is computed, not copied** (`transform` actions). `settingsMerge.ts` does a shallow top-level-key split/merge: `~/.config/claudetr/settings.local.json` declares machine-local keys that never travel to the repo; on incoming, local overrides win over the shared base.
-- **Config lives in the repo** (`claudetr.json`, zod-validated in `types.ts`): machines, projects, and per-machine literal paths. Local state (just `machineId`) lives outside the repo in `~/.config/claudetr/local.json`.
+- **settings.json is computed, not copied** (`transform` actions). `settingsMerge.ts` does a shallow top-level-key split/merge: `~/.config/engram/settings.local.json` declares machine-local keys that never travel to the repo; on incoming, local overrides win over the shared base.
+- **Config lives in the repo** (`engram.json` — `claudetr.json` before #123 — zod-validated in `types.ts`; always go through `resolveConfigPath`, which falls back to the legacy name until the explicit, once-per-fleet `migrateSharedConfig`): machines, projects, and per-machine literal paths. Local state (just `machineId`) lives outside the repo in `~/.config/engram/local.json`.
 - **Config edits avoid JSON merge conflicts** via fetch + `reset --hard origin` + reapply + push, retried up to 6 times (`service.ts: commitConfigChange`, `registerMachine`).
+- **One syncer per machine.** The Electron single-instance lock (#140, keyed on userData — dev builds get their own "Engram (dev)" userData) plus a cross-process lock file `<configHome>/instance.lock` shared with the CLI (#141, `core/instanceLock.ts`, heartbeat + stale takeover). Inside the process, every working-copy git mutation — the auto-sync cycle included (#111) — runs under `withRepoLock`, taken by the CALLER (it isn't reentrant).
+- **Startup order is load-bearing** (see the comment block in `src/main/main.ts`): dev userData → single-instance lock → localStorage carry-over → `migrateConfigHome` (~/.config/claudetr → ~/.config/engram, before anything reads local state; a failure stops the app) → boot. The CLI runs `migrateConfigHome` at the top of every verb.
 - **Memory-file conflicts** (concurrent outgoing syncs) are resolved per-file as local (`--ours`) / remote (`--theirs`), then `completeConflictMerge`.
 
 `git.ts` shells out to the `git` binary via `exec.ts` — no libgit2/isomorphic-git. Tests use local `file://` remotes; the mechanics are identical to GitHub over HTTPS/SSH.
 
 ### Internationalization (i18n)
 
-- **Renderer** uses react-i18next with both catalogs (`i18n/en.json`, `i18n/es.json`) bundled and imported statically (`resolveJsonModule`). Init is synchronous (`initAsync: false`) so `t()` works before the first render — no flash of the wrong language. The default locale comes from `navigator.languages`; the choice persists in `localStorage['claude-total-recall:locale']`. i18next (`i18n.resolvedLanguage`) is the source of truth, not the reducer.
+- **Renderer** uses react-i18next with both catalogs (`i18n/en.json`, `i18n/es.json`) bundled and imported statically (`resolveJsonModule`). Init is synchronous (`initAsync: false`) so `t()` works before the first render — no flash of the wrong language. The default locale comes from `navigator.languages`; the choice persists in `localStorage['engram:locale']`. i18next (`i18n.resolvedLanguage`) is the source of truth, not the reducer.
 - **Backend errors are code + English default.** `core/errors.ts: AppError` carries a stable `code` + params + an English message. The CLI prints the message verbatim; the renderer localizes by code. Since Electron only serializes `Error.message` over `ipcMain.handle`, main re-throws AppError encoded behind a sentinel (`encodeAppError`), and the renderer decodes + localizes in `state/api.ts: normalizeError` (`t('errors.<code>', { ...params, defaultValue })`). Preflight checks carry `detailKey`/`fixKey` for the same reason.
 - **Non-component modules** receive `t` as a parameter (`buildCommands(state, actions, t)`, `validateName(kind, value, t)`) or use the `i18n` singleton (`state/api.ts`, `state/useActions.ts`). Search keywords in the command palette stay bilingual literal arrays so search works in either language.
 
