@@ -13,7 +13,7 @@ export default defineConfig({
     // The core is pure TS and runs under Node (the default). React component tests
     // (*.test.tsx) opt into a browser-like DOM with a `@vitest-environment happy-dom`
     // docblock at the top of each file. (vitest 4 removed `environmentMatchGlobs`;
-    // per-file docblocks are the supported replacement for our 3 component tests.)
+    // per-file docblocks are the supported replacement for our component tests.)
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
