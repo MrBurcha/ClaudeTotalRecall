@@ -3,6 +3,7 @@ import type { PlatformAdapter } from '../platform'
 import { USER_LEVEL_EXCLUDES } from './managedPaths'
 import { parseMemoryPath } from './memoryPath'
 import type { Config } from './types'
+import { USER_LEVEL_SPEC, userLevelLogicalPath } from './userLevel'
 
 export interface UserLevelItem {
   slot: string
@@ -17,23 +18,15 @@ export interface UserLevelItem {
 }
 
 /**
- * Fixed user-level slots. `logicalPath` is relative to the repo root;
- * `realPath` is expanded against ~/.claude via the adapter.
+ * Fixed user-level slots (USER_LEVEL_SPEC, in the node-free userLevel.ts). `logicalPath`
+ * is relative to the repo root; `realPath` is expanded against ~/.claude via the adapter.
  */
-const USER_LEVEL_SPEC: ReadonlyArray<{ slot: string; kind: 'file' | 'dir' }> = [
-  { slot: 'CLAUDE.md', kind: 'file' },
-  { slot: 'commands', kind: 'dir' },
-  { slot: 'agents', kind: 'dir' },
-  { slot: 'skills', kind: 'dir' },
-  { slot: 'settings.json', kind: 'file' },
-]
-
 export function userLevelItems(adapter: PlatformAdapter): UserLevelItem[] {
   const claudeHome = adapter.claudeHome()
   return USER_LEVEL_SPEC.map(({ slot, kind }) => ({
     slot,
     realPath: join(claudeHome, slot),
-    logicalPath: `memories/user/${slot}`,
+    logicalPath: userLevelLogicalPath(slot),
     kind,
     exclude: USER_LEVEL_EXCLUDES[slot] ?? [],
   }))
