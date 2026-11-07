@@ -149,6 +149,9 @@
   align-items: center;
   gap: var(--space-2);
 }
+.machine-row__remove {
+  margin-left: auto;
+}
 .machine-row__meta {
   padding-left: 25px;
 }

@@ -194,3 +194,10 @@ describe('Engram rename: both commit prefixes classify (#123)', () => {
     expect(classifyCommit('Merge branch main')).toBeNull()
   })
 })
+
+describe('automatic rename bookkeeping stays out of the activity feed (#123)', () => {
+  it('hides fleet: commits', () => {
+    expect(classifyCommit('Engram: fleet: m1 runs Engram')).toBeNull()
+    expect(classifyCommit('Engram: fleet: shared config renamed to engram.json')).toBeNull()
+  })
+})

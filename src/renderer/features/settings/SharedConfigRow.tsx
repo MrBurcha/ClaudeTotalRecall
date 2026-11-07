@@ -7,16 +7,18 @@ import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 
 /**
- * The shared config file of the memories repo, and — while it still has its
- * pre-rename name — the explicit, once-per-fleet rename to engram.json (#123). This
- * is the one action of the rename that can break OTHER machines (older versions only
- * read claudetr.json), so the confirmation names every machine that must be updated.
+ * Status of the automatic shared-config rename (#123). Nothing to do here in the
+ * normal case: every machine running Engram marks itself and the last one renames
+ * claudetr.json → engram.json on its own. This row only says who it's still waiting
+ * for — and offers a forced rename for the rare case where waiting isn't an option.
+ * Once renamed, it's not shown at all.
  */
 export function SharedConfigRow(): JSX.Element | null {
   const { t } = useTranslation()
-  const { config, busy } = useAppState()
+  const { config, busy, syncEngine } = useAppState()
   const actions = useActions()
   const [info, setInfo] = useState<SharedConfigInfo | null>(null)
+  const lastSyncedAt = syncEngine?.lastSyncedAt
 
   useEffect(() => {
     if (!config) return
@@ -28,39 +30,41 @@ export function SharedConfigRow(): JSX.Element | null {
     return () => {
       alive = false
     }
-  }, [config])
+    // Re-read after every sync: that's when this machine marks itself / the rename lands.
+  }, [config, lastSyncedAt])
 
-  if (!config || !info) return null
+  if (!config || !info || info.file !== 'claudetr.json') return null
 
-  const migrate = async (): Promise<void> => {
+  const forceNow = async (): Promise<void> => {
     const ok = await actions.confirm({
-      title: t('settings.sharedConfig.confirmTitle'),
-      body: t('settings.sharedConfig.confirmBody', { machines: info.machines.join(', ') }),
-      confirmLabel: t('settings.sharedConfig.confirm'),
+      title: t('settings.sharedConfig.forceTitle'),
+      body: t('settings.sharedConfig.forceBody', { machines: info.waiting.join(', ') }),
+      confirmLabel: t('settings.sharedConfig.forceConfirm'),
       danger: true,
     })
     if (!ok) return
     await actions.run(async () => {
-      const r = await api.migrateSharedConfig()
+      await api.migrateSharedConfig()
       setInfo(await api.sharedConfigInfo())
-      return r.migrated ? t('settings.sharedConfig.done') : t('settings.sharedConfig.already')
+      return t('settings.sharedConfig.done')
     })
   }
 
   return (
     <div className="stack stack-1">
-      <div className="row between">
-        <span className="muted">
-          {t('settings.sharedConfig.label')} <span className="mono">{info.file}</span>
-        </span>
-        {info.file === 'claudetr.json' && (
-          <Button size="sm" icon="git-branch" disabled={busy} onClick={() => void migrate()}>
-            {t('settings.sharedConfig.migrate')}
-          </Button>
-        )}
-      </div>
-      {info.file === 'claudetr.json' && (
-        <p className="muted small">{t('settings.sharedConfig.legacyHint')}</p>
+      <span className="muted">{t('settings.sharedConfig.switching')}</span>
+      {info.waiting.length > 0 && (
+        <>
+          <span className="muted small">
+            {t('settings.sharedConfig.waitingFor', { machines: info.waiting.join(', ') })}
+          </span>
+          <span className="muted small">{t('settings.sharedConfig.goneHint')}</span>
+          <div className="row">
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => void forceNow()}>
+              {t('settings.sharedConfig.forceButton')}
+            </Button>
+          </div>
+        </>
       )}
     </div>
   )

@@ -143,6 +143,9 @@ export function registerIpc(
   // once-per-fleet rename to engram.json (it takes the repo lock itself).
   handle('config:sharedInfo', () => svc.sharedConfigInfo(adapter()))
   change('config:migrateShared', () => svc.migrateSharedConfig(adapter()))
+  // A machine gone for good would block the automatic rename forever (and clutter
+  // the constellation): remove it from the repo.
+  change('machine:remove', (_e, id: string) => svc.removeMachine(adapter(), id))
   change('repo:connect', (_e, remote: string) => svc.connectRepo(remote, adapter()))
   handle('repo:status', () => svc.repoStatus(adapter()))
   handle('repo:history', (_e, limit?: number) => svc.history(adapter(), limit))

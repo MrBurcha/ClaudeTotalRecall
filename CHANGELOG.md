@@ -7,6 +7,23 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-11-07
+
+### Changed
+
+- **Moving to Engram needs no last step.** The shared config file in your memories repo now switches
+  from `claudetr.json` to `engram.json` on its own, once every machine runs Engram. Each machine
+  quietly marks itself when it syncs, and the last one to update makes the switch. Machines still
+  on the old app keep syncing until then. **Settings → Repo** only shows who it's still waiting
+  for. There's no button to remember and nothing to coordinate between machines.
+
+### Added
+
+- **Remove a machine you no longer use.** **Settings → Machines** has a remove button for every
+  machine except this one. The machine leaves the list and its folder paths are forgotten; the
+  memory it already synced stays. This also keeps the automatic switch above from waiting for a
+  machine that will never come back.
+
 ## [0.15.0] - 2026-11-07
 
 **Claude Total Recall is now Engram** — _your agent's memory, everywhere._ Same app, same synced
@@ -764,7 +781,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/Engram/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/Engram/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/MrBurcha/Engram/releases/tag/v0.15.1
 [0.15.0]: https://github.com/MrBurcha/Engram/releases/tag/v0.15.0
 [0.14.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.14.0
 [0.13.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.13.1

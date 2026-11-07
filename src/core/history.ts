@@ -41,6 +41,8 @@ export function classifyCommit(subject: string): ClassifiedCommit | null {
   if (stripped === null) return null // merge / external commit
   const body = stripped.trim()
   if (body === 'initial structure') return null // onboarding seed → noise
+  // Automatic shared-config rename bookkeeping (markers, the rename itself): not activity.
+  if (body.startsWith('fleet: ')) return null
 
   let m: RegExpExecArray | null
   if ((m = /^outgoing on (.+)$/.exec(body))) return { type: 'outgoing', machineId: m[1] }
@@ -54,6 +56,7 @@ export function classifyCommit(subject: string): ClassifiedCommit | null {
     return { type: 'remove-folder', project: m[1], slot: m[2], machineId: m[3] }
   if ((m = /^pin (.+) on (.+)$/.exec(body))) return { type: 'pin', pin: m[1], machineId: m[2] }
   if ((m = /^unpin (.+)$/.exec(body))) return { type: 'unpin', pin: m[1] }
+  if ((m = /^remove machine (.+)$/.exec(body))) return { type: 'other', machineId: m[1] }
   if (body === 'resolve conflicts') return { type: 'conflicts' }
   if (body === 'remove Claude Code managed cache') return { type: 'cleanup' } // #135
   // `set a/b on x` (current) or legacy `a/b on x` — kept last so the keyword forms win.

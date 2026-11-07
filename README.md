@@ -161,7 +161,7 @@ an exit code (`0` on success).
 | `register [--name <id>]`       | Register this machine in the repo config (defaults the id to your hostname). Mutates the repo.                                                                              |
 | `outgoing [--dry-run] [--yes]` | **machine → repo**: build a Plan, then commit + pull + push your memory.                                                                                                    |
 | `incoming [--dry-run] [--yes]` | **repo → machine**: pull first, build a Plan, then write the repo's memory onto this machine. Never touches the remote.                                                     |
-| `migrate-config`               | Rename the shared `claudetr.json` to `engram.json` in the memories repo — once, after **every** machine runs Engram (same as Settings → Repo → Rename).                     |
+| `migrate-config`               | Force the shared `claudetr.json` → `engram.json` switch now. Normally unnecessary: it happens on its own once every machine runs Engram.                                    |
 
 Notes:
 
@@ -314,9 +314,10 @@ one at a time:
 2. After one sync, uninstall the old app (macOS: delete the old `.app`; Windows: remove it in
    **Settings → Apps**; Linux: `sudo apt|dnf remove claude-total-recall` /
    `sudo pacman -R claude-total-recall`, or delete the old AppImage).
-3. **Once every machine runs Engram:** **Settings → Repo → Rename to engram.json** on any one of them
-   (or `engram migrate-config`). Until then the shared config keeps its old name, so machines not
-   yet updated keep syncing.
+   That's it. The shared config file in your memories repo switches to its new name **on its own**
+   once every machine runs Engram; until then it keeps the old one, so machines not updated yet keep
+   syncing. If a machine is gone for good, remove it under **Settings → Machines** so the switch
+   doesn't wait for it.
 
 ## Build from source
 

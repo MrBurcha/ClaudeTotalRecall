@@ -263,7 +263,15 @@ export class SyncScheduler {
           return
         }
         this.setState({ status: 'syncing', lastError: null, errorKind: null })
-        this.applyOutcome(await runSyncCycle(this.adapter))
+        const outcome = await runSyncCycle(this.adapter)
+        this.applyOutcome(outcome)
+        // Automatic shared-config rename (#123): mark this machine, rename once the
+        // whole fleet runs Engram. Bookkeeping only — it never fails a sync.
+        if (outcome.kind === 'synced') {
+          await svc.advanceSharedConfigRename(this.adapter).catch((e: unknown) => {
+            console.error('[engram] shared-config rename step failed', e)
+          })
+        }
       })
     } catch (e) {
       this.applyOutcome({ kind: 'error', message: errorMessage(e) })

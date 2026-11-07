@@ -211,8 +211,9 @@ export async function pendingSummary(
   const plan = await buildVerbPlan(adapter, 'outgoing', newMeta())
   const git = repoGit(adapter)
   const up = new Set(safeActions(plan, baseline).map((a) => a.logicalPath))
-  for (const f of await git.changedFiles('@{upstream}...HEAD')) up.add(f)
-  const down = await git.changedFiles('HEAD...@{upstream}')
+  const isMemory = (f: string): boolean => f.startsWith('memories/')
+  for (const f of await git.changedFiles('@{upstream}...HEAD')) if (isMemory(f)) up.add(f)
+  const down = (await git.changedFiles('HEAD...@{upstream}')).filter(isMemory)
   return { up: up.size, down: down.length, checkedAt: now() }
 }
 

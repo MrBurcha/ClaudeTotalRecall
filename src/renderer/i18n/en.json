@@ -73,14 +73,14 @@
     "language": "Language",
     "languageAria": "Interface language",
     "sharedConfig": {
-      "label": "Shared config file:",
-      "legacyHint": "This repo still uses the file name from before the rename. Rename it once — after every machine runs Engram.",
-      "migrate": "Rename to engram.json",
-      "confirmTitle": "Rename the shared config file?",
-      "confirmBody": "Every machine in this repo must already run Engram: {{machines}}. A machine still on Claude Total Recall stops syncing after this until it is updated. Other machines pick up the new name on their own.",
-      "confirm": "Rename",
-      "done": "Shared config renamed to engram.json.",
-      "already": "The shared config was already engram.json."
+      "switching": "Shared config file: switching from claudetr.json to engram.json. It happens on its own once every machine runs Engram — nothing to do.",
+      "waitingFor": "Waiting for: {{machines}}.",
+      "goneHint": "A machine you no longer use? Remove it under Machines and the switch goes ahead.",
+      "forceButton": "Switch now anyway",
+      "forceTitle": "Switch the shared config file now?",
+      "forceBody": "These machines haven't run Engram yet: {{machines}}. If any of them still runs Claude Total Recall, it stops syncing until it's updated.",
+      "forceConfirm": "Switch now",
+      "done": "Shared config switched to engram.json."
     }
   },
   "home": {
@@ -266,7 +266,9 @@
       "notRegistered": "Machine not registered.",
       "notRegisteredAddProject": "Machine not registered; register before adding projects.",
       "notRegisteredLocal": "Machine not registered (local.json missing). Run `engram register`.",
-      "notRegisteredPrefs": "Machine not registered; nowhere to save preferences."
+      "notRegisteredPrefs": "Machine not registered; nowhere to save preferences.",
+      "removeSelf": "This machine can't remove itself.",
+      "unknown": "Machine \"{{value}}\" isn't registered."
     },
     "push": {
       "rejectedRegister": "Push failed while registering: {{stderr}}",
@@ -358,7 +360,12 @@
     "registeredAs": "This machine is registered as <b>{{machineId}}</b>.",
     "knownMachines_one": "Known machine ({{count}})",
     "knownMachines_other": "Known machines ({{count}})",
-    "thisMachine": "this"
+    "thisMachine": "this",
+    "removeLabel": "Remove {{machineId}} from this repo",
+    "removeTitle": "Remove {{machineId}}?",
+    "removeBody": "{{machineId}} stops being part of this repo: it disappears from the list and its folder paths are forgotten. The memory it already synced stays. If it's still in use, it'll have to register again.",
+    "removeConfirm": "Remove",
+    "removed": "{{machineId}} removed from this repo."
   },
   "constellation": {
     "syncingUp": "Syncing: pushing to the repo.",
