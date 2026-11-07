@@ -263,3 +263,35 @@ describe('outgoing→incoming race (found dogfooding auto-sync, 2026-07-09)', ()
     expect(await exists(join(home1, '.claude', 'commands', 'new.md'))).toBe(true)
   })
 })
+
+describe('the sync cycle under the working-copy lock (#111)', () => {
+  it('a Notebook save issued mid-cycle waits for it, then lands and travels on the next cycle', async () => {
+    const { withRepoLock } = await import('./repoLock')
+    const notebook = await import('./notebook')
+    const base = await newBase()
+    await bareRemote(base)
+    const home = join(base, 'home1')
+    await mkdir(join(home, '.claude'), { recursive: true })
+    await writeFile(join(home, '.claude', 'CLAUDE.md'), 'memory\n')
+    const a = await joinMachine(base, 'm1', home)
+
+    const order: string[] = []
+    // How the scheduler runs a cycle: inside withRepoLock. The save is fired while it runs.
+    const cycle = withRepoLock(async () => {
+      const out = await runSyncCycle(a)
+      order.push('cycle')
+      return out
+    })
+    const save = notebook
+      .createNote(a, { relPath: 'general/idea.md', content: 'hello\n' })
+      .then(() => order.push('save'))
+    const [out] = await Promise.all([cycle, save])
+
+    expect(out.kind).toBe('synced')
+    expect(order).toEqual(['cycle', 'save'])
+    const git = service.repoGit(a)
+    expect((await git.status()).ahead).toBe(1) // the save: committed, not pushed yet
+    expect((await withRepoLock(() => runSyncCycle(a))).kind).toBe('synced')
+    expect((await git.status()).ahead).toBe(0)
+  })
+})

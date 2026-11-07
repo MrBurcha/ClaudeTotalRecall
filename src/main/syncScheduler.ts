@@ -4,6 +4,7 @@ import { classifyRemoteError } from '../core/gitAuth'
 import { loadAutoSyncPrefs, saveAutoSyncPrefs } from '../core/localState'
 import { isExcludedRel } from '../core/managedPaths'
 import { isSecretExcluded } from '../core/plan'
+import { withRepoLock } from '../core/repoLock'
 import { projectSlotPath, projectSlots, userLevelItems } from '../core/resolve'
 import * as svc from '../core/service'
 import { runSyncCycle, incomingResolved, type SyncOutcome } from '../core/syncEngine'
@@ -143,7 +144,7 @@ export class SyncScheduler {
   /** After finishing a merge in the Advanced panel: brings the result down and resumes. */
   async resumeAfterConflict(): Promise<void> {
     try {
-      await incomingResolved(this.adapter)
+      await withRepoLock(() => incomingResolved(this.adapter))
       this.setState({
         status: 'idle',
         conflicts: [],
@@ -172,24 +173,31 @@ export class SyncScheduler {
         return
       }
       this.ready = true
-      // Guard: if the working copy already has conflicts (from a manual flow or a
-      // previous cycle), don't sync; ask for a resolution — after self-healing the
-      // Claude-managed ones (#135). A merge stuck ONLY on those (e.g. left by an
-      // older version) completes here and lands like a manual resolution would.
-      const existing = await svc.listConflicts(this.adapter)
-      if (existing.length > 0) {
-        const heal = await svc.healManagedConflicts(this.adapter)
-        if (!heal.completed) {
-          this.setState({ status: 'conflict', conflicts: heal.remaining })
-          this.reconcileTimers()
+      // The whole cycle runs under the working-copy lock (#111), the same one
+      // Notebook saves and config edits take, so no other git mutation of this app
+      // can interleave with it (no `.git/index.lock` races, no pull over a tree a
+      // plan left dirty). None of the core calls below take the lock themselves:
+      // it isn't reentrant.
+      await withRepoLock(async () => {
+        // Guard: if the working copy already has conflicts (from a manual flow or a
+        // previous cycle), don't sync; ask for a resolution — after self-healing the
+        // Claude-managed ones (#135). A merge stuck ONLY on those (e.g. left by an
+        // older version) completes here and lands like a manual resolution would.
+        const existing = await svc.listConflicts(this.adapter)
+        if (existing.length > 0) {
+          const heal = await svc.healManagedConflicts(this.adapter)
+          if (!heal.completed) {
+            this.setState({ status: 'conflict', conflicts: heal.remaining })
+            this.reconcileTimers()
+            return
+          }
+          await incomingResolved(this.adapter)
+          this.applyOutcome({ kind: 'synced', pushed: heal.pushed, pulled: true, incoming: true })
           return
         }
-        await incomingResolved(this.adapter)
-        this.applyOutcome({ kind: 'synced', pushed: heal.pushed, pulled: true, incoming: true })
-        return
-      }
-      this.setState({ status: 'syncing', lastError: null, errorKind: null })
-      this.applyOutcome(await runSyncCycle(this.adapter))
+        this.setState({ status: 'syncing', lastError: null, errorKind: null })
+        this.applyOutcome(await runSyncCycle(this.adapter))
+      })
     } catch (e) {
       this.applyOutcome({ kind: 'error', message: errorMessage(e) })
     } finally {
