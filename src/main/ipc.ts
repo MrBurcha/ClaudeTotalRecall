@@ -15,6 +15,7 @@ import { folderContainsMemoryIndex } from '../core/memoryScan'
 import * as notebook from '../core/notebook'
 import { PlanDriftError } from '../core/plan'
 import { runPreflight } from '../core/preflight'
+import { withRepoLock } from '../core/repoLock'
 import { isRepoReleaseUrl } from '../core/releaseCheck'
 import * as svc from '../core/service'
 import type { AutoSyncPrefs, Plan, Verb } from '../core/types'
@@ -129,7 +130,8 @@ export function registerIpc(
   change('repo:connect', (_e, remote: string) => svc.connectRepo(remote, adapter()))
   handle('repo:status', () => svc.repoStatus(adapter()))
   handle('repo:history', (_e, limit?: number) => svc.history(adapter(), limit))
-  change('repo:pull', () => svc.pullRepo(adapter()))
+  // Manual git mutations of the working copy share the auto-sync cycle's lock (#111).
+  change('repo:pull', () => withRepoLock(() => svc.pullRepo(adapter())))
 
   // Machines
   change('machine:register', async (_e, name?: string) => {
@@ -263,10 +265,11 @@ export function registerIpc(
     }
     const opts = { force: args.force }
     try {
-      const result =
+      const result = await withRepoLock(() =>
         args.verb === 'outgoing'
-          ? await svc.syncOutgoing(adapter(), plan, opts)
-          : await svc.syncIncoming(adapter(), plan, opts)
+          ? svc.syncOutgoing(adapter(), plan, opts)
+          : svc.syncIncoming(adapter(), plan, opts),
+      )
       planCache.delete(args.planId) // only consumed after success
       return { ok: true, result }
     } catch (e) {
@@ -280,10 +283,11 @@ export function registerIpc(
   // Conflicts
   handle('conflict:list', () => svc.listConflicts(adapter()))
   change('conflict:resolve', (_e, a: { file: string; side: 'local' | 'remote' }) =>
-    svc.resolveConflict(adapter(), a.file, a.side),
+    withRepoLock(() => svc.resolveConflict(adapter(), a.file, a.side)),
   )
   change('conflict:complete', async () => {
-    const r = await svc.completeConflictMerge(adapter())
+    // Not nested: resumeAfterConflict takes the lock itself, after this one is released.
+    const r = await withRepoLock(() => svc.completeConflictMerge(adapter()))
     await scheduler.resumeAfterConflict() // pull the resolved merge and resume auto
     return r
   })
