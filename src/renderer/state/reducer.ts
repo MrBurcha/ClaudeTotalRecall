@@ -16,7 +16,7 @@ export type Action =
   | { t: 'hydrate'; snap: Snapshot }
   | { t: 'busy'; busy: boolean }
   | { t: 'activeOp'; op: ActiveOp | null }
-  | { t: 'navigate'; route: Route }
+  | { t: 'navigate'; route: Route; focus?: string }
   | { t: 'theme'; theme: Theme }
   | { t: 'pushModal'; modal: ModalDescriptor }
   | { t: 'popModal' }
@@ -37,6 +37,7 @@ export const initialState: AppState = {
   preflight: null,
   version: null,
   route: 'home',
+  focus: null,
   theme: 'dark',
   loading: true,
   busy: false,
@@ -58,7 +59,11 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'activeOp':
       return { ...state, activeOp: action.op }
     case 'navigate':
-      return { ...state, route: action.route }
+      return {
+        ...state,
+        route: action.route,
+        focus: action.focus ? { route: action.route, target: action.focus } : null,
+      }
     case 'theme':
       return { ...state, theme: action.theme }
     case 'pushModal':

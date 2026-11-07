@@ -21,6 +21,7 @@
   "nav": {
     "home": "Sincronización",
     "projects": "Proyectos",
+    "pinned": "Archivos fijados",
     "notebook": "Cuaderno",
     "settings": "Ajustes"
   },
@@ -186,6 +187,7 @@
     },
     "goHome": "Ir a Sincronización",
     "goProjects": "Ir a Proyectos",
+    "goPinned": "Ir a Archivos fijados",
     "goNotebook": "Ir al Cuaderno",
     "goMachines": "Ir a Máquinas",
     "goSettings": "Ir a Ajustes",
@@ -557,22 +559,53 @@
     }
   },
   "pinned": {
+    "eyebrow": "Configuración",
     "title": "Archivos fijados",
-    "sub": "Archivos sueltos que se sincronizan de forma global, fuera de cualquier proyecto (por ejemplo un CLAUDE.md específico).",
-    "registerFirst": "Registra esta máquina primero para fijar archivos.",
-    "empty": "Ningún archivo fijado todavía.",
+    "sub": "Archivos sueltos que se sincronizan por sí solos: los globales en General y las fuentes de tipo archivo de cada proyecto. Las fuentes de tipo carpeta siguen en Proyectos.",
     "add": "Fijar un archivo",
-    "nameLabel": "Nombre",
-    "namePlaceholder": "mi-archivo",
-    "nameRequired": "Dale un nombre al archivo fijado.",
+    "notConnected": "Conecta tu repo de memoria primero",
+    "notConnectedHint": "Los archivos fijados son parte de la configuración de tu repo sincronizado. Configúralo en Ajustes.",
+    "pickTitle": "Selecciona un archivo",
+    "pickHint": "Elige un archivo del árbol para ver dónde vive en cada máquina y previsualizar su contenido sincronizado.",
+    "registerFirst": "Registra esta máquina primero para fijar archivos.",
+    "general": "General",
+    "addGeneral": "Fijar un archivo en General",
+    "addToProject": "Agregar un archivo a este proyecto",
+    "emptyGroup": "Sin archivos todavía.",
     "noPathHere": "sin ruta en esta máquina",
+    "notMapped": "sin ruta asignada",
+    "unregisteredMachine": "no registrada",
     "editPath": "Editar ruta",
-    "remove": "Quitar",
+    "setPath": "Asignar una ruta en esta máquina",
+    "pathOnThisMachine": "Ruta en esta máquina",
+    "pathSaved": "Se guardó la ruta de \"{{name}}\" en esta máquina.",
+    "repoLocation": "En el repo",
+    "machinePaths": "Ruta en cada máquina",
+    "content": "Contenido sincronizado",
+    "notInRepo": "Todavía no está en el repo: aparecerá cuando sincronice una máquina que tenga este archivo.",
+    "removeAll": "Quitar para todas las máquinas",
     "removed": "Archivo fijado \"{{pin}}\" quitado.",
     "saved": "Archivo fijado \"{{pin}}\" guardado.",
     "deleteFile": {
       "title": "Quitar archivo fijado",
       "body": "¿Quitar \"{{pin}}\" para todas las máquinas? No borra el archivo, solo deja de sincronizarlo."
+    },
+    "removeProjectFile": {
+      "title": "Quitar de esta máquina",
+      "body": "¿Dejar de sincronizar \"{{name}}\" ({{project}}) en esta máquina? No borra el archivo. Las demás máquinas lo siguen sincronizando; cuando ninguna tenga una ruta para él, se quita del proyecto."
+    },
+    "nameLabel": "Nombre",
+    "namePlaceholder": "mi-archivo",
+    "nameRequired": "Dale un nombre al archivo fijado.",
+    "nameInvalid": "Nombre inválido. Usa solo letras, números, punto, guion y guion bajo.",
+    "nameTaken": "Ese nombre ya se usa aquí.",
+    "create": {
+      "titleGeneral": "Fijar un archivo en General",
+      "titleProject": "Agregar un archivo a {{project}}",
+      "hintGeneral": "Un archivo global, sincronizado fuera de cualquier proyecto (por ejemplo un CLAUDE.md específico).",
+      "hintProject": "Una fuente de un solo archivo de este proyecto. Sus fuentes de tipo carpeta se administran en Proyectos.",
+      "nameHint": "Se guarda en el repo como {{path}}",
+      "submit": "Fijar archivo"
     }
   },
   "activity": {

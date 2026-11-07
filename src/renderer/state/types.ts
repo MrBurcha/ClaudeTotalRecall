@@ -10,7 +10,18 @@ import type {
 import type { UpdateState } from '../../core/releaseCheck'
 
 /** Navigable sections of the steady-state (the wizard is a separate takeover). */
-export type Route = 'home' | 'projects' | 'notebook' | 'settings'
+export type Route = 'home' | 'projects' | 'pinned' | 'notebook' | 'settings'
+
+/**
+ * Something a screen should select when it opens, set by a navigation that wants
+ * to land on a specific item (e.g. the Projects overview jumping to one pinned
+ * file). Cleared by any plain navigation, so it only applies to the next mount.
+ */
+export interface RouteFocus {
+  route: Route
+  /** screen-specific key (for 'pinned': the file's repo logical path) */
+  target: string
+}
 export type Theme = 'dark' | 'light'
 export type ToastKind = 'ok' | 'err' | 'info'
 
@@ -76,6 +87,7 @@ export interface AppState {
   version: string | null
   // UI
   route: Route
+  focus: RouteFocus | null
   theme: Theme
   loading: boolean // before the first refresh → skeletons
   busy: boolean // global operation in progress → disables actions

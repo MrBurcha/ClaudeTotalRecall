@@ -21,6 +21,7 @@
   "nav": {
     "home": "Sync",
     "projects": "Projects",
+    "pinned": "Pinned files",
     "notebook": "Notebook",
     "settings": "Settings"
   },
@@ -186,6 +187,7 @@
     },
     "goHome": "Go to Sync",
     "goProjects": "Go to Projects",
+    "goPinned": "Go to Pinned files",
     "goNotebook": "Go to Notebook",
     "goMachines": "Go to Machines",
     "goSettings": "Go to Settings",
@@ -557,22 +559,53 @@
     }
   },
   "pinned": {
+    "eyebrow": "Configuration",
     "title": "Pinned files",
-    "sub": "Single files synced globally, outside any project (for example a specific CLAUDE.md).",
-    "registerFirst": "Register this machine first to pin files.",
-    "empty": "No pinned files yet.",
+    "sub": "Single files that sync on their own: global ones in General, plus each project's file sources. Folder sources stay in Projects.",
     "add": "Pin a file",
-    "nameLabel": "Name",
-    "namePlaceholder": "my-file",
-    "nameRequired": "Give the pinned file a name.",
+    "notConnected": "Connect your memory repo first",
+    "notConnectedHint": "Pinned files are part of your synced repo's configuration. Set it up in Settings.",
+    "pickTitle": "Select a file",
+    "pickHint": "Pick a file from the tree to see where it lives on each machine and preview its synced content.",
+    "registerFirst": "Register this machine first to pin files.",
+    "general": "General",
+    "addGeneral": "Pin a file to General",
+    "addToProject": "Add a file to this project",
+    "emptyGroup": "No files yet.",
     "noPathHere": "no path on this machine",
+    "notMapped": "not mapped",
+    "unregisteredMachine": "not registered",
     "editPath": "Edit path",
-    "remove": "Remove",
+    "setPath": "Set a path on this machine",
+    "pathOnThisMachine": "Path on this machine",
+    "pathSaved": "Saved the path of \"{{name}}\" on this machine.",
+    "repoLocation": "In the repo",
+    "machinePaths": "Path on each machine",
+    "content": "Synced content",
+    "notInRepo": "Not in the repo yet — it shows up after a machine that has this file syncs.",
+    "removeAll": "Remove for all machines",
     "removed": "Pinned file \"{{pin}}\" removed.",
     "saved": "Pinned file \"{{pin}}\" saved.",
     "deleteFile": {
       "title": "Remove pinned file",
       "body": "Remove \"{{pin}}\" for all machines? It doesn't delete the file, it just stops syncing it."
+    },
+    "removeProjectFile": {
+      "title": "Remove from this machine",
+      "body": "Stop syncing \"{{name}}\" ({{project}}) on this machine? It doesn't delete the file. Other machines keep syncing it; once no machine has a path for it, it's removed from the project."
+    },
+    "nameLabel": "Name",
+    "namePlaceholder": "my-file",
+    "nameRequired": "Give the pinned file a name.",
+    "nameInvalid": "Invalid name. Use only letters, numbers, dot, hyphen and underscore.",
+    "nameTaken": "That name is already used here.",
+    "create": {
+      "titleGeneral": "Pin a file to General",
+      "titleProject": "Add a file to {{project}}",
+      "hintGeneral": "A global file, synced outside any project (for example a specific CLAUDE.md).",
+      "hintProject": "A single-file source of this project. Its folder sources are managed in Projects.",
+      "nameHint": "Stored in the repo as {{path}}",
+      "submit": "Pin file"
     }
   },
   "activity": {

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { parseProperties } from './previewFormat'
+import { detectPreviewKind, parseProperties } from './previewFormat'
 
 /**
  * Links are shown but NOT navigable, and remote images are replaced by their alt
@@ -66,4 +66,18 @@ export function PropertiesView({ content }: { content: string }): JSX.Element {
 
 export function TextView({ content }: { content: string }): JSX.Element {
   return <pre className="preview-code">{content}</pre>
+}
+
+/** The read-only renderer for a file, picked by its name (same rules as #43). */
+export function PreviewByName({ name, content }: { name: string; content: string }): JSX.Element {
+  switch (detectPreviewKind(name)) {
+    case 'markdown':
+      return <MarkdownView content={content} />
+    case 'json':
+      return <JsonView content={content} />
+    case 'properties':
+      return <PropertiesView content={content} />
+    default:
+      return <TextView content={content} />
+  }
 }

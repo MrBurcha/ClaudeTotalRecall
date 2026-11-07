@@ -73,4 +73,15 @@ describe('reducer', () => {
     const op = { verb: 'outgoing', phase: 'executing' } as const
     expect(reducer(initialState, { t: 'activeOp', op }).activeOp).toEqual(op)
   })
+
+  it('navigate carries an optional focus that a plain navigation clears', () => {
+    const focused = reducer(initialState, {
+      t: 'navigate',
+      route: 'pinned',
+      focus: 'memories/pinned/notes.md',
+    })
+    expect(focused.route).toBe('pinned')
+    expect(focused.focus).toEqual({ route: 'pinned', target: 'memories/pinned/notes.md' })
+    expect(reducer(focused, { t: 'navigate', route: 'pinned' }).focus).toBeNull()
+  })
 })

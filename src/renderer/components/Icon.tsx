@@ -42,6 +42,7 @@ export type IconName =
   | 'folder-plus'
   | 'copy'
   | 'more-vertical'
+  | 'pin'
   | 'minimize'
   | 'maximize'
   | 'restore'
@@ -196,6 +197,13 @@ const ICONS: Record<IconName, ReactNode> = {
       <circle cx="12" cy="5" r="1.4" />
       <circle cx="12" cy="12" r="1.4" />
       <circle cx="12" cy="19" r="1.4" />
+    </>
+  ),
+  // Push pin: head, needle (pinned files, #113).
+  pin: (
+    <>
+      <path d="M9 3h6l-1 6.5 3 3V15H7v-2.5l3-3z" />
+      <path d="M12 15v6" />
     </>
   ),
   // Controls for the custom title bar.

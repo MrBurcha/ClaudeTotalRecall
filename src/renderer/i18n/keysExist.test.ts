@@ -99,6 +99,7 @@ describe('i18n static keys exist in the catalog', () => {
       'ghAuth.fixGhFirst',
     ])
       expect(has(`preflight.${k}`), `preflight.${k}`).toBe(true)
-    for (const k of ['home', 'projects', 'settings']) expect(has(`nav.${k}`), `nav.${k}`).toBe(true)
+    for (const k of ['home', 'projects', 'pinned', 'notebook', 'settings'])
+      expect(has(`nav.${k}`), `nav.${k}`).toBe(true)
   })
 })

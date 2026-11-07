@@ -101,6 +101,14 @@ export function buildCommands(state: AppState, actions: Actions, t: TFunction): 
       run: () => actions.navigate('projects'),
     },
     {
+      id: 'go-pinned',
+      title: t('palette.goPinned'),
+      icon: 'pin',
+      group: t('palette.group.navigate'),
+      keywords: ['pinned', 'pin', 'files', 'fijados', 'fijar', 'archivos'],
+      run: () => actions.navigate('pinned'),
+    },
+    {
       id: 'go-notebook',
       title: t('palette.goNotebook'),
       icon: 'book',

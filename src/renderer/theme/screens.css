@@ -1016,3 +1016,30 @@
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
 }
+
+/* ══ Pinned files (two-pane tree on the Notebook layout, #113) ════════════════ */
+.pinned-tree__entry {
+  padding-left: 22px;
+}
+.pinned-tree__empty {
+  padding-left: 34px;
+}
+.pinned-tree__count {
+  font-size: var(--text-xs);
+}
+.pinned-tree__missing {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent);
+}
+/* The group "+" stays faintly visible (not hover-only) so adding is discoverable. */
+.nb-menu__trigger.pinned-tree__add {
+  opacity: 0.55;
+}
+.pinned-detail__title {
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+.pinned-create {
+  max-width: 640px;
+}
