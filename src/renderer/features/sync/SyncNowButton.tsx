@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/Button'
-import { canSync, hasConflict } from '../../state/selectors'
+import { canSync, hasConflict, isBlocked } from '../../state/selectors'
 import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 
@@ -14,7 +14,7 @@ export function SyncNowButton(): JSX.Element {
   const state = useAppState()
   const actions = useActions()
   const syncing = state.syncEngine?.status === 'syncing'
-  const disabled = !canSync(state) || syncing || hasConflict(state)
+  const disabled = !canSync(state) || syncing || hasConflict(state) || isBlocked(state)
 
   return (
     <Button

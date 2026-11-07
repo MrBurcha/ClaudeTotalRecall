@@ -21,6 +21,7 @@ function statusLabel(state: ReturnType<typeof useAppState>, t: TFunction): strin
   if (hasConflict(state)) return t('home.status.conflict')
   const eng = state.syncEngine
   if (!eng) return t('home.status.loading')
+  if (eng.blockedBy) return t('home.status.blocked')
   if (eng.status === 'syncing') return t('home.status.syncing')
   if (eng.status === 'offline') return t('home.status.offline')
   if (eng.status === 'error') {
@@ -46,6 +47,9 @@ function statusMeta(state: ReturnType<typeof useAppState>, now: number, t: TFunc
   const eng = state.syncEngine
   if (hasConflict(state)) return t('home.meta.toResolve', { count: conflictFiles(state).length })
   if (!eng) return ''
+  if (eng.blockedBy) {
+    return eng.blockedBy.kind === 'cli' ? t('home.meta.blockedCli') : t('home.meta.blockedApp')
+  }
   if (eng.status === 'syncing') return t('home.meta.syncing')
   if (eng.status === 'offline') return t('home.meta.offline')
   if (eng.status === 'error') {

@@ -71,7 +71,8 @@
       "offline": "Sin conexión",
       "error": "Falló la sincronización",
       "noAccess": "Sin acceso al repo",
-      "upToDate": "Al día"
+      "upToDate": "Al día",
+      "blocked": "En pausa en esta ventana"
     },
     "meta": {
       "toResolve_one": "{{count}} archivo por resolver",
@@ -82,7 +83,9 @@
       "noAccess": "ninguna de tus cuentas de gh tiene acceso al repo de memoria",
       "lastChecked": "última verificación {{time}}",
       "autoOn": "automático activado",
-      "autoOff": "automático desactivado"
+      "autoOff": "automático desactivado",
+      "blockedApp": "otra copia de la app está sincronizando esta máquina; ciérrala y esta toma el control",
+      "blockedCli": "hay una sincronización por línea de comandos en curso; esta sigue cuando termine"
     },
     "errorDetails": {
       "show": "Ver detalle",
@@ -263,6 +266,9 @@
     },
     "sync": {
       "pendingConflict": "Resolvé los conflictos de sincronización pendientes antes de continuar."
+    },
+    "instance": {
+      "busy": "Otra copia de la app (o una sincronización por línea de comandos) está sincronizando esta máquina ahora. Esta podrá hacer cambios cuando se cierre."
     }
   },
   "preflight": {

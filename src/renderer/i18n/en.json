@@ -71,7 +71,8 @@
       "offline": "Offline",
       "error": "Sync failed",
       "noAccess": "No access to the repo",
-      "upToDate": "Up to date"
+      "upToDate": "Up to date",
+      "blocked": "Paused on this window"
     },
     "meta": {
       "toResolve_one": "{{count}} file to resolve",
@@ -82,7 +83,9 @@
       "noAccess": "none of your gh accounts can reach the memories repo",
       "lastChecked": "last checked {{time}}",
       "autoOn": "automatic on",
-      "autoOff": "automatic off"
+      "autoOff": "automatic off",
+      "blockedApp": "another copy of the app is syncing this machine; close it and this one takes over",
+      "blockedCli": "a command-line sync is running; this one resumes when it finishes"
     },
     "errorDetails": {
       "show": "Show details",
@@ -263,6 +266,9 @@
     },
     "sync": {
       "pendingConflict": "Resolve the pending sync conflicts before continuing."
+    },
+    "instance": {
+      "busy": "Another copy of the app (or a command-line sync) is syncing this machine right now. This one can make changes once it closes."
     }
   },
   "preflight": {

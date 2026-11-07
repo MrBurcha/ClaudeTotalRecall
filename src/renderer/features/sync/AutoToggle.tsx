@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { canSync } from '../../state/selectors'
+import { canSync, isBlocked } from '../../state/selectors'
 import { useAppState } from '../../state/store'
 import { useActions } from '../../state/useActions'
 
@@ -14,7 +14,7 @@ export function AutoToggle(): JSX.Element {
   const actions = useActions()
   const eng = state.syncEngine
   const auto = eng?.auto ?? true
-  const disabled = !eng || !canSync(state)
+  const disabled = !eng || !canSync(state) || isBlocked(state)
 
   return (
     <label className={`switch${disabled ? ' switch--disabled' : ''}`}>

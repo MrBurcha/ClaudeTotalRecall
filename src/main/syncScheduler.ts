@@ -68,9 +68,12 @@ export class SyncScheduler {
     conflicts: [],
     lastError: null,
     errorKind: null,
+    blockedBy: null,
   }
 
   private ready = false
+  /** Another process owns this machine's sync lock (#141): never cycle or arm. */
+  private blocked = false
   private inFlight = false
   private pending = false
   private armed = false
@@ -82,6 +85,17 @@ export class SyncScheduler {
 
   getState(): SyncEngineState {
     return this.state
+  }
+
+  /**
+   * Called by the instance guard: a holder means another process syncs this machine,
+   * so this copy stands down (timers off, no cycles); null hands control back.
+   */
+  setBlocked(blockedBy: SyncEngineState['blockedBy']): void {
+    this.blocked = blockedBy !== null
+    if (this.blocked) this.disarm()
+    const prev = this.state.blockedBy
+    if (prev?.pid !== blockedBy?.pid || prev?.kind !== blockedBy?.kind) this.setState({ blockedBy })
   }
 
   /** true if the engine is paused waiting for a conflict resolution. */
@@ -145,7 +159,7 @@ export class SyncScheduler {
 
   // ── cycle (mutex + pending) ──────────────────────────────────────────────────
   private async cycle(): Promise<void> {
-    if (this.pausedByConflict) return
+    if (this.pausedByConflict || this.blocked) return
     if (this.inFlight) {
       this.pending = true
       return
@@ -213,7 +227,8 @@ export class SyncScheduler {
 
   // ── arming/disarming watch + poll ────────────────────────────────────────────
   private reconcileTimers(): void {
-    const shouldRun = this.ready && this.state.auto && this.state.status !== 'conflict'
+    const shouldRun =
+      this.ready && this.state.auto && this.state.status !== 'conflict' && !this.blocked
     if (shouldRun) this.arm()
     else this.disarm()
   }

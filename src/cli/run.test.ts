@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../platform', () => ({ createPlatformAdapter: () => ({}) }))
 vi.mock('../core/preflight', () => ({ runPreflight: vi.fn() }))
+const lockHandle = { startHeartbeat: vi.fn(), release: vi.fn(async () => {}), releaseSync: vi.fn() }
+vi.mock('../core/instanceLock', () => ({
+  acquireInstanceLock: vi.fn(async () => ({ acquired: true, lock: lockHandle })),
+}))
 vi.mock('../core/service', () => ({
   buildVerbPlan: vi.fn(),
   connectRepo: vi.fn(),
@@ -12,7 +16,8 @@ vi.mock('../core/service', () => ({
   syncIncoming: vi.fn(),
 }))
 
-import { flagValue, hasFlag, main } from './run'
+import { flagValue, hasFlag, lockedMessage, main } from './run'
+import { acquireInstanceLock } from '../core/instanceLock'
 import { runPreflight } from '../core/preflight'
 import { buildVerbPlan, connectRepo, pullRepo, syncOutgoing } from '../core/service'
 
@@ -114,5 +119,56 @@ describe('CLI sync (outgoing / incoming)', () => {
     expect(await main(['incoming'])).toBe(1)
     expect(output).toContain('Conflicts while pulling')
     expect(vi.mocked(buildVerbPlan)).not.toHaveBeenCalled()
+  })
+})
+
+describe('CLI machine lock (#141)', () => {
+  const mutatingPlan = {
+    verb: 'outgoing',
+    actions: [{ type: 'create', logicalPath: 'memories/user/CLAUDE.md' }],
+  }
+
+  it('refuses a mutating command while the app holds the lock, touching nothing', async () => {
+    vi.mocked(acquireInstanceLock).mockResolvedValueOnce({
+      acquired: false,
+      holder: { pid: 4242, kind: 'app', startedAt: 0, heartbeatAt: 0, token: 'x' },
+    })
+    expect(await main(['outgoing', '--yes'])).toBe(1)
+    expect(output).toContain('The app is open on this machine')
+    expect(output).toContain('pid 4242')
+    expect(vi.mocked(buildVerbPlan)).not.toHaveBeenCalled()
+    expect(vi.mocked(syncOutgoing)).not.toHaveBeenCalled()
+  })
+
+  it('releases the lock after a successful command', async () => {
+    vi.mocked(buildVerbPlan).mockResolvedValueOnce(mutatingPlan as any)
+    vi.mocked(syncOutgoing).mockResolvedValueOnce({
+      exec: { applied: 1, created: 1, overwritten: 0, deleted: 0 },
+      conflicts: [],
+      pushed: true,
+      committed: true,
+    } as any)
+    expect(await main(['outgoing', '--yes'])).toBe(0)
+    expect(lockHandle.startHeartbeat).toHaveBeenCalled()
+    expect(lockHandle.release).toHaveBeenCalled()
+  })
+
+  it('releases the lock even when the command throws', async () => {
+    vi.mocked(buildVerbPlan).mockRejectedValueOnce(new Error('boom'))
+    await expect(main(['outgoing', '--yes'])).rejects.toThrow('boom')
+    expect(lockHandle.release).toHaveBeenCalled()
+  })
+
+  it('a --dry-run never takes the lock (it works while the app is open)', async () => {
+    vi.mocked(buildVerbPlan).mockResolvedValueOnce(mutatingPlan as any)
+    expect(await main(['incoming', '--dry-run'])).toBe(0)
+    expect(vi.mocked(acquireInstanceLock)).not.toHaveBeenCalled()
+  })
+
+  it('explains another running command differently from the app', () => {
+    expect(
+      lockedMessage({ pid: 7, kind: 'cli', startedAt: 0, heartbeatAt: 0, token: 'y' }),
+    ).toContain('Another claude-total-recall command')
+    expect(lockedMessage(null)).toContain('The app is open')
   })
 })
