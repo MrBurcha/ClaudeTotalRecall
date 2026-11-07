@@ -102,25 +102,6 @@
   margin-top: 2px;
 }
 
-/* Pinned "update available" notice (#66): sits between the brand and the nav
-   items, compact rather than full `.card` padding — the sidebar is only 236px. */
-.sidebar__update-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin: 0 var(--space-2) var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--accent-weak);
-  border: 1px solid var(--accent-line);
-  color: var(--text);
-  font-size: var(--text-xs);
-}
-.sidebar__update-banner .icon {
-  color: var(--accent);
-}
-
 .nav {
   display: flex;
   flex-direction: column;
@@ -163,6 +144,47 @@
   gap: var(--space-3);
   padding-top: var(--space-3);
   border-top: 1px solid var(--border);
+}
+/* Footer notice (#122): a newer release (#66, #134) or the wrong build for this
+   Mac (#133), grouped with the app's meta-info between the machine row and the
+   version line. Compact rather than full `.card` padding, and stacked (message
+   over action) because the footer is only ~212px wide. */
+.sidebar__notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--accent-weak);
+  border: 1px solid var(--accent-line);
+  color: var(--text);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+}
+.sidebar__notice-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.sidebar__notice-msg .icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+/* Lines the action's label up with the message text: 14px icon + gap, minus the
+   button's own 10px padding + 1px border. Long labels wrap instead of overflowing. */
+.sidebar__notice .btn {
+  margin-left: calc(14px + var(--space-2) - 11px);
+  white-space: normal;
+  text-align: left;
+}
+.sidebar__notice--warn {
+  background: var(--warn-weak);
+  border-color: color-mix(in srgb, var(--warn) 42%, transparent);
+}
+.sidebar__notice--warn .sidebar__notice-msg .icon {
+  color: var(--warn);
 }
 .sidebar__version {
   font-family: var(--font-mono);

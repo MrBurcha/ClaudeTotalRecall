@@ -1,6 +1,7 @@
 import { useMemo, useRef, type Dispatch } from 'react'
 import { api, normalizeError } from './api'
 import type { Action } from './reducer'
+import { sidebarNotice } from './selectors'
 import { useAppState, useDispatch } from './store'
 import type { AppState, ModalDescriptor, Route, Theme } from './types'
 import type { Verb } from '../../core/types'
@@ -206,11 +207,15 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     }
   }
 
-  // ── Update check (#66) ──────────────────────────────────────────────────────
-  /** Opens the releases page in the OS default browser; never downloads/installs anything itself. */
-  const openUpdateReleasePage = (): void => {
-    const update = stateRef.current.updateAvailable
-    if (update) void api.openReleasePage(update.releasesUrl)
+  // ── Update check (#66, #134) / wrong build (#133) ───────────────────────────
+  /**
+   * Opens the sidebar notice's link (this machine's installer, or the releases
+   * page) in the OS default browser; never downloads/installs anything itself.
+   */
+  const openReleaseNotice = (): void => {
+    const notice = sidebarNotice(stateRef.current)
+    if (!notice) return
+    api.openReleasePage(notice.url).catch((e: unknown) => notify(normalizeError(e), 'err'))
   }
 
   return {
@@ -237,7 +242,7 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
     syncNow,
     setAutoSync,
     setSyncInterval,
-    openUpdateReleasePage,
+    openReleaseNotice,
   }
 }
 

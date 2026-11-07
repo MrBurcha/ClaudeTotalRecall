@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { canSync, conflicts, needsOnboarding, onboardingStep } from './selectors'
+import { canSync, conflicts, needsOnboarding, onboardingStep, sidebarNotice } from './selectors'
 import type { Config, PreflightResult, RepoStatus } from '../../core/types'
+import type { InstallerLink, UpdateInfo } from '../../core/releaseCheck'
 
 const okPreflight: PreflightResult = { ok: true, checks: [] }
 const badPreflight: PreflightResult = { ok: false, checks: [] }
@@ -74,5 +75,59 @@ describe('conflicts', () => {
     }
     expect(conflicts({ status })).toEqual(['a.md', 'b.md'])
     expect(conflicts({ status: null })).toEqual([])
+  })
+})
+
+describe('sidebarNotice', () => {
+  const PAGE = 'https://github.com/MrBurcha/ClaudeTotalRecall/releases'
+  const currentArm: InstallerLink = {
+    url: `${PAGE}/download/v0.14.0/x-macos-arm64.dmg`,
+    variant: 'macos-arm64',
+  }
+  const latestArm: UpdateInfo = {
+    latestVersion: 'v0.15.0',
+    url: `${PAGE}/download/v0.15.0/x-macos-arm64.dmg`,
+    variant: 'macos-arm64',
+  }
+
+  it('shows nothing when up to date on the right build', () => {
+    expect(sidebarNotice({ updates: { update: null, wrongBuild: null } })).toBeNull()
+  })
+
+  it('shows the update with its installer link', () => {
+    expect(sidebarNotice({ updates: { update: latestArm, wrongBuild: null } })).toEqual({
+      kind: 'update',
+      ...latestArm,
+    })
+  })
+
+  it('shows the wrong-build notice linked to the current version', () => {
+    expect(sidebarNotice({ updates: { update: null, wrongBuild: currentArm } })).toEqual({
+      kind: 'wrongBuild',
+      ...currentArm,
+    })
+  })
+
+  it('folds an available update into the wrong-build notice, linking the newer installer', () => {
+    expect(sidebarNotice({ updates: { update: latestArm, wrongBuild: currentArm } })).toEqual({
+      kind: 'wrongBuild',
+      url: latestArm.url,
+      variant: 'macos-arm64',
+      latestVersion: 'v0.15.0',
+    })
+  })
+
+  it('keeps the exact current installer when the newer release has none', () => {
+    const latestPage: UpdateInfo = { latestVersion: 'v0.15.0', url: PAGE, variant: null }
+    expect(sidebarNotice({ updates: { update: latestPage, wrongBuild: currentArm } })).toEqual({
+      kind: 'wrongBuild',
+      ...currentArm,
+      latestVersion: 'v0.15.0',
+    })
+    // Neither has one: the newer release's page.
+    const currentPage: InstallerLink = { url: PAGE, variant: null }
+    expect(
+      sidebarNotice({ updates: { update: latestPage, wrongBuild: currentPage } }),
+    ).toMatchObject({ kind: 'wrongBuild', url: PAGE, variant: null })
   })
 })

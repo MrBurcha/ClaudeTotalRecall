@@ -31,6 +31,18 @@
     "updateBanner": {
       "message": "New version {{version}} available",
       "action": "Update"
+    },
+    "wrongBuild": {
+      "message": "You're running the Intel build on an Apple Silicon Mac.",
+      "messageWithUpdate": "You're running the Intel build on an Apple Silicon Mac. Version {{version}} is available.",
+      "action": "Get the Apple Silicon version"
+    },
+    "download": {
+      "appleSilicon": "Download for Apple Silicon",
+      "intel": "Download for Intel",
+      "windows": "Download for Windows",
+      "windowsPortable": "Download portable version",
+      "appImage": "Download AppImage"
     }
   },
   "interval": {
@@ -269,22 +281,31 @@
     },
     "instance": {
       "busy": "Another copy of the app (or a command-line sync) is syncing this machine right now. This one can make changes once it closes."
+    },
+    "update": {
+      "invalidUrl": "Refusing to open a URL outside the app releases."
     }
   },
   "preflight": {
     "git": {
       "missing": "git not found in PATH",
-      "install": "Install git"
+      "install": "Install git",
+      "cannotRun": "git was found at {{path}} but cannot run: {{error}}",
+      "fixCannotRun": "Check that \"git --version\" works in a terminal, and reinstall git if it doesn't"
     },
     "gh": {
       "missing": "gh (GitHub CLI) not found",
-      "install": "Install gh from https://cli.github.com"
+      "install": "Install gh from https://cli.github.com",
+      "cannotRun": "gh was found at {{path}} but cannot run: {{error}}",
+      "fixCannotRun": "Check that \"gh --version\" works in a terminal, and reinstall gh if it doesn't"
     },
     "ghAuth": {
       "ok": "gh authenticated",
       "fix": "Run: gh auth login && gh auth setup-git",
       "noGh": "gh is not installed, cannot verify auth",
-      "installFirst": "Install gh first"
+      "installFirst": "Install gh first",
+      "ghCannotRun": "gh cannot run, cannot verify auth",
+      "fixGhFirst": "Fix gh first"
     }
   },
   "planReason": {

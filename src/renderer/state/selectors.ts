@@ -1,3 +1,4 @@
+import type { InstallerVariant } from '../../core/releaseCheck'
 import type { AppState } from './types'
 
 /**
@@ -67,4 +68,31 @@ export function onboardingStep(
 export function needsOnboarding(s: Pick<AppState, 'preflight' | 'config' | 'machineId'>): boolean {
   const step = onboardingStep(s)
   return step === 'preflight' || step === 'connect' || step === 'register'
+}
+
+/**
+ * The one notice in the sidebar footer (#122): the wrong build for this Mac (#133)
+ * or a newer release (#134). When both apply, a single wrong-build notice links
+ * the newer release's installer (main resolves it for the real chip, so it is the
+ * Apple Silicon one): updating and switching builds in one download. It keeps the
+ * current version's link only if the newer release has no exact installer.
+ */
+export type SidebarNotice =
+  | { kind: 'wrongBuild'; url: string; variant: InstallerVariant | null; latestVersion?: string }
+  | { kind: 'update'; url: string; variant: InstallerVariant | null; latestVersion: string }
+
+export function sidebarNotice(s: Pick<AppState, 'updates'>): SidebarNotice | null {
+  const { update, wrongBuild } = s.updates
+  if (wrongBuild) {
+    if (!update) return { kind: 'wrongBuild', url: wrongBuild.url, variant: wrongBuild.variant }
+    const link = update.variant !== null || wrongBuild.variant === null ? update : wrongBuild
+    return {
+      kind: 'wrongBuild',
+      url: link.url,
+      variant: link.variant,
+      latestVersion: update.latestVersion,
+    }
+  }
+  if (update) return { kind: 'update', ...update }
+  return null
 }

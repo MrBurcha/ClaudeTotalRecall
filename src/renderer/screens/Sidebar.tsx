@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { StatusDot } from '../components/Badge'
 import { BrandMark } from '../components/BrandMark'
@@ -5,7 +6,7 @@ import { Button } from '../components/Button'
 import { Icon, type IconName } from '../components/Icon'
 import { IconButton } from '../components/IconButton'
 import { Kbd } from '../components/Kbd'
-import { conflictFiles } from '../state/selectors'
+import { conflictFiles, sidebarNotice, type SidebarNotice } from '../state/selectors'
 import { useAppState } from '../state/store'
 import { useActions } from '../state/useActions'
 import type { Route } from '../state/types'
@@ -17,11 +18,41 @@ const NAV: { route: Route; labelKey: string; icon: IconName }[] = [
   { route: 'settings', labelKey: 'nav.settings', icon: 'sliders' },
 ]
 
+function noticeMessage(notice: SidebarNotice, t: TFunction): string {
+  if (notice.kind === 'update') {
+    return t('sidebar.updateBanner.message', { version: notice.latestVersion })
+  }
+  return notice.latestVersion
+    ? t('sidebar.wrongBuild.messageWithUpdate', { version: notice.latestVersion })
+    : t('sidebar.wrongBuild.message')
+}
+
+/** Names the exact installer the link points to (#134); generic when it's the releases page. */
+function noticeAction(notice: SidebarNotice, t: TFunction): string {
+  switch (notice.variant) {
+    case 'macos-arm64':
+      return t('sidebar.download.appleSilicon')
+    case 'macos-x64':
+      return t('sidebar.download.intel')
+    case 'windows-setup':
+      return t('sidebar.download.windows')
+    case 'windows-portable':
+      return t('sidebar.download.windowsPortable')
+    case 'linux-appimage':
+      return t('sidebar.download.appImage')
+    default:
+      return notice.kind === 'wrongBuild'
+        ? t('sidebar.wrongBuild.action')
+        : t('sidebar.updateBanner.action')
+  }
+}
+
 export function Sidebar(): JSX.Element {
   const { t } = useTranslation()
   const state = useAppState()
   const actions = useActions()
   const nConflicts = conflictFiles(state).length
+  const notice = sidebarNotice(state)
 
   return (
     <nav className="sidebar">
@@ -31,18 +62,6 @@ export function Sidebar(): JSX.Element {
           <div className="brand__name">Claude Total Recall</div>
         </div>
       </div>
-
-      {state.updateAvailable && (
-        <div className="sidebar__update-banner">
-          <span className="cluster">
-            <Icon name="info" size={14} />
-            {t('sidebar.updateBanner.message', { version: state.updateAvailable.latestVersion })}
-          </span>
-          <Button variant="ghost" size="sm" onClick={actions.openUpdateReleasePage}>
-            {t('sidebar.updateBanner.action')}
-          </Button>
-        </div>
-      )}
 
       <div className="nav">
         {NAV.map((n) => (
@@ -81,6 +100,20 @@ export function Sidebar(): JSX.Element {
             onClick={actions.toggleTheme}
           />
         </div>
+        {notice && (
+          <div
+            className={`sidebar__notice${notice.kind === 'wrongBuild' ? ' sidebar__notice--warn' : ''}`}
+            role="status"
+          >
+            <span className="sidebar__notice-msg">
+              <Icon name={notice.kind === 'wrongBuild' ? 'alert' : 'info'} size={14} />
+              <span>{noticeMessage(notice, t)}</span>
+            </span>
+            <Button variant="ghost" size="sm" onClick={actions.openReleaseNotice}>
+              {noticeAction(notice, t)}
+            </Button>
+          </div>
+        )}
         <button className="sidebar__version" onClick={() => actions.openModal({ kind: 'about' })}>
           Claude Total Recall v{state.version ?? '—'}
         </button>

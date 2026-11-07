@@ -28,7 +28,7 @@ export type Action =
   | { t: 'syncState'; state: SyncEngineState }
   | { t: 'status'; status: RepoStatus | null }
   | { t: 'config'; config: Config | null }
-  | { t: 'updateAvailable'; state: UpdateState }
+  | { t: 'updateState'; state: UpdateState }
 
 export const initialState: AppState = {
   config: null,
@@ -46,7 +46,7 @@ export const initialState: AppState = {
   palette: { open: false, query: '', index: 0 },
   wizardOpen: false,
   syncEngine: null,
-  updateAvailable: null,
+  updates: { update: null, wrongBuild: null },
 }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -81,8 +81,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, status: action.status }
     case 'config':
       return { ...state, config: action.config }
-    case 'updateAvailable':
-      return { ...state, updateAvailable: action.state }
+    case 'updateState':
+      return { ...state, updates: action.state }
     default:
       return state
   }

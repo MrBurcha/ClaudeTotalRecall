@@ -15,6 +15,7 @@ import { folderContainsMemoryIndex } from '../core/memoryScan'
 import * as notebook from '../core/notebook'
 import { PlanDriftError } from '../core/plan'
 import { runPreflight } from '../core/preflight'
+import { isRepoReleaseUrl } from '../core/releaseCheck'
 import * as svc from '../core/service'
 import type { AutoSyncPrefs, Plan, Verb } from '../core/types'
 import type { SyncScheduler } from './syncScheduler'
@@ -113,9 +114,15 @@ export function registerIpc(
 
   // Update check (real-time state via webContents.send('update:state'), #66).
   // openReleasePage just hands the URL to the OS default browser — no update is
-  // downloaded or installed by the app itself.
+  // downloaded or installed by the app itself. It now also opens an installer asset
+  // (#134), so only https URLs inside this repo's GitHub releases are accepted.
   handle('update:getState', () => updateScheduler.getState())
-  handle('update:openReleasePage', (_e, url: string) => shell.openExternal(url))
+  handle('update:openReleasePage', (_e, url: string) => {
+    if (typeof url !== 'string' || !isRepoReleaseUrl(url)) {
+      throw new AppError('update.invalidUrl', 'Refusing to open a URL outside the app releases.')
+    }
+    return shell.openExternal(url)
+  })
 
   // Config / repo
   handle('config:load', () => svc.loadRepoConfig(adapter()).catch(() => null))

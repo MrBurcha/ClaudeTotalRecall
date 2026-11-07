@@ -87,6 +87,6 @@ export interface AppState {
   wizardOpen: boolean // wizard takeover forced on-demand
   // auto-sync engine (pushed by main; null until the first getState)
   syncEngine: SyncEngineState | null
-  // update check (#66): pushed by main on open + every 24h; null = up to date (or unknown yet)
-  updateAvailable: UpdateState
+  // update check (#66, #134) + wrong-build notice (#133): pushed by main on open + every 24h
+  updates: UpdateState
 }

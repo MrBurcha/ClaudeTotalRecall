@@ -83,12 +83,12 @@ export function AppStateProvider({ children }: { children: ReactNode }): JSX.Ele
     void api
       .updateGetState()
       .then((s) => {
-        if (alive) dispatch({ t: 'updateAvailable', state: s })
+        if (alive) dispatch({ t: 'updateState', state: s })
       })
       .catch(() => {
         /* not ready yet; the push will arrive when the first check completes */
       })
-    const off = api.onUpdateState((s) => dispatch({ t: 'updateAvailable', state: s }))
+    const off = api.onUpdateState((s) => dispatch({ t: 'updateState', state: s }))
     return () => {
       alive = false
       off()

@@ -31,6 +31,18 @@
     "updateBanner": {
       "message": "Nueva versión {{version}} disponible",
       "action": "Actualizar"
+    },
+    "wrongBuild": {
+      "message": "Estás usando la versión para Intel en una Mac con Apple Silicon.",
+      "messageWithUpdate": "Estás usando la versión para Intel en una Mac con Apple Silicon. Ya está disponible la versión {{version}}.",
+      "action": "Obtener la versión para Apple Silicon"
+    },
+    "download": {
+      "appleSilicon": "Descargar para Apple Silicon",
+      "intel": "Descargar para Intel",
+      "windows": "Descargar para Windows",
+      "windowsPortable": "Descargar versión portable",
+      "appImage": "Descargar AppImage"
     }
   },
   "interval": {
@@ -269,22 +281,31 @@
     },
     "instance": {
       "busy": "Otra copia de la app (o una sincronización por línea de comandos) está sincronizando esta máquina ahora. Esta podrá hacer cambios cuando se cierre."
+    },
+    "update": {
+      "invalidUrl": "No se puede abrir una URL fuera de las versiones publicadas de la app."
     }
   },
   "preflight": {
     "git": {
       "missing": "git no se encontró en el PATH",
-      "install": "Instala git"
+      "install": "Instala git",
+      "cannotRun": "git está en {{path}} pero no se puede ejecutar: {{error}}",
+      "fixCannotRun": "Verifica que \"git --version\" funcione en una terminal y, si no, reinstala git"
     },
     "gh": {
       "missing": "gh (GitHub CLI) no se encontró",
-      "install": "Instala gh desde https://cli.github.com"
+      "install": "Instala gh desde https://cli.github.com",
+      "cannotRun": "gh está en {{path}} pero no se puede ejecutar: {{error}}",
+      "fixCannotRun": "Verifica que \"gh --version\" funcione en una terminal y, si no, reinstala gh"
     },
     "ghAuth": {
       "ok": "gh autenticado",
       "fix": "Ejecuta: gh auth login && gh auth setup-git",
       "noGh": "gh no está instalado, no se puede verificar la autenticación",
-      "installFirst": "Instala gh primero"
+      "installFirst": "Instala gh primero",
+      "ghCannotRun": "gh no se puede ejecutar, no se puede verificar la autenticación",
+      "fixGhFirst": "Primero soluciona gh"
     }
   },
   "planReason": {
