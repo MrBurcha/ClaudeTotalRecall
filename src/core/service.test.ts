@@ -721,3 +721,49 @@ describe('bulk scan (multi-project, one commit)', () => {
     expect(one.proposal.slots.map((s) => s.slot)).toEqual(['memory'])
   })
 })
+
+describe('shared config file during the Engram rename (#123)', () => {
+  it('a new repo uses engram.json', async () => {
+    const { CONFIG_FILE, sharedConfigInfo } = await import('./service')
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a = adapterFor(join(base, 'home1'))
+    await connectRepo(remote, a)
+    expect(await exists(join(a.configHome(), 'repo', CONFIG_FILE))).toBe(true)
+    expect((await sharedConfigInfo(a)).file).toBe('engram.json')
+  })
+
+  it('a claudetr.json repo is read AND written in place, migrated explicitly, adopted elsewhere', async () => {
+    const svc = await import('./service')
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    // Seed a repo the way an older version left it: claudetr.json only.
+    const a1 = adapterFor(join(base, 'home1'))
+    await connectRepo(remote, a1)
+    const g1 = new Git(join(a1.configHome(), 'repo'))
+    await g1.out(['mv', 'engram.json', 'claudetr.json'])
+    await g1.commit('Claude Total Recall: legacy layout')
+    await g1.push()
+    await svc.registerMachine(a1, 'm1')
+    const dir1 = join(a1.configHome(), 'repo')
+    expect(await exists(join(dir1, 'engram.json'))).toBe(false) // no silent rename
+    expect(await svc.sharedConfigInfo(a1)).toEqual({ file: 'claudetr.json', machines: ['m1'] })
+
+    // Another machine joins: it keeps writing claudetr.json too.
+    const a2 = adapterFor(join(base, 'home2'))
+    await connectRepo(remote, a2)
+    await svc.registerMachine(a2, 'm2')
+    await svc.createProject(a2, 'alpha')
+    const dir2 = join(a2.configHome(), 'repo')
+    expect(await exists(join(dir2, 'engram.json'))).toBe(false)
+    expect(Object.keys((await svc.loadRepoConfig(a2)).machines).sort()).toEqual(['m1', 'm2'])
+
+    // m1 migrates; m2's next config edit adopts engram.json after its reset.
+    expect(await svc.migrateSharedConfig(a1)).toEqual({ migrated: true })
+    expect(await svc.migrateSharedConfig(a1)).toEqual({ migrated: false })
+    await svc.createProject(a2, 'beta')
+    expect(await exists(join(dir2, 'engram.json'))).toBe(true)
+    expect(await exists(join(dir2, 'claudetr.json'))).toBe(false)
+    expect(Object.keys((await svc.loadRepoConfig(a2)).projects).sort()).toEqual(['alpha', 'beta'])
+  })
+})

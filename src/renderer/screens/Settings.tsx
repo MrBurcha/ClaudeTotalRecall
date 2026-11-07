@@ -4,6 +4,7 @@ import { StatusDot } from '../components/Badge'
 import { Button } from '../components/Button'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { MachinesCard } from '../features/machines/MachinesCard'
+import { SharedConfigRow } from '../features/settings/SharedConfigRow'
 import { AutoToggle } from '../features/sync/AutoToggle'
 import type { Locale } from '../i18n'
 import { api } from '../state/api'
@@ -94,7 +95,10 @@ export function Settings(): JSX.Element {
         </div>
         <p className="muted">{t('settings.repoSub')}</p>
         {config ? (
-          <p className="mono muted truncate">{config.repo.remote}</p>
+          <>
+            <p className="mono muted truncate">{config.repo.remote}</p>
+            <SharedConfigRow />
+          </>
         ) : (
           <div className="row row-nowrap">
             <input

@@ -37,6 +37,7 @@ import {
   type ExecResult,
   type SyncContext,
 } from './plan'
+import { COMMIT_PREFIX } from './history'
 import { withRepoLock } from './repoLock'
 import { machinePathForLogical, machineSyncedPaths, pathsCollide } from './resolve'
 import {
@@ -81,8 +82,31 @@ export function repoGit(adapter: PlatformAdapter): Git {
 export function workingCopyDir(adapter: PlatformAdapter): string {
   return join(adapter.configHome(), 'repo')
 }
+/** The shared config file, in the memories repo. */
+export const CONFIG_FILE = 'engram.json'
+/** Its name before the Engram rename (#123); still read and written until migrated. */
+export const LEGACY_CONFIG_FILE = 'claudetr.json'
+
+/** Where a NEW repo keeps its shared config (initStructure); see resolveConfigPath. */
 export function configPath(adapter: PlatformAdapter): string {
-  return join(workingCopyDir(adapter), 'claudetr.json')
+  return join(workingCopyDir(adapter), CONFIG_FILE)
+}
+
+/**
+ * The shared config file this repo actually uses, for reads AND writes:
+ * engram.json if present, else claudetr.json if present, else engram.json.
+ * A mixed fleet keeps using claudetr.json consistently (older versions only read
+ * that) until someone runs the explicit migration once the whole fleet is on Engram
+ * (migrateSharedConfig). Never renamed automatically: that would break every
+ * machine still on an older version at once. Resolve it AFTER any reset, so a
+ * migration pushed by another machine is adopted on the next attempt.
+ */
+export async function resolveConfigPath(adapter: PlatformAdapter): Promise<string> {
+  const next = configPath(adapter)
+  if (await pathExists(next)) return next
+  const legacy = join(workingCopyDir(adapter), LEGACY_CONFIG_FILE)
+  if (await pathExists(legacy)) return legacy
+  return next
 }
 
 async function pathExists(p: string): Promise<boolean> {
@@ -94,16 +118,16 @@ async function pathExists(p: string): Promise<boolean> {
   }
 }
 
-export function loadRepoConfig(adapter: PlatformAdapter): Promise<Config> {
-  return loadConfig(configPath(adapter))
+export async function loadRepoConfig(adapter: PlatformAdapter): Promise<Config> {
+  return loadConfig(await resolveConfigPath(adapter))
 }
 
 /** Ensures a local commit identity if the user has no global one. */
 async function ensureIdentity(git: Git): Promise<void> {
   const email = await git.raw(['config', 'user.email'])
   if (email.code !== 0 || !email.stdout.trim()) {
-    await git.config('user.email', 'claude-total-recall@localhost')
-    await git.config('user.name', 'Claude Total Recall')
+    await git.config('user.email', 'engram@localhost')
+    await git.config('user.name', 'Engram')
   }
 }
 
@@ -113,7 +137,7 @@ export interface ConnectResult {
 }
 
 async function initStructure(dir: string, remote: string): Promise<void> {
-  await saveConfig(join(dir, 'claudetr.json'), emptyConfig(remote))
+  await saveConfig(join(dir, CONFIG_FILE), emptyConfig(remote))
   const dirs = [
     'memories/user/commands',
     'memories/user/agents',
@@ -195,10 +219,10 @@ export async function connectRepo(
   }
   await ensureIdentity(git)
 
-  if (!(await pathExists(configPath(adapter)))) {
+  if (!(await pathExists(await resolveConfigPath(adapter)))) {
     await initStructure(dir, remote)
     await git.add()
-    await git.commit('Claude Total Recall: initial structure')
+    await git.commit(`${COMMIT_PREFIX}initial structure`)
     await git.push(['-u', 'origin', 'HEAD'])
     return { initialized: true }
   }
@@ -209,7 +233,7 @@ export async function connectRepo(
   if (!(await pathExists(join(dir, '.gitattributes')))) {
     await ensureGitAttributes(dir)
     await git.add()
-    await git.commit('Claude Total Recall: add .gitattributes (verbatim EOL)')
+    await git.commit(`${COMMIT_PREFIX}add .gitattributes (verbatim EOL)`)
     try {
       await pushPendingCommits(git)
     } catch {
@@ -261,9 +285,9 @@ async function registerMachineLocked(
       break
     }
     config.machines[machineId] = machine
-    await saveConfig(configPath(adapter), config)
+    await saveConfig(await resolveConfigPath(adapter), config)
     await git.add()
-    await git.commit(`Claude Total Recall: register machine ${machineId}`)
+    await git.commit(`${COMMIT_PREFIX}register machine ${machineId}`)
     const push = await git.push()
     if (push.ok) break
     if (!push.rejected) {
@@ -347,7 +371,7 @@ async function commitConfigChangeLocked(
     await git.resetHard(`origin/${await git.currentBranch()}`)
     const config = await loadRepoConfig(adapter)
     await mutate(config)
-    await saveConfig(configPath(adapter), config)
+    await saveConfig(await resolveConfigPath(adapter), config)
     await git.add()
     const c = await git.commit(message)
     if (!c.committed) return
@@ -360,6 +384,54 @@ async function commitConfigChangeLocked(
       throw new AppError('push.retriesExhausted', 'Could not save after several retries.')
     }
   }
+}
+
+// ── shared config rename (#123): claudetr.json → engram.json, explicit, once ──
+export interface SharedConfigInfo {
+  /** the file this repo uses today */
+  file: typeof CONFIG_FILE | typeof LEGACY_CONFIG_FILE
+  /** machines in the fleet — every one must run Engram before migrating */
+  machines: string[]
+}
+
+/** Which shared config file the working copy uses, plus the fleet it affects. */
+export async function sharedConfigInfo(adapter: PlatformAdapter): Promise<SharedConfigInfo> {
+  const path = await resolveConfigPath(adapter)
+  const config = await loadConfig(path)
+  const file = path.endsWith(LEGACY_CONFIG_FILE) ? LEGACY_CONFIG_FILE : CONFIG_FILE
+  return { file, machines: Object.keys(config.machines).sort() }
+}
+
+/**
+ * Renames the shared config to engram.json in the memories repo (git mv + commit +
+ * push, with the same fetch/reset/retry mechanics as config edits). Run ONCE, only
+ * after every machine of the fleet runs Engram: older versions only read
+ * claudetr.json and would stop syncing. A no-op if it's already migrated.
+ */
+export function migrateSharedConfig(adapter: PlatformAdapter): Promise<{ migrated: boolean }> {
+  return withRepoLock(async () => {
+    const git = repoGit(adapter)
+    await ensureIdentity(git)
+    await pushPendingCommits(git)
+    const dir = workingCopyDir(adapter)
+    const maxAttempts = 6
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await git.fetch()
+      await git.resetHard(`origin/${await git.currentBranch()}`)
+      if (await pathExists(join(dir, CONFIG_FILE))) return { migrated: false }
+      if (!(await pathExists(join(dir, LEGACY_CONFIG_FILE)))) {
+        throw new AppError('config.missing', 'This repo has no shared config file to migrate.')
+      }
+      await git.out(['mv', LEGACY_CONFIG_FILE, CONFIG_FILE])
+      await git.commit(`${COMMIT_PREFIX}migrate shared config to ${CONFIG_FILE}`)
+      const push = await git.push()
+      if (push.ok) return { migrated: true }
+      if (!push.rejected) {
+        throw new AppError('push.failed', `Push failed: ${push.stderr}`, { stderr: push.stderr })
+      }
+    }
+    throw new AppError('push.retriesExhausted', 'Could not save after several retries.')
+  })
 }
 
 export async function currentMachineId(adapter: PlatformAdapter): Promise<string | null> {
@@ -459,7 +531,7 @@ export async function createProject(
 ): Promise<CreateProjectResult> {
   const proj = assertSafeName('project', name)
   let alreadyExists = false
-  await commitConfigChange(adapter, `Claude Total Recall: new project ${proj}`, (config) => {
+  await commitConfigChange(adapter, `${COMMIT_PREFIX}new project ${proj}`, (config) => {
     if (config.projects[proj]) {
       alreadyExists = true
       return
@@ -495,7 +567,7 @@ export async function setProjectFolder(
   const sl = assertSafeName('slot', slot)
   const path = adapter.expandHome(absolutePath.trim())
   if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
-  await commitConfigChange(adapter, `Claude Total Recall: set ${proj}/${sl} on ${id}`, (config) => {
+  await commitConfigChange(adapter, `${COMMIT_PREFIX}set ${proj}/${sl} on ${id}`, (config) => {
     // Recursion guard (#20): reject a folder that overlaps another path already
     // synced on THIS machine — outgoing/incoming and the watcher work recursively, so
     // a nested folder would sync the same files twice. Runs against the freshly
@@ -530,7 +602,7 @@ export async function removeProjectFolder(
   if (!id) throw new AppError('machine.notRegistered', 'Machine not registered.')
   await commitConfigChange(
     adapter,
-    `Claude Total Recall: remove ${projectName}/${slot} on ${id}`,
+    `${COMMIT_PREFIX}remove ${projectName}/${slot} on ${id}`,
     (config) => {
       const project = config.projects[projectName]
       const folder = project?.folders[slot]
@@ -546,13 +618,9 @@ export async function removeProjectFolder(
 
 /** Deletes an entire project (all machines). */
 export async function deleteProject(adapter: PlatformAdapter, projectName: string): Promise<void> {
-  await commitConfigChange(
-    adapter,
-    `Claude Total Recall: delete project ${projectName}`,
-    (config) => {
-      delete config.projects[projectName]
-    },
-  )
+  await commitConfigChange(adapter, `${COMMIT_PREFIX}delete project ${projectName}`, (config) => {
+    delete config.projects[projectName]
+  })
 }
 
 /**
@@ -569,7 +637,7 @@ export async function renameProject(
   const to = assertSafeName('project', newName)
   await commitConfigChange(
     adapter,
-    `Claude Total Recall: rename project ${oldName} -> ${to}`,
+    `${COMMIT_PREFIX}rename project ${oldName} -> ${to}`,
     async (config) => {
       if (!config.projects[oldName])
         throw new AppError('project.notFound', `Project "${oldName}" not found.`, { name: oldName })
@@ -719,7 +787,7 @@ export async function applyDiscovery(
     proj,
     input.slots,
     id,
-    `Claude Total Recall: discover ${proj} on ${id}`,
+    `${COMMIT_PREFIX}discover ${proj} on ${id}`,
     { createIfMissing: true },
   )
 }
@@ -743,7 +811,7 @@ export async function applyMachineMapping(
     proj,
     input.slots,
     id,
-    `Claude Total Recall: adopt ${proj} on ${id}`,
+    `${COMMIT_PREFIX}adopt ${proj} on ${id}`,
     { createIfMissing: false },
   )
   return { slots }
@@ -767,7 +835,7 @@ export async function applyDiscoveries(
   let created = 0
   await commitConfigChange(
     adapter,
-    `Claude Total Recall: scan ${prepared.length} projects on ${id}`,
+    `${COMMIT_PREFIX}scan ${prepared.length} projects on ${id}`,
     (config) => {
       created = 0
       // Phase 1: neutralize self-overlap across ALL projects before snapshotting.
@@ -892,7 +960,7 @@ export async function setPinnedFile(
   const pin = assertSafeName('pin', pinId)
   const path = adapter.expandHome(absolutePath.trim())
   if (!path) throw new AppError('path.empty', 'The path cannot be empty.')
-  await commitConfigChange(adapter, `Claude Total Recall: pin ${pin} on ${id}`, (config) => {
+  await commitConfigChange(adapter, `${COMMIT_PREFIX}pin ${pin} on ${id}`, (config) => {
     for (const other of machineSyncedPaths(config, adapter, id, { pin })) {
       if (pathsCollide(path, other.path)) {
         throw new AppError(
@@ -912,7 +980,7 @@ export async function setPinnedFile(
 
 /** Removes an entire pinned file (all machines). */
 export async function removePinnedFile(adapter: PlatformAdapter, pinId: string): Promise<void> {
-  await commitConfigChange(adapter, `Claude Total Recall: unpin ${pinId}`, (config) => {
+  await commitConfigChange(adapter, `${COMMIT_PREFIX}unpin ${pinId}`, (config) => {
     if (config.pinnedFiles) delete config.pinnedFiles[pinId]
   })
 }
@@ -987,7 +1055,7 @@ export async function healManagedConflicts(adapter: PlatformAdapter): Promise<He
   return { remaining, completed, pushed: push.ok }
 }
 
-const CLEANUP_COMMIT = 'Claude Total Recall: remove Claude Code managed cache'
+const CLEANUP_COMMIT = `${COMMIT_PREFIX}remove Claude Code managed cache`
 
 /**
  * Repo hygiene (#135): drops the Claude-managed subtrees (`managedRepoPaths`) from
@@ -1064,7 +1132,7 @@ export async function completeConflictMerge(
   adapter: PlatformAdapter,
 ): Promise<{ pushed: boolean }> {
   const git = repoGit(adapter)
-  await git.completeMerge('Claude Total Recall: resolve conflicts')
+  await git.completeMerge(`${COMMIT_PREFIX}resolve conflicts`)
   const push = await git.push()
   return { pushed: push.ok }
 }
@@ -1116,7 +1184,7 @@ async function buildContext(adapter: PlatformAdapter): Promise<SyncContext> {
   if (!local) {
     throw new AppError(
       'machine.notRegisteredLocal',
-      'Machine not registered (local.json missing). Run `claude-total-recall register`.',
+      'Machine not registered (local.json missing). Run `engram register`.',
     )
   }
   const localOverrides = await loadSettingsLocal(adapter)
@@ -1161,7 +1229,7 @@ export async function syncOutgoing(
 
   await git.add()
   // Stamp the machine so the activity history (#8) can attribute and direct (↑/↓) it.
-  const c = await git.commit(`Claude Total Recall: outgoing on ${ctx.machineId}`)
+  const c = await git.commit(`${COMMIT_PREFIX}outgoing on ${ctx.machineId}`)
   if (!c.committed && !purged) return { exec, conflicts: [], pushed: false, committed: false }
 
   const pull = await pullMerge(git)

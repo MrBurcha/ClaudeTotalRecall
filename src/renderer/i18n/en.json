@@ -71,7 +71,17 @@
     "about": "About",
     "aboutText": "Claude Total Recall v{{version}} — syncs Claude Code memory across your machines via a private GitHub repo.",
     "language": "Language",
-    "languageAria": "Interface language"
+    "languageAria": "Interface language",
+    "sharedConfig": {
+      "label": "Shared config file:",
+      "legacyHint": "This repo still uses the file name from before the rename. Rename it once — after every machine runs Engram.",
+      "migrate": "Rename to engram.json",
+      "confirmTitle": "Rename the shared config file?",
+      "confirmBody": "Every machine in this repo must already run Engram: {{machines}}. A machine still on Claude Total Recall stops syncing after this until it is updated. Other machines pick up the new name on their own.",
+      "confirm": "Rename",
+      "done": "Shared config renamed to engram.json.",
+      "already": "The shared config was already engram.json."
+    }
   },
   "home": {
     "eyebrow": "Sync station",
@@ -304,6 +314,9 @@
     },
     "update": {
       "invalidUrl": "Refusing to open a URL outside the app releases."
+    },
+    "config": {
+      "missing": "This repo has no shared config file to migrate."
     }
   },
   "preflight": {

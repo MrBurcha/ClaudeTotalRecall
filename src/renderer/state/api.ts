@@ -7,9 +7,7 @@ import i18n from '../i18n'
  * `window` always exists; under Node it resolves to undefined and only the pure
  * helpers below (normalizeError) are exercised.
  */
-export const api = (
-  typeof window !== 'undefined' ? window.claudeTotalRecall : undefined
-) as Window['claudeTotalRecall']
+export const api = (typeof window !== 'undefined' ? window.engram : undefined) as Window['engram']
 
 /**
  * Electron prefixes exceptions that cross ipcMain.handle

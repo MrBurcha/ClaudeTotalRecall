@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { stdin, stdout } from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { createPlatformAdapter } from '../platform'
+import { migrateConfigHome } from '../core/configHomeMigration'
 import { acquireInstanceLock, type LockHolder } from '../core/instanceLock'
 import { runPreflight } from '../core/preflight'
 import type { Plan, PlanAction, Verb } from '../core/types'
@@ -9,6 +10,7 @@ import {
   buildVerbPlan,
   connectRepo,
   pullRepo,
+  migrateSharedConfig,
   registerMachine,
   repoStatus,
   syncOutgoing,
@@ -68,7 +70,7 @@ function printPlan(plan: Plan): void {
 export function lockedMessage(holder: LockHolder | null): string {
   const pid = holder ? ` (pid ${holder.pid})` : ''
   if (holder?.kind === 'cli') {
-    return `Another claude-total-recall command is running on this machine${pid}. Wait for it to finish and try again.`
+    return `Another engram command is running on this machine${pid}. Wait for it to finish and try again.`
   }
   return `The app is open on this machine and is syncing it${pid}. Use the app, or quit it and try again.`
 }
@@ -110,7 +112,7 @@ async function cmdCheck(): Promise<number> {
 async function cmdConnect(args: string[]): Promise<number> {
   const remote = args.find((a) => !a.startsWith('-'))
   if (!remote) {
-    out('Missing remote. Usage: claude-total-recall connect <remote-url>')
+    out('Missing remote. Usage: engram connect <remote-url>')
     return 1
   }
   const adapter = createPlatformAdapter()
@@ -201,17 +203,35 @@ async function cmdSync(verb: Verb, args: string[]): Promise<number> {
 }
 
 function usage(): void {
-  out('claude-total-recall <command>\n')
+  out('engram <command>\n')
   out('  check                        preflight (git/gh/auth)')
   out('  connect <remote>             clone/initialize the repo')
   out('  status                       repo status')
   out('  register [--name X]          register this machine')
   out('  outgoing [--dry-run] [--yes]  machine → repo')
   out('  incoming [--dry-run] [--yes]  repo → machine')
+  out('  migrate-config               rename the shared claudetr.json → engram.json (once,')
+  out('                               after EVERY machine runs Engram)')
+}
+
+async function cmdMigrateConfig(): Promise<number> {
+  const r = await migrateSharedConfig(createPlatformAdapter())
+  out(
+    r.migrated
+      ? 'Shared config renamed to engram.json and pushed.'
+      : 'Nothing to do: the shared config is already engram.json.',
+  )
+  return 0
 }
 
 export async function main(argv: string[]): Promise<number> {
   const [command, ...args] = argv
+  // Releases before the Engram rename kept local state in ~/.config/claudetr (#123):
+  // move it before anything reads it. A failure stops here; never a fresh start.
+  if (command && !['help', '--help', '-h'].includes(command)) {
+    const moved = await migrateConfigHome(createPlatformAdapter())
+    if (moved === 'migrated') out('Moved local data from ~/.config/claudetr to ~/.config/engram.')
+  }
   switch (command) {
     case 'check':
       return cmdCheck()
@@ -230,6 +250,8 @@ export async function main(argv: string[]): Promise<number> {
       return hasFlag(args, '--dry-run')
         ? cmdSync('incoming', args)
         : withMachineLock(() => cmdSync('incoming', args))
+    case 'migrate-config':
+      return withMachineLock(() => cmdMigrateConfig())
     case undefined:
     case 'help':
     case '--help':

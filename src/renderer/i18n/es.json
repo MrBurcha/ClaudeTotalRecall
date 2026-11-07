@@ -71,7 +71,17 @@
     "about": "Acerca de",
     "aboutText": "Claude Total Recall v{{version}} — sincroniza la memoria de Claude Code entre tus máquinas mediante un repositorio privado de GitHub.",
     "language": "Idioma",
-    "languageAria": "Idioma de la interfaz"
+    "languageAria": "Idioma de la interfaz",
+    "sharedConfig": {
+      "label": "Archivo de configuración compartida:",
+      "legacyHint": "Este repo todavía usa el nombre de archivo de antes del cambio de nombre. Renómbralo una sola vez, cuando todas las máquinas ya usen Engram.",
+      "migrate": "Renombrar a engram.json",
+      "confirmTitle": "¿Renombrar el archivo de configuración compartida?",
+      "confirmBody": "Todas las máquinas de este repo tienen que estar ya en Engram: {{machines}}. Una máquina que siga en Claude Total Recall deja de sincronizar hasta que la actualices. Las demás toman el nombre nuevo solas.",
+      "confirm": "Renombrar",
+      "done": "Configuración compartida renombrada a engram.json.",
+      "already": "La configuración compartida ya era engram.json."
+    }
   },
   "home": {
     "eyebrow": "Estación de sincronización",
@@ -304,6 +314,9 @@
     },
     "update": {
       "invalidUrl": "No se puede abrir una URL fuera de las versiones publicadas de la app."
+    },
+    "config": {
+      "missing": "Este repo no tiene un archivo de configuración compartida para migrar."
     }
   },
   "preflight": {

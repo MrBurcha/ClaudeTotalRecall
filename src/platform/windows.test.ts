@@ -14,10 +14,11 @@ describe('WindowsAdapter', () => {
     expect(adapter.os()).toBe('windows')
   })
 
-  it('keeps the shared ~/.claude and ~/.config/claudetr layout', () => {
+  it('keeps the shared ~/.claude and ~/.config/engram layout', () => {
     expect(adapter.home()).toBe(HOME)
     expect(adapter.claudeHome()).toBe(join(HOME, '.claude'))
-    expect(adapter.configHome()).toBe(join(HOME, '.config', 'claudetr'))
+    expect(adapter.configHome()).toBe(join(HOME, '.config', 'engram'))
+    expect(adapter.legacyConfigHome()).toBe(join(HOME, '.config', 'claudetr'))
   })
 
   it('expands both POSIX and Windows tilde forms', () => {
