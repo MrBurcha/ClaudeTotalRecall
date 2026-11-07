@@ -60,7 +60,7 @@ export function Sidebar(): JSX.Element {
       <div className="brand">
         <BrandMark size={22} />
         <div>
-          <div className="brand__name">Claude Total Recall</div>
+          <div className="brand__name">Engram</div>
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export function Sidebar(): JSX.Element {
           </div>
         )}
         <button className="sidebar__version" onClick={() => actions.openModal({ kind: 'about' })}>
-          Claude Total Recall v{state.version ?? '—'}
+          Engram v{state.version ?? '—'}
         </button>
       </div>
     </nav>

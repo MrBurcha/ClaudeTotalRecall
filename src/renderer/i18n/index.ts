@@ -2,10 +2,10 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import en from './en.json'
 import es from './es.json'
+import { LOCALE_KEY, readStorageMigrated } from '../state/storageKeys'
 
 export type Locale = 'en' | 'es'
 export const LOCALES: Locale[] = ['en', 'es']
-const STORAGE_KEY = 'claude-total-recall:locale'
 
 /**
  * Maps the host's preferred languages to a supported locale. Chromium exposes the
@@ -26,7 +26,7 @@ function detectFromHost(): Locale {
 /** Persisted choice wins; otherwise fall back to the host locale, then English. */
 export function readStoredLocale(): Locale {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = readStorageMigrated(LOCALE_KEY)
     if (saved === 'en' || saved === 'es') return saved
   } catch {
     /* localStorage unavailable — fall through to host detection */
@@ -53,7 +53,7 @@ void i18n.use(initReactI18next).init({
 i18n.on('languageChanged', (lng) => {
   if (typeof document !== 'undefined') document.documentElement.lang = lng
   try {
-    localStorage.setItem(STORAGE_KEY, lng)
+    localStorage.setItem(LOCALE_KEY, lng)
   } catch {
     /* ignore persistence failure (localStorage unavailable) */
   }

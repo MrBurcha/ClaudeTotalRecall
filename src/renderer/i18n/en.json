@@ -57,7 +57,7 @@
     "title": "Settings",
     "sub": "Requirements, your memory repo, and how it syncs.",
     "requirements": "Requirements",
-    "requirementsSub": "Claude Total Recall syncs your memory through a private GitHub repo, using git and the GitHub CLI (gh). Both need to be installed, and gh signed in to your GitHub account.",
+    "requirementsSub": "Engram syncs your memory through a private GitHub repo, using git and the GitHub CLI (gh). Both need to be installed, and gh signed in to your GitHub account.",
     "recheck": "Re-check",
     "repo": "Repo",
     "repoSub": "The private GitHub repo that stores your synced memory — one repo, shared by all your machines.",
@@ -69,7 +69,7 @@
     "remoteCheck": "Remote check",
     "remoteCheckFreq": "Remote check frequency",
     "about": "About",
-    "aboutText": "Claude Total Recall v{{version}} — syncs Claude Code memory across your machines via a private GitHub repo.",
+    "aboutText": "Engram v{{version}} — syncs Claude Code memory across your machines via a private GitHub repo.",
     "language": "Language",
     "languageAria": "Interface language",
     "sharedConfig": {
@@ -86,7 +86,7 @@
   "home": {
     "eyebrow": "Sync station",
     "title": "Your memory, synced on its own",
-    "sub": "Claude Total Recall keeps Claude Code's memory up to date across your machines: it pushes the moment you edit and pulls from the repo every few minutes. Nothing to press.",
+    "sub": "Engram keeps Claude Code's memory up to date across your machines: it pushes the moment you edit and pulls from the repo every few minutes. Nothing to press.",
     "status": {
       "conflict": "Conflict",
       "loading": "Loading…",
@@ -144,9 +144,10 @@
     "days_other": "{{count}}d ago"
   },
   "about": {
-    "title": "About Claude Total Recall",
+    "title": "About Engram",
     "body": "Syncs Claude Code memory across your machines via a private GitHub repo.",
-    "secrets": "Secrets never travel: .credentials.json, .claude.json, or transcripts (*.jsonl)."
+    "secrets": "Secrets never travel: .credentials.json, .claude.json, or transcripts (*.jsonl).",
+    "tagline": "Your agent's memory, everywhere."
   },
   "sync": {
     "resolveBeforeIncoming": "Resolve the conflicts before the incoming sync: {{conflicts}}",
@@ -221,7 +222,7 @@
       "toLight": "Switch to light theme",
       "toDark": "Switch to dark theme"
     },
-    "about": "About Claude Total Recall"
+    "about": "About Engram"
   },
   "planReview": {
     "title": "Review changes",
@@ -264,7 +265,7 @@
       "invalidName": "Invalid machine name.",
       "notRegistered": "Machine not registered.",
       "notRegisteredAddProject": "Machine not registered; register before adding projects.",
-      "notRegisteredLocal": "Machine not registered (local.json missing). Run `claude-total-recall register`.",
+      "notRegisteredLocal": "Machine not registered (local.json missing). Run `engram register`.",
       "notRegisteredPrefs": "Machine not registered; nowhere to save preferences."
     },
     "push": {
@@ -291,7 +292,7 @@
       "empty": "The path cannot be empty."
     },
     "platform": {
-      "unsupported": "Unsupported platform: {{platform}}. Claude Total Recall supports macOS and Linux (Windows later)."
+      "unsupported": "Unsupported platform: {{platform}}. Engram supports macOS, Linux and Windows."
     },
     "plan": {
       "expired": "Plan expired; rebuild it (the preview is no longer valid)."
@@ -317,6 +318,9 @@
     },
     "config": {
       "missing": "This repo has no shared config file to migrate."
+    },
+    "configHome": {
+      "migrationFailed": "Couldn't move the local data folder from {{from}} to {{to}} ({{reason}}). Quit any running copy of Claude Total Recall, then open Engram again."
     }
   },
   "preflight": {
@@ -636,7 +640,7 @@
     },
     "preflight": {
       "title": "System requirements",
-      "sub": "Claude Total Recall syncs your memory through a private GitHub repo, using git and the GitHub CLI (gh). Both need to be installed, and gh signed in to your GitHub account."
+      "sub": "Engram syncs your memory through a private GitHub repo, using git and the GitHub CLI (gh). Both need to be installed, and gh signed in to your GitHub account."
     },
     "connect": {
       "title": "Connect your memory repo",

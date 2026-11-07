@@ -20,10 +20,10 @@ const jsonResponse = (body: unknown, ok = true, status = 200): Response =>
     json: async () => body,
   }) as Response
 
-const DOWNLOAD = 'https://github.com/MrBurcha/ClaudeTotalRecall/releases/download'
+const DOWNLOAD = 'https://github.com/MrBurcha/Engram/releases/download'
 
 /** The real asset list of a release (v0.14.0), under any product-name prefix. */
-function assetsFor(version: string, prefix = 'claude-total-recall'): ReleaseAsset[] {
+function assetsFor(version: string, prefix = 'engram'): ReleaseAsset[] {
   return [
     `linux-amd64.deb`,
     `linux-x64.pacman`,
@@ -39,7 +39,7 @@ function assetsFor(version: string, prefix = 'claude-total-recall'): ReleaseAsse
   })
 }
 const ASSETS = assetsFor('0.9.0')
-const url = (suffix: string): string => `${DOWNLOAD}/v0.9.0/claude-total-recall-0.9.0-${suffix}`
+const url = (suffix: string): string => `${DOWNLOAD}/v0.9.0/engram-0.9.0-${suffix}`
 
 const facts = (over: Partial<MachineFacts> = {}): MachineFacts => ({
   platform: 'darwin',
@@ -183,20 +183,20 @@ describe('isRepoReleaseUrl', () => {
     expect(isRepoReleaseUrl(`${RELEASES_PAGE_URL}/tag/v0.14.0`)).toBe(true)
     expect(isRepoReleaseUrl(url('macos-arm64.dmg'))).toBe(true)
     // GitHub owner/repo names are case-insensitive.
-    expect(isRepoReleaseUrl('https://github.com/mrburcha/claudetotalrecall/releases')).toBe(true)
+    expect(isRepoReleaseUrl('https://github.com/mrburcha/engram/releases')).toBe(true)
   })
 
   it('rejects anything else', () => {
     for (const bad of [
-      'http://github.com/MrBurcha/ClaudeTotalRecall/releases',
-      'https://github.com.evil.example/MrBurcha/ClaudeTotalRecall/releases',
-      'https://evil.example/MrBurcha/ClaudeTotalRecall/releases',
-      'https://github.com/MrBurcha/ClaudeTotalRecall',
-      'https://github.com/MrBurcha/ClaudeTotalRecall/releasesX',
+      'http://github.com/MrBurcha/Engram/releases',
+      'https://github.com.evil.example/MrBurcha/Engram/releases',
+      'https://evil.example/MrBurcha/Engram/releases',
+      'https://github.com/MrBurcha/Engram',
+      'https://github.com/MrBurcha/Engram/releasesX',
       'https://github.com/MrBurcha/Other/releases',
-      'https://github.com/MrBurcha/ClaudeTotalRecall/releases/../../Other/releases',
-      'https://user:pw@github.com/MrBurcha/ClaudeTotalRecall/releases',
-      'https://github.com:8443/MrBurcha/ClaudeTotalRecall/releases',
+      'https://github.com/MrBurcha/Engram/releases/../../Other/releases',
+      'https://user:pw@github.com/MrBurcha/Engram/releases',
+      'https://github.com:8443/MrBurcha/Engram/releases',
       'file:///etc/passwd',
       'javascript:alert(1)',
       'not a url',
@@ -303,9 +303,7 @@ describe('currentVersionInstaller', () => {
     }
     const link = await currentVersionInstaller('0.9.0', rosetta, deps)
     expect(link).toEqual({ url: url('macos-arm64.dmg'), variant: 'macos-arm64' })
-    expect(requested).toEqual([
-      'https://api.github.com/repos/MrBurcha/ClaudeTotalRecall/releases/tags/v0.9.0',
-    ])
+    expect(requested).toEqual(['https://api.github.com/repos/MrBurcha/Engram/releases/tags/v0.9.0'])
   })
 
   it('falls back to the releases page when offline or the tag has no release', async () => {

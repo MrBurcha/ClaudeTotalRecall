@@ -38,7 +38,7 @@ function createWindow(): BrowserWindow {
     width: 1100,
     height: 740,
     show: false,
-    title: 'Claude Total Recall',
+    title: 'Engram',
     // Chrome propio: en Linux/Windows sacamos el marco nativo (la barra de título
     // la dibuja el renderer); en macOS ocultamos la barra pero conservamos los
     // semáforos nativos (titleBarStyle 'hidden').
@@ -186,7 +186,9 @@ if (!SMOKE && !app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   app.on('second-instance', () => revealMainWindow())
-  if (app.isPackaged) migrateLocalStorage(app.getPath('appData'), app.getPath('userData'))
+  if (app.isPackaged && !SMOKE) {
+    migrateLocalStorage(app.getPath('appData'), app.getPath('userData'))
+  }
   void app.whenReady().then(async () => {
     if (!SMOKE) {
       try {

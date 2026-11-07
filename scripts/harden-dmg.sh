@@ -153,7 +153,7 @@ for dmg in "$@"; do
   # 2) Mount read-write at a directory WE chose (-mountpoint), instead of
   #    parsing `hdiutil attach`'s text table for the mount path — that table
   #    breaks the moment the volume title has spaces (ours always does —
-  #    "Claude Total Recall 0.8.0"), and rows for entries hdiutil didn't
+  #    "Engram 0.15.0"), and rows for entries hdiutil didn't
   #    mount (EFI partition, partition map, etc.) would need filtering.
   #    -nobrowse keeps it out of Finder's sidebar; -noautoopen stops Finder
   #    from popping a window; -noverify skips the (slow, unneeded) checksum

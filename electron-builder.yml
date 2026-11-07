@@ -1,5 +1,5 @@
-appId: com.mrburcha.claudetotalrecall
-productName: Claude Total Recall
+appId: com.mrburcha.engram
+productName: Engram
 directories:
   output: release
   buildResources: build
@@ -53,7 +53,7 @@ dmg:
   # keeps the arm64 and x64 dmgs distinguishable when mounted. harden-dmg.sh
   # mounts via -mountpoint (it never parses this title), so the arch suffix here
   # is safe.
-  title: Claude Total Recall ${version} (${arch})
+  title: Engram ${version} (${arch})
   # Background with the install/open instructions (build/background.png +
   # background@2x.png for retina). Coords in px from the top-left, at the icon
   # center: the app on the left, the Applications alias on the right.
@@ -102,9 +102,9 @@ linux:
   # This single key covers all four Linux targets; dmg/nsis/portable carry the
   # equivalent pattern in their own sections.
   #
-  # `${name}` (package.json's "claude-total-recall") rather than `${productName}`:
-  # the latter has spaces, and GitHub rewrites those to dots on upload
-  # ("Claude.Total.Recall-…"), which is half of why the old names sorted apart.
+  # `${name}` (package.json's "engram") rather than `${productName}`: a product
+  # name with spaces gets rewritten to dots on upload by GitHub ("Claude.Total.
+  # Recall-…" before the rename), which is half of why the old names sorted apart.
   #
   # `${arch}` stays a macro instead of a hardcoded "x86_64": electron-builder
   # expands it to each target's NATIVE token (amd64 for deb, x86_64 for
@@ -121,18 +121,18 @@ linux:
   icon: build/icons
   # Pin the executable name so the binary, Exec, the .desktop Icon field and the
   # installed hicolor/*/apps/<name>.png are all deterministic lowercase, matching
-  # StartupWMClass below. Otherwise they derive from productName ("Claude Total
-  # Recall", with spaces).
-  executableName: claude-total-recall
+  # StartupWMClass below. Otherwise they derive from productName ("Engram", with a
+  # capital letter).
+  executableName: engram
   # GNOME/mutter binds the window to its .desktop entry via WM_CLASS (case-sensitive).
-  # Electron reports WM_CLASS "claude-total-recall" (the package.json name), but
-  # electron-builder defaults StartupWMClass to productName ("Claude Total Recall") →
+  # Electron reports WM_CLASS "engram" (the package.json name), but
+  # electron-builder defaults StartupWMClass to productName ("Engram") →
   # it won't match and the DE shows a generic icon. Force it to the real WM_CLASS.
   # electron-builder 26 nests the [Desktop Entry] pairs under `desktop.entry`
   # (v25 accepted them flat under `desktop`).
   desktop:
     entry:
-      StartupWMClass: claude-total-recall
+      StartupWMClass: engram
 # Deps with Arch names: electron-builder's default uses Debian naming (e.g.
 # http-parser), which doesn't exist in the Arch repos. The .deb keeps its
 # defaults; only the pacman package needs this override.
@@ -194,4 +194,4 @@ electronLanguages:
 publish:
   provider: github
   owner: MrBurcha
-  repo: ClaudeTotalRecall
+  repo: Engram
