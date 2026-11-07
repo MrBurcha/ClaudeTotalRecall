@@ -17,7 +17,7 @@ let tmpHome: string
 let adapter: PlatformAdapter
 
 beforeEach(async () => {
-  tmpHome = await mkdtemp(join(tmpdir(), 'claude-total-recall-activity-'))
+  tmpHome = await mkdtemp(join(tmpdir(), 'engram-activity-'))
   adapter = createPlatformAdapter(process.platform, tmpHome)
 })
 

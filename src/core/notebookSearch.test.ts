@@ -160,7 +160,7 @@ describe('searchNotebook (working copy)', () => {
 
   /** A working copy holding only Notebook files (search needs no commits). */
   async function notebookWith(files: Record<string, string | Buffer>) {
-    const base = await mkdtemp(join(tmpdir(), 'claude-total-recall-nbs-'))
+    const base = await mkdtemp(join(tmpdir(), 'engram-nbs-'))
     bases.push(base)
     const a = createPlatformAdapter(process.platform, join(base, 'home'))
     const root = join(workingCopyDir(a), 'memories/notebook')

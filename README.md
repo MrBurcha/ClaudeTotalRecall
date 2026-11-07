@@ -48,6 +48,11 @@ same core. **macOS, Linux and Windows.**
 </p>
 
 <p align="center">
+  <img src="docs/screenshots/notebook.png" width="360" alt="Notebook — notes and prompts that sync, with history and search" />
+  <img src="docs/screenshots/all-paths.png" width="360" alt="All paths — everything that syncs, per machine" />
+</p>
+
+<p align="center">
   <img src="docs/screenshots/wizard.png" width="360" alt="Onboarding wizard" />
   <img src="docs/screenshots/projects.png" width="360" alt="Projects configuration" />
 </p>
@@ -100,34 +105,15 @@ sudo dnf install ./engram-<version>-linux-x86_64.rpm
 sudo pacman -U engram-<version>-linux-x64.pacman
 ```
 
-Prefer to build the binaries yourself? See [Build from source](#build-from-source).
+### Windows
 
-## Coming from Claude Total Recall
+Two options: `engram-<version>-windows-setup.exe` (installer, per-user — no admin needed) or
+`engram-<version>-windows-portable.exe` (single file, nothing to install). The build is unsigned,
+so SmartScreen may say _"Windows protected your PC"_: click **More info → Run anyway** once. You
+also need `git` and `gh` — see [Windows prerequisites](#windows-prerequisites).
 
-Engram **is** Claude Total Recall, renamed (0.15.0). In neuroscience an _engram_ is the trace a
-memory leaves — which is what this app keeps of your agent's memory. Nothing about your synced data
-changes; the app, its local folder and the repo it lives in get the new name. Per machine, one at a
-time:
-
-1. **Quit Claude Total Recall** completely (and don't run its old command-line tool).
-2. **Install Engram** from the [latest release](https://github.com/MrBurcha/Engram/releases/latest)
-   and open it. On first launch it moves its local data from `~/.config/claudetr` to
-   `~/.config/engram` in one step — this machine keeps its identity, the working copy and its
-   settings — and carries over your theme and language.
-3. Check that one sync runs (the sync bar says **Up to date**), then **uninstall the old app**:
-   - **macOS:** delete `/Applications/Claude Total Recall.app`.
-   - **Windows:** it's a separate entry in **Settings → Apps** ("Claude Total Recall").
-   - **Linux:** `sudo apt remove claude-total-recall` / `sudo dnf remove claude-total-recall` /
-     `sudo pacman -R claude-total-recall` (the `engram` package doesn't replace it), or delete
-     the old AppImage.
-
-**Last step, once:** the shared config file in your memories repo keeps its old name
-(`claudetr.json`) so machines still on the old app keep working during the switch. When **every**
-machine runs Engram, go to **Settings → Repo → Rename to engram.json** on any one of them (or run
-`engram migrate-config`). The others pick up the new name on their own.
-
-If Engram can't move the old folder (the old app is still open, say), it tells you and closes
-instead of starting from scratch — quit the old app and open Engram again.
+Prefer to build the binaries yourself? See [Build from source](#build-from-source). Upgrading from an
+earlier version under the old name? See [Upgrading from an earlier version](#upgrading-from-an-earlier-version).
 
 ## Quickstart
 
@@ -316,6 +302,22 @@ choose to back it up. But it also means the app won't stop you, and the responsi
 > - For teams or production, prefer a real secrets manager (1Password, Vault, a cloud secret store)
 >   over versioning secrets at all.
 
+## Upgrading from an earlier version
+
+Engram was called **Claude Total Recall** until 0.15.0. Your synced data doesn't change. Per machine,
+one at a time:
+
+1. Quit the old app, then install Engram and open it. On first launch it moves its local data from
+   `~/.config/claudetr` to `~/.config/engram` (same machine identity, working copy and settings).
+   If the old app is still open and the move fails, Engram says so and closes — quit the old app
+   and try again.
+2. After one sync, uninstall the old app (macOS: delete the old `.app`; Windows: remove it in
+   **Settings → Apps**; Linux: `sudo apt|dnf remove claude-total-recall` /
+   `sudo pacman -R claude-total-recall`, or delete the old AppImage).
+3. **Once every machine runs Engram:** **Settings → Repo → Rename to engram.json** on any one of them
+   (or `engram migrate-config`). Until then the shared config keeps its old name, so machines not
+   yet updated keep syncing.
+
 ## Build from source
 
 **Requirements:** [Node.js 20](https://nodejs.org), plus `git` and `gh` as above.
@@ -388,7 +390,6 @@ gh auth setup-git      # installs gh as git's credential helper
 - In-app 3-way merge editor
 - Per-project timestamps
 - Create the memories repo from the app
-- Windows support
 
 ## Contributing
 

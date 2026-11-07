@@ -99,7 +99,7 @@ describe('classifyCommit', () => {
 describe('Git.log', () => {
   let root: string
   beforeAll(async () => {
-    root = await mkdtemp(join(tmpdir(), 'claude-total-recall-hist-'))
+    root = await mkdtemp(join(tmpdir(), 'engram-hist-'))
   })
   afterAll(async () => {
     await rm(root, { recursive: true, force: true })
@@ -109,8 +109,8 @@ describe('Git.log', () => {
     const dir = join(root, name)
     await run('git', ['init', '--initial-branch=main', dir])
     const g = new Git(dir)
-    await g.config('user.email', 'test@claude-total-recall.local')
-    await g.config('user.name', 'Claude Total Recall Test')
+    await g.config('user.email', 'test@engram.local')
+    await g.config('user.name', 'Engram Test')
     await g.config('commit.gpgsign', 'false')
     return g
   }

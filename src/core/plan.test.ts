@@ -35,7 +35,7 @@ interface Sandbox {
 const bases: string[] = []
 
 async function seed(): Promise<Sandbox> {
-  const base = await mkdtemp(join(tmpdir(), 'claude-total-recall-plan-'))
+  const base = await mkdtemp(join(tmpdir(), 'engram-plan-'))
   bases.push(base)
   const home1 = join(base, 'home1')
   const home2 = join(base, 'home2')

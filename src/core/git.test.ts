@@ -9,8 +9,8 @@ import { Git } from './git'
 let root: string
 
 async function configUser(g: Git): Promise<void> {
-  await g.config('user.email', 'test@claude-total-recall.local')
-  await g.config('user.name', 'Claude Total Recall Test')
+  await g.config('user.email', 'test@engram.local')
+  await g.config('user.name', 'Engram Test')
   await g.config('commit.gpgsign', 'false')
 }
 
@@ -49,7 +49,7 @@ beforeAll(async () => {
   process.env.GIT_CONFIG_COUNT = '1'
   process.env.GIT_CONFIG_KEY_0 = 'core.autocrlf'
   process.env.GIT_CONFIG_VALUE_0 = 'false'
-  root = await mkdtemp(join(tmpdir(), 'claude-total-recall-git-'))
+  root = await mkdtemp(join(tmpdir(), 'engram-git-'))
 })
 afterAll(async () => {
   for (const k of GIT_CONFIG_ENV_KEYS) {

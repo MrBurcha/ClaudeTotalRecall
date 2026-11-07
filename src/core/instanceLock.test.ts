@@ -30,7 +30,7 @@ function holder(over: Partial<LockHolder> = {}): LockHolder {
 }
 
 beforeEach(async () => {
-  tmpHome = await mkdtemp(join(tmpdir(), 'claude-total-recall-lock-'))
+  tmpHome = await mkdtemp(join(tmpdir(), 'engram-lock-'))
   adapter = createPlatformAdapter(process.platform, tmpHome)
   await mkdir(adapter.configHome(), { recursive: true })
   clock = 1_000_000
