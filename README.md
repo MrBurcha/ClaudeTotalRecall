@@ -140,7 +140,7 @@ an exit code (`0` on success).
 
 | Command                        | What it does                                                                                                                                                                  |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `check`                        | Preflight: verifies `git` and `gh` are installed and `gh` is authenticated. Read-only.                                                                                        |
+| `check`                        | Preflight: verifies `git` and `gh` are installed and actually run, and `gh` is authenticated. Read-only.                                                                      |
 | `connect <remote>`             | Clone/initialize the memories repo into `~/.config/claudetr/repo` (accepts HTTPS, SSH, or `file://` remotes). On an empty repo it writes the initial structure and pushes it. |
 | `status`                       | Local repo status: branch, ahead/behind, dirty, conflicts. Read-only.                                                                                                         |
 | `register [--name <id>]`       | Register this machine in the repo config (defaults the id to your hostname). Mutates the repo.                                                                                |
