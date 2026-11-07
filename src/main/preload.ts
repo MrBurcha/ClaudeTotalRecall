@@ -164,6 +164,7 @@ const api = {
   sharedConfigInfo: () => ipcRenderer.invoke('config:sharedInfo') as Promise<SharedConfigInfo>,
   migrateSharedConfig: () =>
     ipcRenderer.invoke('config:migrateShared') as Promise<{ migrated: boolean }>,
+  machineRemove: (id: string) => ipcRenderer.invoke('machine:remove', id) as Promise<void>,
   syncGetState: () => ipcRenderer.invoke('sync:getState') as Promise<SyncEngineState>,
   syncSetAuto: (enabled: boolean, intervalMs: number) =>
     ipcRenderer.invoke('sync:setAuto', { enabled, intervalMs }) as Promise<SyncEngineState>,

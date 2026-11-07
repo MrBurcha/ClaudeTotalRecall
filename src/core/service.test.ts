@@ -747,7 +747,10 @@ describe('shared config file during the Engram rename (#123)', () => {
     await svc.registerMachine(a1, 'm1')
     const dir1 = join(a1.configHome(), 'repo')
     expect(await exists(join(dir1, 'engram.json'))).toBe(false) // no silent rename
-    expect(await svc.sharedConfigInfo(a1)).toEqual({ file: 'claudetr.json', machines: ['m1'] })
+    expect(await svc.sharedConfigInfo(a1)).toMatchObject({
+      file: 'claudetr.json',
+      machines: ['m1'],
+    })
 
     // Another machine joins: it keeps writing claudetr.json too.
     const a2 = adapterFor(join(base, 'home2'))
@@ -765,5 +768,77 @@ describe('shared config file during the Engram rename (#123)', () => {
     expect(await exists(join(dir2, 'engram.json'))).toBe(true)
     expect(await exists(join(dir2, 'claudetr.json'))).toBe(false)
     expect(Object.keys((await svc.loadRepoConfig(a2)).projects).sort()).toEqual(['alpha', 'beta'])
+  })
+})
+
+describe('automatic shared-config rename (#123)', () => {
+  /** A fleet whose repo still has claudetr.json, as older versions left it. */
+  async function legacyFleet(names: string[]) {
+    const svc = await import('./service')
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const first = adapterFor(join(base, `home-${names[0]}`))
+    await connectRepo(remote, first)
+    const g = new Git(join(first.configHome(), 'repo'))
+    await g.out(['mv', 'engram.json', 'claudetr.json'])
+    await g.commit('Claude Total Recall: legacy layout')
+    await g.push()
+    const machines = []
+    for (const n of names) {
+      const a = n === names[0] ? first : adapterFor(join(base, `home-${n}`))
+      if (a !== first) await connectRepo(remote, a)
+      await svc.registerMachine(a, n)
+      machines.push(a)
+    }
+    return { svc, remote, machines }
+  }
+  const pull = async (a: ReturnType<typeof adapterFor>) => {
+    const svc = await import('./service')
+    await svc.pullRepo(a)
+  }
+  const remoteFiles = async (remote: string) =>
+    (await run('git', ['--git-dir', remote, 'ls-tree', '-r', '--name-only', 'main'])).stdout
+
+  it('marks each machine and renames on its own once the whole fleet runs Engram', async () => {
+    const { svc, remote, machines } = await legacyFleet(['m1', 'm2'])
+    const [a1, a2] = machines
+    await pull(a1)
+    expect(await svc.advanceSharedConfigRename(a1)).toBe('marked')
+    expect(await svc.advanceSharedConfigRename(a1)).toBe('waiting') // no new commit
+    expect((await svc.sharedConfigInfo(a1)).waiting).toEqual(['m2'])
+    expect(await remoteFiles(remote)).toContain('.engram/machines/m1.json')
+
+    await pull(a2)
+    expect(await svc.advanceSharedConfigRename(a2)).toBe('renamed')
+    const files = await remoteFiles(remote)
+    expect(files).toContain('engram.json')
+    expect(files).not.toContain('claudetr.json')
+    expect(files).not.toContain('.engram/')
+
+    await pull(a1)
+    expect(await svc.advanceSharedConfigRename(a1)).toBe('done')
+    expect((await svc.sharedConfigInfo(a1)).file).toBe('engram.json')
+  })
+
+  it('a machine gone for good can be removed, and the rename goes ahead', async () => {
+    const { svc, remote, machines } = await legacyFleet(['m1', 'old-laptop'])
+    const [a1] = machines
+    await pull(a1)
+    expect(await svc.advanceSharedConfigRename(a1)).toBe('marked')
+    await expect(svc.removeMachine(a1, 'm1')).rejects.toMatchObject({ code: 'machine.removeSelf' })
+    await svc.removeMachine(a1, 'old-laptop')
+    expect(Object.keys((await svc.loadRepoConfig(a1)).machines)).toEqual(['m1'])
+    expect(await svc.advanceSharedConfigRename(a1)).toBe('renamed')
+    expect(await remoteFiles(remote)).toContain('engram.json')
+  })
+
+  it('a repo that already has engram.json has nothing to do', async () => {
+    const svc = await import('./service')
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a = adapterFor(join(base, 'home'))
+    await connectRepo(remote, a)
+    await svc.registerMachine(a, 'solo')
+    expect(await svc.advanceSharedConfigRename(a)).toBe('done')
   })
 })

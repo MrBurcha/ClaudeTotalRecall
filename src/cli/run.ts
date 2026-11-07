@@ -210,8 +210,8 @@ function usage(): void {
   out('  register [--name X]          register this machine')
   out('  outgoing [--dry-run] [--yes]  machine → repo')
   out('  incoming [--dry-run] [--yes]  repo → machine')
-  out('  migrate-config               rename the shared claudetr.json → engram.json (once,')
-  out('                               after EVERY machine runs Engram)')
+  out('  migrate-config               force the shared claudetr.json → engram.json rename now')
+  out('                               (normally automatic once every machine runs Engram)')
 }
 
 async function cmdMigrateConfig(): Promise<number> {

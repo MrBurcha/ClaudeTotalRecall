@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { hostname } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import type { PlatformAdapter } from '../platform'
@@ -386,27 +386,115 @@ async function commitConfigChangeLocked(
   }
 }
 
-// ── shared config rename (#123): claudetr.json → engram.json, explicit, once ──
+// ── shared config rename (#123): claudetr.json → engram.json, AUTOMATIC ─────
+//
+// Releases before Engram only read claudetr.json, so renaming it while any machine
+// still runs one would stop that machine from syncing. Instead of asking the user to
+// pick the moment, every machine running Engram leaves a marker in the repo
+// (`.engram/machines/<id>.json`, a path older versions never look at). After each
+// successful sync the engine runs one step: mark this machine; once EVERY machine in
+// the config is marked, rename the file and drop the markers. A machine that's gone
+// for good would block it forever, so it can be removed from the repo (removeMachine)
+// — or, as a last resort, the rename can be forced (migrateSharedConfig).
+
+/** Where each machine running Engram marks itself until the rename happens. */
+export const FLEET_MARKERS_DIR = '.engram/machines'
+const FLEET_ROOT = '.engram'
+
 export interface SharedConfigInfo {
   /** the file this repo uses today */
   file: typeof CONFIG_FILE | typeof LEGACY_CONFIG_FILE
-  /** machines in the fleet — every one must run Engram before migrating */
+  /** every machine registered in the repo */
   machines: string[]
+  /** machines already running Engram (marked) — only meaningful before the rename */
+  ready: string[]
+  /** machines the automatic rename is waiting for */
+  waiting: string[]
 }
 
-/** Which shared config file the working copy uses, plus the fleet it affects. */
+async function fleetMarkers(dir: string): Promise<Set<string>> {
+  try {
+    const names = await readdir(join(dir, FLEET_MARKERS_DIR))
+    return new Set(names.filter((n) => n.endsWith('.json')).map((n) => n.slice(0, -5)))
+  } catch {
+    return new Set()
+  }
+}
+
+/** Which shared config file the working copy uses and, before the rename, who it waits for. */
 export async function sharedConfigInfo(adapter: PlatformAdapter): Promise<SharedConfigInfo> {
   const path = await resolveConfigPath(adapter)
   const config = await loadConfig(path)
   const file = path.endsWith(LEGACY_CONFIG_FILE) ? LEGACY_CONFIG_FILE : CONFIG_FILE
-  return { file, machines: Object.keys(config.machines).sort() }
+  const machines = Object.keys(config.machines).sort()
+  if (file === CONFIG_FILE) return { file, machines, ready: machines, waiting: [] }
+  const marked = await fleetMarkers(workingCopyDir(adapter))
+  return {
+    file,
+    machines,
+    ready: machines.filter((m) => marked.has(m)),
+    waiting: machines.filter((m) => !marked.has(m)),
+  }
+}
+
+export type RenameStep = 'skipped' | 'waiting' | 'marked' | 'renamed' | 'done'
+
+/**
+ * One step of the automatic rename. The engine calls it after every successful sync,
+ * already holding the repo lock (it doesn't take it: the lock isn't reentrant). It
+ * commits locally and tries one push; a rejected push simply rides the next cycle.
+ * Never touches memory files.
+ */
+export async function advanceSharedConfigRename(adapter: PlatformAdapter): Promise<RenameStep> {
+  const machineId = await currentMachineId(adapter)
+  if (!machineId) return 'skipped'
+  const dir = workingCopyDir(adapter)
+  const git = repoGit(adapter)
+
+  if (await pathExists(join(dir, CONFIG_FILE))) {
+    // Already renamed. A marker can survive a concurrent rename (two machines on the
+    // same cycle): sweep it so the repo ends up clean.
+    if (!(await pathExists(join(dir, FLEET_ROOT)))) return 'done'
+    await ensureIdentity(git)
+    await git.out(['rm', '-r', '-q', '--ignore-unmatch', FLEET_ROOT])
+    await rm(join(dir, FLEET_ROOT), { recursive: true, force: true })
+    await git.commit(`${COMMIT_PREFIX}fleet: clean up rename markers`)
+    await git.push()
+    return 'done'
+  }
+  if (!(await pathExists(join(dir, LEGACY_CONFIG_FILE)))) return 'skipped'
+
+  await ensureIdentity(git)
+  const marker = join(dir, FLEET_MARKERS_DIR, `${machineId}.json`)
+  let marked = false
+  if (!(await pathExists(marker))) {
+    await mkdir(join(dir, FLEET_MARKERS_DIR), { recursive: true })
+    await writeFile(marker, `${JSON.stringify({ machine: machineId, app: 'engram' }, null, 2)}\n`)
+    await git.out(['add', '--', `${FLEET_MARKERS_DIR}/${machineId}.json`])
+    marked = true
+  }
+
+  const { waiting } = await sharedConfigInfo(adapter)
+  if (waiting.length === 0) {
+    await git.out(['mv', LEGACY_CONFIG_FILE, CONFIG_FILE])
+    await git.out(['rm', '-r', '-q', '-f', '--ignore-unmatch', FLEET_ROOT])
+    await rm(join(dir, FLEET_ROOT), { recursive: true, force: true })
+    await git.commit(`${COMMIT_PREFIX}fleet: shared config renamed to ${CONFIG_FILE}`)
+    await git.push()
+    return 'renamed'
+  }
+  if (marked) {
+    await git.commit(`${COMMIT_PREFIX}fleet: ${machineId} runs Engram`)
+    await git.push()
+    return 'marked'
+  }
+  return 'waiting'
 }
 
 /**
- * Renames the shared config to engram.json in the memories repo (git mv + commit +
- * push, with the same fetch/reset/retry mechanics as config edits). Run ONCE, only
- * after every machine of the fleet runs Engram: older versions only read
- * claudetr.json and would stop syncing. A no-op if it's already migrated.
+ * Forces the rename now (git mv + commit + push, with the config-edit retry
+ * mechanics). Normally unnecessary: the engine does it on its own once every machine
+ * runs Engram. Machines still on an older version stop syncing until updated.
  */
 export function migrateSharedConfig(adapter: PlatformAdapter): Promise<{ migrated: boolean }> {
   return withRepoLock(async () => {
@@ -423,7 +511,9 @@ export function migrateSharedConfig(adapter: PlatformAdapter): Promise<{ migrate
         throw new AppError('config.missing', 'This repo has no shared config file to migrate.')
       }
       await git.out(['mv', LEGACY_CONFIG_FILE, CONFIG_FILE])
-      await git.commit(`${COMMIT_PREFIX}migrate shared config to ${CONFIG_FILE}`)
+      await git.out(['rm', '-r', '-q', '-f', '--ignore-unmatch', FLEET_ROOT])
+      await rm(join(dir, FLEET_ROOT), { recursive: true, force: true })
+      await git.commit(`${COMMIT_PREFIX}fleet: shared config renamed to ${CONFIG_FILE}`)
       const push = await git.push()
       if (push.ok) return { migrated: true }
       if (!push.rejected) {
@@ -431,6 +521,36 @@ export function migrateSharedConfig(adapter: PlatformAdapter): Promise<{ migrate
       }
     }
     throw new AppError('push.retriesExhausted', 'Could not save after several retries.')
+  })
+}
+
+/**
+ * Removes a machine that's gone for good from the repo: its entry and its per-machine
+ * paths (a project source or pinned file left with no machine at all is dropped too).
+ * The memory it already synced stays in the repo. Not allowed for this machine.
+ */
+export async function removeMachine(adapter: PlatformAdapter, id: string): Promise<void> {
+  if (id === (await currentMachineId(adapter))) {
+    throw new AppError('machine.removeSelf', "This machine can't remove itself.")
+  }
+  await commitConfigChange(adapter, `${COMMIT_PREFIX}remove machine ${id}`, (config) => {
+    if (!config.machines[id]) {
+      throw new AppError('machine.unknown', `Machine "${id}" isn't registered.`, { value: id })
+    }
+    delete config.machines[id]
+    for (const project of Object.values(config.projects)) {
+      for (const [slot, paths] of Object.entries(project.folders)) {
+        delete paths[id]
+        if (Object.keys(paths).length === 0) {
+          delete project.folders[slot]
+          if (project.slotKinds) delete project.slotKinds[slot]
+        }
+      }
+    }
+    for (const [pin, paths] of Object.entries(config.pinnedFiles ?? {})) {
+      delete paths[id]
+      if (Object.keys(paths).length === 0) delete config.pinnedFiles![pin]
+    }
   })
 }
 
