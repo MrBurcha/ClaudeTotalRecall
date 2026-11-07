@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../platform', () => ({ createPlatformAdapter: () => ({}) }))
 vi.mock('../core/preflight', () => ({ runPreflight: vi.fn() }))
+vi.mock('../core/configHomeMigration', () => ({ migrateConfigHome: vi.fn(async () => 'noop') }))
 const lockHandle = { startHeartbeat: vi.fn(), release: vi.fn(async () => {}), releaseSync: vi.fn() }
 vi.mock('../core/instanceLock', () => ({
   acquireInstanceLock: vi.fn(async () => ({ acquired: true, lock: lockHandle })),
@@ -9,6 +10,7 @@ vi.mock('../core/instanceLock', () => ({
 vi.mock('../core/service', () => ({
   buildVerbPlan: vi.fn(),
   connectRepo: vi.fn(),
+  migrateSharedConfig: vi.fn(),
   pullRepo: vi.fn(),
   registerMachine: vi.fn(),
   repoStatus: vi.fn(),
@@ -17,9 +19,16 @@ vi.mock('../core/service', () => ({
 }))
 
 import { flagValue, hasFlag, lockedMessage, main } from './run'
+import { migrateConfigHome } from '../core/configHomeMigration'
 import { acquireInstanceLock } from '../core/instanceLock'
 import { runPreflight } from '../core/preflight'
-import { buildVerbPlan, connectRepo, pullRepo, syncOutgoing } from '../core/service'
+import {
+  buildVerbPlan,
+  connectRepo,
+  migrateSharedConfig,
+  pullRepo,
+  syncOutgoing,
+} from '../core/service'
 
 let output = ''
 beforeEach(() => {
@@ -50,7 +59,7 @@ describe('CLI dispatch', () => {
   it('prints usage and exits 0 for help / no args', async () => {
     expect(await main([])).toBe(0)
     expect(await main(['help'])).toBe(0)
-    expect(output).toContain('claude-total-recall <command>')
+    expect(output).toContain('engram <command>')
   })
 
   it('exits 1 on an unknown command', async () => {
@@ -168,7 +177,38 @@ describe('CLI machine lock (#141)', () => {
   it('explains another running command differently from the app', () => {
     expect(
       lockedMessage({ pid: 7, kind: 'cli', startedAt: 0, heartbeatAt: 0, token: 'y' }),
-    ).toContain('Another claude-total-recall command')
+    ).toContain('Another engram command')
     expect(lockedMessage(null)).toContain('The app is open')
+  })
+})
+
+describe('Engram rename (#123)', () => {
+  it('moves ~/.config/claudetr before running any verb, and says so', async () => {
+    vi.mocked(migrateConfigHome).mockResolvedValueOnce('migrated')
+    vi.mocked(runPreflight).mockResolvedValueOnce({ ok: true, checks: [] } as any)
+    expect(await main(['check'])).toBe(0)
+    expect(vi.mocked(migrateConfigHome)).toHaveBeenCalledOnce()
+    expect(output).toContain('Moved local data')
+  })
+
+  it('never touches local state just to print help', async () => {
+    expect(await main(['help'])).toBe(0)
+    expect(vi.mocked(migrateConfigHome)).not.toHaveBeenCalled()
+  })
+
+  it('a failed local-dir migration aborts the command', async () => {
+    vi.mocked(migrateConfigHome).mockRejectedValueOnce(new Error('EBUSY'))
+    await expect(main(['outgoing', '--yes'])).rejects.toThrow('EBUSY')
+    expect(vi.mocked(buildVerbPlan)).not.toHaveBeenCalled()
+  })
+
+  it('migrate-config runs the shared rename under the machine lock', async () => {
+    vi.mocked(migrateSharedConfig).mockResolvedValueOnce({ migrated: true })
+    expect(await main(['migrate-config'])).toBe(0)
+    expect(output).toContain('renamed to engram.json')
+    expect(lockHandle.release).toHaveBeenCalled()
+    vi.mocked(migrateSharedConfig).mockResolvedValueOnce({ migrated: false })
+    expect(await main(['migrate-config'])).toBe(0)
+    expect(output).toContain('already engram.json')
   })
 })

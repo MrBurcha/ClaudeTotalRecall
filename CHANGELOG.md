@@ -1,11 +1,109 @@
 # Changelog
 
-All notable changes to Claude Total Recall are documented here.
+All notable changes to Engram (formerly Claude Total Recall) are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.15.0] - 2026-11-07
+
+**Claude Total Recall is now Engram** — _your agent's memory, everywhere._ Same app, same synced
+data, new name. This release also makes sure only one copy of the app syncs a machine, makes the
+sync bar tell the truth, and adds a Pinned files module, an all-paths overview, and history and
+search for the Notebook.
+
+### Moving from Claude Total Recall (read this first)
+
+Do this on each machine, one at a time:
+
+1. **Quit Claude Total Recall** completely, and don't run its old command-line tool.
+2. **Install Engram and open it.** On first launch it moves its local data from
+   `~/.config/claudetr` to `~/.config/engram` in one step. The machine keeps its identity, the
+   working copy and its settings, and your theme and language carry over. If the old folder can't
+   be moved (usually because the old app is still open), Engram says so and closes rather than
+   starting from scratch: quit the old app and open Engram again.
+3. **Wait for one sync to finish**, then **uninstall the old app**:
+   - **macOS:** delete `/Applications/Claude Total Recall.app`.
+   - **Windows:** remove "Claude Total Recall" in Settings → Apps. It's a separate entry from
+     Engram.
+   - **Linux:** the `engram` package doesn't replace the old one. Run
+     `sudo apt remove claude-total-recall` (or `dnf remove` / `pacman -R`), or delete the old
+     AppImage.
+4. **Once every machine runs Engram, rename the shared config file.** Do this on any one machine:
+   **Settings → Repo → Rename to engram.json**, or run `engram migrate-config`. The file in your
+   memories repo keeps its old name (`claudetr.json`) until you do this, so machines still on the old
+   app keep syncing during the switch. Once one machine renames it, the others pick up the new name
+   on their own.
+
+### Changed
+
+- **New name, icon and home.** The app, window, installers and command-line tool are now **Engram**
+  (CLI: `engram`). The GitHub repo moves to `MrBurcha/Engram`; old links and installed older
+  versions are redirected, so update notices keep working. Installer files are now named
+  `engram-<version>-…`. Commits in your memories repo now start with `Engram:`, and older
+  `Claude Total Recall:` commits still show up in Recent activity.
+
+### Added
+
+- **Only one copy of the app runs (#140).** Opening the app again, for example a double-click on a
+  slow start, now brings the existing window to the front, restoring it if it was minimized,
+  instead of starting a second copy that synced the same files in parallel.
+- **The app and the command-line tool never sync a machine at the same time (#141).** While the app
+  is open, `engram outgoing` / `incoming` / `register` / `connect` refuse with a clear message
+  (`--dry-run` still works). A second copy of the app with a different name, such as a development
+  build, pauses itself and says why. It takes over on its own once the other copy closes. If a copy
+  crashed, its leftover lock is cleared automatically.
+- **Pinned files module (#113).** Pinned files now have their own section in the left menu, laid out
+  like the Notebook:
+  - **General** holds your global pins, and each project holds its single-file sources.
+  - Pick a file to see where it lives on each machine, change this machine's path, or preview the
+    synced copy.
+  - Pinned files are no longer under Settings.
+- **"All paths" overview (#114).** Projects has a **By project | All paths** switch. **All paths** is
+  one read-only list of everything that syncs and from where on each machine: user-level items,
+  pinned files, and every project folder and file. It flags entries a machine hasn't mapped and
+  paths that differ between machines, and you can filter it.
+- **Notebook: version history (#107).** Every note has a **History**: every saved version (renames
+  included), a side-by-side **Compare with current**, and **Restore this version**. A restore is
+  just another save, so it can be undone too.
+- **Notebook: search (#108).** A search box above the tree finds notes by name and content. It
+  ignores case and accents and highlights the match. Enter opens the first result, Esc clears.
+- **Update notices link to your installer (#134).** The "new version" notice now downloads the exact
+  installer for this machine: Apple Silicon or Intel, the Windows installer or portable build, or
+  the AppImage. It says which one it is. The notice moved to the bottom of the sidebar, next to the
+  machine and version (#122).
+
+### Fixed
+
+- **The sync bar tells the truth (#139).** With automatic sync off, the bar used to say **Up to
+  date** while edits piled up, and the upload animation ran forever, so it looked frozen. Now:
+  - It says **Up to date** only when that's true. Otherwise you see **N changes not uploaded**,
+    **N changes to bring in** or **No changes on this machine**, plus when it last checked.
+  - The count includes edits on this machine and Notebook saves that haven't gone up yet. Counting
+    is read-only: it never pushes, pulls or changes a file.
+  - The animation runs only while a sync is actually happening. Waiting changes show as a still,
+    dashed link with an ↑N/↓N count.
+  - With automatic sync off and something waiting, the bar turns amber and offers **Turn automatic
+    on**.
+  - Turning automatic sync off now asks first and explains what it means.
+  - A Notebook save with automatic sync off says it's only on this machine. With automatic sync on,
+    the save uploads within seconds instead of waiting for the next check.
+- **One sync at a time inside the app, too (#111).** The automatic sync now waits for Notebook saves
+  and config changes, and they wait for it. This removes the occasional "index.lock" failure when
+  both happened at once.
+- **Intel build on an Apple Silicon Mac (#133).** When the Intel build runs under Rosetta, git and gh
+  now run natively, so syncing keeps working with Command Line Tools 27. The app also shows a
+  notice linking the Apple Silicon build.
+- **The requirements check runs git and gh (#133).** It used to only check that they exist. A git or
+  gh that's installed but can't start now fails the check with its real error, instead of syncing
+  showing a bare "Offline".
+
+### Dependencies
+
+- Electron 43.8 (Chromium security fixes), React 19.3, i18next 26.7 and other minor/patch updates.
+  Fixes for most `npm audit` advisories in the build tooling (#124).
 
 ## [0.14.0] - 2026-11-03
 
@@ -666,7 +764,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/ClaudeTotalRecall/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/MrBurcha/Engram/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/MrBurcha/Engram/releases/tag/v0.15.0
 [0.14.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.14.0
 [0.13.1]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.13.1
 [0.13.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.13.0

@@ -25,7 +25,7 @@ export function createPlatformAdapter(
     default:
       throw new AppError(
         'platform.unsupported',
-        `Unsupported platform: ${platform}. Claude Total Recall supports macOS, Linux and Windows.`,
+        `Unsupported platform: ${platform}. Engram supports macOS, Linux and Windows.`,
         { platform },
       )
   }

@@ -279,7 +279,7 @@ export function RecentActivity(): JSX.Element {
                 // a bunch of spurious "removed" rows.
                 const visible = e.changes.filter((c) => !isStructuralNoise(c.path))
                 // File details for the sync verbs and Notebook edits: config commits
-                // also touch claudetr.json, which would be noise here.
+                // also touch engram.json (claudetr.json before #123), noise here.
                 const showFiles = showsFileList(e.type) && visible.length > 0
                 // A Notebook "create folder" commit only touches a .gitkeep placeholder,
                 // and a pre-#135 sync often only touched Claude Code's skills cache: with

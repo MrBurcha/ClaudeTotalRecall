@@ -1,8 +1,17 @@
 import type { HistoryType } from './types'
 
-// Every message the app writes is prefixed with this; anything else (git merge
-// commits, external commits) is filtered out of the activity view.
-const PREFIX = 'Claude Total Recall: '
+// Every message the app writes is prefixed with COMMIT_PREFIX; anything else (git
+// merge commits, external commits) is filtered out of the activity view. Commits
+// written before the Engram rename (#123) — and by machines still on an older
+// version during the switch — carry LEGACY_COMMIT_PREFIX and classify the same way.
+export const COMMIT_PREFIX = 'Engram: '
+export const LEGACY_COMMIT_PREFIX = 'Claude Total Recall: '
+
+function stripPrefix(subject: string): string | null {
+  if (subject.startsWith(COMMIT_PREFIX)) return subject.slice(COMMIT_PREFIX.length)
+  if (subject.startsWith(LEGACY_COMMIT_PREFIX)) return subject.slice(LEGACY_COMMIT_PREFIX.length)
+  return null
+}
 
 export interface ClassifiedCommit {
   type: HistoryType
@@ -25,11 +34,12 @@ export interface ClassifiedCommit {
  */
 export function classifyCommit(subject: string): ClassifiedCommit | null {
   // Notebook (#104) commits carry their own `notebook: <verb> <path>` subject (kept
-  // out of the CTR prefix so git log stays readable). Surface them in the ledger; the
+  // out of the app prefix so git log stays readable). Surface them in the ledger; the
   // changed files come from the commit's name-status, so no fields are needed here.
   if (/^notebook: /.test(subject)) return { type: 'notebook' }
-  if (!subject.startsWith(PREFIX)) return null // merge / external commit
-  const body = subject.slice(PREFIX.length).trim()
+  const stripped = stripPrefix(subject)
+  if (stripped === null) return null // merge / external commit
+  const body = stripped.trim()
   if (body === 'initial structure') return null // onboarding seed → noise
 
   let m: RegExpExecArray | null

@@ -57,7 +57,7 @@
     "title": "Ajustes",
     "sub": "Requisitos, tu repo de memoria y cómo se sincroniza.",
     "requirements": "Requisitos",
-    "requirementsSub": "Claude Total Recall sincroniza tu memoria a través de un repositorio privado de GitHub, usando git y la CLI de GitHub (gh). Ambos tienen que estar instalados, y gh con la sesión iniciada en tu cuenta de GitHub.",
+    "requirementsSub": "Engram sincroniza tu memoria a través de un repositorio privado de GitHub, usando git y la CLI de GitHub (gh). Ambos tienen que estar instalados, y gh con la sesión iniciada en tu cuenta de GitHub.",
     "recheck": "Volver a revisar",
     "repo": "Repo",
     "repoSub": "El repositorio privado de GitHub donde se guarda tu memoria sincronizada — un solo repo, compartido por todas tus máquinas.",
@@ -69,14 +69,24 @@
     "remoteCheck": "Consulta al remoto",
     "remoteCheckFreq": "Frecuencia de consulta al remoto",
     "about": "Acerca de",
-    "aboutText": "Claude Total Recall v{{version}} — sincroniza la memoria de Claude Code entre tus máquinas mediante un repositorio privado de GitHub.",
+    "aboutText": "Engram v{{version}} — sincroniza la memoria de Claude Code entre tus máquinas mediante un repositorio privado de GitHub.",
     "language": "Idioma",
-    "languageAria": "Idioma de la interfaz"
+    "languageAria": "Idioma de la interfaz",
+    "sharedConfig": {
+      "label": "Archivo de configuración compartida:",
+      "legacyHint": "Este repo todavía usa el nombre de archivo de antes del cambio de nombre. Renómbralo una sola vez, cuando todas las máquinas ya usen Engram.",
+      "migrate": "Renombrar a engram.json",
+      "confirmTitle": "¿Renombrar el archivo de configuración compartida?",
+      "confirmBody": "Todas las máquinas de este repo tienen que estar ya en Engram: {{machines}}. Una máquina que siga en Claude Total Recall deja de sincronizar hasta que la actualices. Las demás toman el nombre nuevo solas.",
+      "confirm": "Renombrar",
+      "done": "Configuración compartida renombrada a engram.json.",
+      "already": "La configuración compartida ya era engram.json."
+    }
   },
   "home": {
     "eyebrow": "Estación de sincronización",
     "title": "Tu memoria, sincronizada sola",
-    "sub": "Claude Total Recall mantiene la memoria de Claude Code al día entre tus máquinas: sube al instante cuando editas y baja del repo cada pocos minutos. Sin apretar nada.",
+    "sub": "Engram mantiene la memoria de Claude Code al día entre tus máquinas: sube al instante cuando editas y baja del repo cada pocos minutos. Sin apretar nada.",
     "status": {
       "conflict": "Conflicto",
       "loading": "Cargando…",
@@ -134,9 +144,10 @@
     "days_other": "hace {{count}} d"
   },
   "about": {
-    "title": "Acerca de Claude Total Recall",
+    "title": "Acerca de Engram",
     "body": "Sincroniza la memoria de Claude Code entre tus máquinas mediante un repositorio privado de GitHub.",
-    "secrets": "Los secretos nunca viajan: .credentials.json, .claude.json ni transcripts (*.jsonl)."
+    "secrets": "Los secretos nunca viajan: .credentials.json, .claude.json ni transcripts (*.jsonl).",
+    "tagline": "La memoria de tu agente, en todas partes."
   },
   "sync": {
     "resolveBeforeIncoming": "Resolve los conflictos antes de la sincronización entrante: {{conflicts}}",
@@ -211,7 +222,7 @@
       "toLight": "Cambiar a tema claro",
       "toDark": "Cambiar a tema oscuro"
     },
-    "about": "Acerca de Claude Total Recall"
+    "about": "Acerca de Engram"
   },
   "planReview": {
     "title": "Revisar cambios",
@@ -254,7 +265,7 @@
       "invalidName": "Nombre de máquina inválido.",
       "notRegistered": "La máquina no está registrada.",
       "notRegisteredAddProject": "La máquina no está registrada; regístrala antes de agregar proyectos.",
-      "notRegisteredLocal": "La máquina no está registrada (falta local.json). Ejecuta `claude-total-recall register`.",
+      "notRegisteredLocal": "La máquina no está registrada (falta local.json). Ejecuta `engram register`.",
       "notRegisteredPrefs": "La máquina no está registrada; no hay dónde guardar las preferencias."
     },
     "push": {
@@ -281,7 +292,7 @@
       "empty": "La ruta no puede estar vacía."
     },
     "platform": {
-      "unsupported": "Plataforma no soportada: {{platform}}. Claude Total Recall soporta macOS y Linux (Windows más adelante)."
+      "unsupported": "Plataforma no soportada: {{platform}}. Engram funciona en macOS, Linux y Windows."
     },
     "plan": {
       "expired": "El plan expiró; vuelve a generarlo (la vista previa ya no es válida)."
@@ -304,6 +315,12 @@
     },
     "update": {
       "invalidUrl": "No se puede abrir una URL fuera de las versiones publicadas de la app."
+    },
+    "config": {
+      "missing": "Este repo no tiene un archivo de configuración compartida para migrar."
+    },
+    "configHome": {
+      "migrationFailed": "No se pudo mover la carpeta de datos locales de {{from}} a {{to}} ({{reason}}). Cierra cualquier copia abierta de Claude Total Recall y vuelve a abrir Engram."
     }
   },
   "preflight": {
@@ -623,7 +640,7 @@
     },
     "preflight": {
       "title": "Requisitos del sistema",
-      "sub": "Claude Total Recall sincroniza tu memoria a través de un repositorio privado de GitHub, usando git y la CLI de GitHub (gh). Ambos tienen que estar instalados, y gh con la sesión iniciada en tu cuenta de GitHub."
+      "sub": "Engram sincroniza tu memoria a través de un repositorio privado de GitHub, usando git y la CLI de GitHub (gh). Ambos tienen que estar instalados, y gh con la sesión iniciada en tu cuenta de GitHub."
     },
     "connect": {
       "title": "Conecta tu repo de memoria",

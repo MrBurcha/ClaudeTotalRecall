@@ -24,6 +24,7 @@ import type {
   OutgoingResult,
   RegisterResult,
   IncomingResult,
+  SharedConfigInfo,
 } from '../core/service'
 import type {
   DiscoveryProposal,
@@ -160,6 +161,9 @@ const api = {
 
   // Auto-sync: estado actual (pull), cambio de prefs, disparo manual, y la
   // suscripción al push en tiempo real (devuelve una función para desuscribirse).
+  sharedConfigInfo: () => ipcRenderer.invoke('config:sharedInfo') as Promise<SharedConfigInfo>,
+  migrateSharedConfig: () =>
+    ipcRenderer.invoke('config:migrateShared') as Promise<{ migrated: boolean }>,
   syncGetState: () => ipcRenderer.invoke('sync:getState') as Promise<SyncEngineState>,
   syncSetAuto: (enabled: boolean, intervalMs: number) =>
     ipcRenderer.invoke('sync:setAuto', { enabled, intervalMs }) as Promise<SyncEngineState>,
@@ -203,6 +207,6 @@ const api = {
   platform: process.platform,
 }
 
-export type ClaudeTotalRecallApi = typeof api
+export type EngramApi = typeof api
 
-contextBridge.exposeInMainWorld('claudeTotalRecall', api)
+contextBridge.exposeInMainWorld('engram', api)

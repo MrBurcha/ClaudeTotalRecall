@@ -33,7 +33,7 @@ function AboutModal(): JSX.Element {
     >
       <div className="cluster">
         <BrandMark size={20} />
-        <b>Claude Total Recall</b>
+        <b>Engram</b>
         <span className="pill mono">v{version ?? '—'}</span>
       </div>
       <p className="muted">{t('about.body')}</p>

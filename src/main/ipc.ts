@@ -139,6 +139,10 @@ export function registerIpc(
 
   // Config / repo
   handle('config:load', () => svc.loadRepoConfig(adapter()).catch(() => null))
+  // Engram rename (#123): which shared config file the repo uses, and the explicit,
+  // once-per-fleet rename to engram.json (it takes the repo lock itself).
+  handle('config:sharedInfo', () => svc.sharedConfigInfo(adapter()))
+  change('config:migrateShared', () => svc.migrateSharedConfig(adapter()))
   change('repo:connect', (_e, remote: string) => svc.connectRepo(remote, adapter()))
   handle('repo:status', () => svc.repoStatus(adapter()))
   handle('repo:history', (_e, limit?: number) => svc.history(adapter(), limit))

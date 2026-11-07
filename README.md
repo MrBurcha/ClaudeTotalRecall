@@ -1,8 +1,10 @@
 <p align="center">
-  <img src="build/icons/256x256.png" width="96" alt="Claude Total Recall" />
+  <img src="build/icons/256x256.png" width="96" alt="Engram" />
 </p>
 
-<h1 align="center">Claude Total Recall</h1>
+<h1 align="center">Engram</h1>
+
+<p align="center"><i>Your agent's memory, everywhere.</i></p>
 
 <p align="center">
   Sync your <b>Claude Code memory</b> across machines — and keep a private, versioned
@@ -11,9 +13,9 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
-  <a href="https://github.com/MrBurcha/ClaudeTotalRecall/releases/latest"><img src="https://img.shields.io/github/v/release/MrBurcha/ClaudeTotalRecall" alt="Latest release" /></a>
-  <a href="https://github.com/MrBurcha/ClaudeTotalRecall/actions/workflows/ci.yml"><img src="https://github.com/MrBurcha/ClaudeTotalRecall/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey" alt="Platform: macOS | Linux" />
+  <a href="https://github.com/MrBurcha/Engram/releases/latest"><img src="https://img.shields.io/github/v/release/MrBurcha/Engram" alt="Latest release" /></a>
+  <a href="https://github.com/MrBurcha/Engram/actions/workflows/ci.yml"><img src="https://github.com/MrBurcha/Engram/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="Platform: macOS | Linux | Windows" />
 </p>
 
 ---
@@ -24,7 +26,7 @@ Claude Code keeps its **memory** in `~/.claude`: your `CLAUDE.md` house rules, y
 `commands/`, `agents/`, and `skills/`, and your `settings.json`. That state is valuable — and it
 lives on one machine. Switch laptops, reinstall, or lose the disk, and it's gone.
 
-**Claude Total Recall** gives you two things, backed by a **private GitHub repo you own**:
+**Engram** gives you two things, backed by a **private GitHub repo you own**:
 
 - **Sync across machines** — your Claude Code memory stays identical on every computer you use, kept
   up to date automatically while the app is open.
@@ -52,14 +54,14 @@ same core. **macOS, Linux and Windows.**
 
 ## Install
 
-Grab the latest build from the [**Releases**](https://github.com/MrBurcha/ClaudeTotalRecall/releases/latest)
+Grab the latest build from the [**Releases**](https://github.com/MrBurcha/Engram/releases/latest)
 page. Builds are **unsigned** (no paid Apple/OS code-signing) — see the notes below.
 
 ### macOS
 
 1. Download the `.dmg` for your Mac's chip, open it, and drag the app to **Applications**:
-   - **Apple Silicon** (M1/M2/M3/…): `claude-total-recall-<version>-macos-arm64.dmg`
-   - **Intel**: `claude-total-recall-<version>-macos-x64.dmg`
+   - **Apple Silicon** (M1/M2/M3/…): `engram-<version>-macos-arm64.dmg`
+   - **Intel**: `engram-<version>-macos-x64.dmg`
 
    Not sure which you have? → **Apple menu → About This Mac**: a "Chip" line means Apple Silicon,
    a "Processor" line means Intel.
@@ -67,13 +69,13 @@ page. Builds are **unsigned** (no paid Apple/OS code-signing) — see the notes 
 2. First open, because the build isn't notarized (macOS 15 Sequoia and later — the old
    _right-click → Open_ was removed):
    - Double-click the app → _"Apple could not verify…"_ → **Done**.
-   - **System Settings → Privacy & Security**, scroll to **Security** → _"Claude Total Recall was
+   - **System Settings → Privacy & Security**, scroll to **Security** → _"Engram was
      blocked…"_ → **Open Anyway** → confirm with Touch ID / password.
 
    Or clear the quarantine in one shot from a terminal:
 
    ```bash
-   xattr -cr "/Applications/Claude Total Recall.app"
+   xattr -cr "/Applications/Engram.app"
    ```
 
    > It's a one-time step. Opening with **no dialog at all** would require notarization with a paid
@@ -85,20 +87,47 @@ Pick the package for your distro:
 
 ```bash
 # AppImage (portable — any distro)
-chmod +x claude-total-recall-<version>-linux-x86_64.AppImage
-./claude-total-recall-<version>-linux-x86_64.AppImage
+chmod +x engram-<version>-linux-x86_64.AppImage
+./engram-<version>-linux-x86_64.AppImage
 
 # Debian / Ubuntu
-sudo dpkg -i claude-total-recall-<version>-linux-amd64.deb
+sudo dpkg -i engram-<version>-linux-amd64.deb
 
 # Fedora / RHEL / openSUSE
-sudo dnf install ./claude-total-recall-<version>-linux-x86_64.rpm
+sudo dnf install ./engram-<version>-linux-x86_64.rpm
 
 # Arch / Manjaro
-sudo pacman -U claude-total-recall-<version>-linux-x64.pacman
+sudo pacman -U engram-<version>-linux-x64.pacman
 ```
 
 Prefer to build the binaries yourself? See [Build from source](#build-from-source).
+
+## Coming from Claude Total Recall
+
+Engram **is** Claude Total Recall, renamed (0.15.0). In neuroscience an _engram_ is the trace a
+memory leaves — which is what this app keeps of your agent's memory. Nothing about your synced data
+changes; the app, its local folder and the repo it lives in get the new name. Per machine, one at a
+time:
+
+1. **Quit Claude Total Recall** completely (and don't run its old command-line tool).
+2. **Install Engram** from the [latest release](https://github.com/MrBurcha/Engram/releases/latest)
+   and open it. On first launch it moves its local data from `~/.config/claudetr` to
+   `~/.config/engram` in one step — this machine keeps its identity, the working copy and its
+   settings — and carries over your theme and language.
+3. Check that one sync runs (the sync bar says **Up to date**), then **uninstall the old app**:
+   - **macOS:** delete `/Applications/Claude Total Recall.app`.
+   - **Windows:** it's a separate entry in **Settings → Apps** ("Claude Total Recall").
+   - **Linux:** `sudo apt remove claude-total-recall` / `sudo dnf remove claude-total-recall` /
+     `sudo pacman -R claude-total-recall` (the `engram` package doesn't replace it), or delete
+     the old AppImage.
+
+**Last step, once:** the shared config file in your memories repo keeps its old name
+(`claudetr.json`) so machines still on the old app keep working during the switch. When **every**
+machine runs Engram, go to **Settings → Repo → Rename to engram.json** on any one of them (or run
+`engram migrate-config`). The others pick up the new name on their own.
+
+If Engram can't move the old folder (the old app is still open, say), it tells you and closes
+instead of starting from scratch — quit the old app and open Engram again.
 
 ## Quickstart
 
@@ -119,12 +148,12 @@ outgoing/incoming flow.
 Prefer the terminal? The same flow via the CLI:
 
 ```bash
-claude-total-recall check                       # preflight: git / gh / auth
-claude-total-recall connect git@github.com:you/claude-memories.git
-claude-total-recall register --name my-laptop
-claude-total-recall outgoing                    # push this machine's memory to the repo
+engram check                       # preflight: git / gh / auth
+engram connect git@github.com:you/claude-memories.git
+engram register --name my-laptop
+engram outgoing                    # push this machine's memory to the repo
 # …on another machine, after connect + register:
-claude-total-recall incoming                    # pull the repo's memory onto this machine
+engram incoming                    # pull the repo's memory onto this machine
 ```
 
 **What syncs:** your user-level `~/.claude/CLAUDE.md`, `commands/`, `agents/`, `skills/`, and
@@ -138,21 +167,22 @@ synced, what's skipped on purpose, and how to back up a git-ignored `.env` — s
 The CLI ships the same core as the app and is English-only. Every command prints its result and sets
 an exit code (`0` on success).
 
-| Command                        | What it does                                                                                                                                                                  |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `check`                        | Preflight: verifies `git` and `gh` are installed and actually run, and `gh` is authenticated. Read-only.                                                                      |
-| `connect <remote>`             | Clone/initialize the memories repo into `~/.config/claudetr/repo` (accepts HTTPS, SSH, or `file://` remotes). On an empty repo it writes the initial structure and pushes it. |
-| `status`                       | Local repo status: branch, ahead/behind, dirty, conflicts. Read-only.                                                                                                         |
-| `register [--name <id>]`       | Register this machine in the repo config (defaults the id to your hostname). Mutates the repo.                                                                                |
-| `outgoing [--dry-run] [--yes]` | **machine → repo**: build a Plan, then commit + pull + push your memory.                                                                                                      |
-| `incoming [--dry-run] [--yes]` | **repo → machine**: pull first, build a Plan, then write the repo's memory onto this machine. Never touches the remote.                                                       |
+| Command                        | What it does                                                                                                                                                                |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check`                        | Preflight: verifies `git` and `gh` are installed and actually run, and `gh` is authenticated. Read-only.                                                                    |
+| `connect <remote>`             | Clone/initialize the memories repo into `~/.config/engram/repo` (accepts HTTPS, SSH, or `file://` remotes). On an empty repo it writes the initial structure and pushes it. |
+| `status`                       | Local repo status: branch, ahead/behind, dirty, conflicts. Read-only.                                                                                                       |
+| `register [--name <id>]`       | Register this machine in the repo config (defaults the id to your hostname). Mutates the repo.                                                                              |
+| `outgoing [--dry-run] [--yes]` | **machine → repo**: build a Plan, then commit + pull + push your memory.                                                                                                    |
+| `incoming [--dry-run] [--yes]` | **repo → machine**: pull first, build a Plan, then write the repo's memory onto this machine. Never touches the remote.                                                     |
+| `migrate-config`               | Rename the shared `claudetr.json` to `engram.json` in the memories repo — once, after **every** machine runs Engram (same as Settings → Repo → Rename).                     |
 
 Notes:
 
 - `outgoing`/`incoming` build a **Plan (dry-run)** and ask for confirmation. `--dry-run` previews and
   touches nothing; `--yes` skips the prompt (**required** when running non-interactively, e.g. in a
   script).
-- There is no per-subcommand `--help` and no version flag — `claude-total-recall` with no args (or
+- There is no per-subcommand `--help` and no version flag — `engram` with no args (or
   `help`) prints the usage block.
 
 Running the CLI from source: `npm run build:cli` produces `dist-cli/index.js`, then
@@ -166,7 +196,7 @@ Running the CLI from source: `npm run build:cli` produces `dist-cli/index.js`, t
 - **Auto-sync while the app is open** — it pushes the moment a watched file changes and pulls from
   the repo on a periodic poll. The manual `outgoing`/`incoming` verbs live under **Advanced sync**.
 - **`settings.json` is merged, not copied** — a shared base plus per-key machine-local overrides in
-  `~/.config/claudetr/settings.local.json`. Local overrides win on incoming and never travel to the
+  `~/.config/engram/settings.local.json`. Local overrides win on incoming and never travel to the
   repo.
 - **Conflicts are resolved per file** — `ours` (local) or `theirs` (remote), then finalize the merge.
 - **Secrets are hard-excluded** — `.credentials.json`, `.claude.json`, `*.jsonl`, always.
@@ -196,14 +226,14 @@ machine).
 
 ## What gets synced (and what to back up)
 
-Claude Total Recall does **not** mirror all of `~/.claude`. It syncs a **curated allowlist** — the
+Engram does **not** mirror all of `~/.claude`. It syncs a **curated allowlist** — the
 config and memory that's portable and worth carrying between machines — and deliberately leaves
 behind everything that's machine-local, disposable, or secret. This section is the full picture:
 what travels, what never does, and how to back up the odd file (like a git-ignored `.env`) you want
 kept but out of your product repo.
 
 > [!WARNING]
-> **Keep your own local backups too — Claude Total Recall is a safety net, not your only copy.**
+> **Keep your own local backups too — Engram is a safety net, not your only copy.**
 > Claude Code's internal file layout belongs to Anthropic and can change without notice: a future
 > update could reshape, rename, or move these files in ways we can't anticipate or immediately
 > support. The app syncs what it sees — it can't guarantee forward-compatibility with a third-party
@@ -227,7 +257,7 @@ kept but out of your product repo.
 | **Pinned files**    | any single file, anywhere on the machine | **Pinned files** (left menu) → General → `memories/pinned/<name>`   |
 
 `settings.json` is the one exception to plain copying: a shared base is merged with per-key
-machine-local overrides you declare in `~/.config/claudetr/settings.local.json`. Those local keys
+machine-local overrides you declare in `~/.config/engram/settings.local.json`. Those local keys
 (paths, per-machine toggles) **never travel to the repo**, and win on the way back in.
 
 **Recommended project source:** point a project at `~/.claude/projects/<project-slug>/memory/` — the
@@ -291,8 +321,8 @@ choose to back it up. But it also means the app won't stop you, and the responsi
 **Requirements:** [Node.js 20](https://nodejs.org), plus `git` and `gh` as above.
 
 ```bash
-git clone https://github.com/MrBurcha/ClaudeTotalRecall.git
-cd ClaudeTotalRecall
+git clone https://github.com/MrBurcha/Engram.git
+cd Engram
 npm install
 npm run dev          # run the Electron app in dev mode
 ```
@@ -334,7 +364,7 @@ defaulting to your host locale and switchable in **Settings → Language**.
 ## Platform support
 
 **macOS, Linux and Windows.** All three share one on-disk layout: the memories working copy and the
-app's local state live under `~/.config/claudetr` (`C:\Users\<you>\.config\claudetr` on Windows),
+app's local state live under `~/.config/engram` (`C:\Users\<you>\.config\engram` on Windows),
 beside Claude Code's own `~/.claude` — home-relative via `os.homedir()`, never tied to the install
 dir (a portable `.exe` can be moved freely). Cross-OS fleets sync user-level memory (CLAUDE.md,
 commands, agents, skills, settings) transparently; project **folders** whose paths differ across

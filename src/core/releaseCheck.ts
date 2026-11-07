@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const GITHUB_OWNER = 'MrBurcha'
-export const GITHUB_REPO = 'ClaudeTotalRecall'
+export const GITHUB_REPO = 'Engram'
 
 const RELEASES_API_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases`
 const LATEST_RELEASE_API_URL = `${RELEASES_API_URL}/latest`

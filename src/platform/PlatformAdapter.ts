@@ -3,22 +3,23 @@ import { join, normalize as pathNormalize } from 'node:path'
 import type { Os } from '../core/types'
 
 /**
- * Único lugar OS-específico de la app. Con el munching de paths eliminado,
- * el adapter solo expande el home y normaliza separadores. Windows a futuro =
- * un adapter más + su rama en index.ts.
+ * The app's only OS-specific spot. With path munging gone, the adapter just expands
+ * the home dir and normalizes separators.
  */
 export interface PlatformAdapter {
   os(): Os
   home(): string
   claudeHome(): string // ~/.claude
-  configHome(): string // ~/.config/claudetr
+  configHome(): string // ~/.config/engram
+  /** Where releases before the Engram rename kept local state (#123). */
+  legacyConfigHome(): string // ~/.config/claudetr
   expandHome(p: string): string
   normalize(p: string): string
 }
 
 /**
- * Base compartida por linux/macos. El `home` es inyectable para tests
- * (por defecto os.homedir()).
+ * Shared base for every OS. `home` is injectable for tests (defaults to
+ * os.homedir()).
  */
 export abstract class BasePlatformAdapter implements PlatformAdapter {
   protected readonly homeDir: string
@@ -38,6 +39,10 @@ export abstract class BasePlatformAdapter implements PlatformAdapter {
   }
 
   configHome(): string {
+    return join(this.homeDir, '.config', 'engram')
+  }
+
+  legacyConfigHome(): string {
     return join(this.homeDir, '.config', 'claudetr')
   }
 

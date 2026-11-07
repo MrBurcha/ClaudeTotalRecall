@@ -26,7 +26,7 @@ export class AppError extends Error {
 }
 
 /** Prefix that marks an IPC error message as an encoded AppError payload. */
-export const IPC_ERROR_SENTINEL = 'CLAUDE_TOTAL_RECALL_ERR::'
+export const IPC_ERROR_SENTINEL = 'ENGRAM_ERR::'
 
 export interface DecodedAppError {
   code: string

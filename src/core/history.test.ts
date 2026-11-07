@@ -179,3 +179,18 @@ describe('Git.log', () => {
     expect(log[0].subject).not.toContain('\\303')
   })
 })
+
+describe('Engram rename: both commit prefixes classify (#123)', () => {
+  it('current and legacy prefixes produce the same entry', async () => {
+    const { COMMIT_PREFIX, LEGACY_COMMIT_PREFIX } = await import('./history')
+    expect(COMMIT_PREFIX).toBe('Engram: ')
+    for (const p of [COMMIT_PREFIX, LEGACY_COMMIT_PREFIX]) {
+      expect(classifyCommit(`${p}outgoing on laptop`)).toEqual({
+        type: 'outgoing',
+        machineId: 'laptop',
+      })
+      expect(classifyCommit(`${p}initial structure`)).toBeNull()
+    }
+    expect(classifyCommit('Merge branch main')).toBeNull()
+  })
+})

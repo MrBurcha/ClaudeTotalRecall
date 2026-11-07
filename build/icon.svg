@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!--
+    Engram app icon (#123). An engram is the trace a memory leaves: a short
+    constellation of nodes on one luminous path that forks and merges back —
+    readable both as a neural pathway and as a git commit graph. Palette from the
+    app's design tokens. Rounded-square canvas with macOS-style margins.
+  -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#7ba2ff" stop-opacity="0.55" />
+      <stop offset="0.55" stop-color="#7ba2ff" stop-opacity="0.16" />
+      <stop offset="1" stop-color="#7ba2ff" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111623" />
+      <stop offset="1" stop-color="#0b0e14" />
+    </linearGradient>
+    <clipPath id="tile">
+      <rect x="100" y="100" width="824" height="824" rx="186" />
+    </clipPath>
+  </defs>
+
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)" />
+  <rect x="103" y="103" width="818" height="818" rx="183" fill="none" stroke="#222b3d" stroke-width="6" />
+
+  <!-- trace: A → B → D, with a branch B → C → D that forks and merges back -->
+  <g fill="none" stroke="#5b8cff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M300 724 L432 592 L722 302" stroke-width="46" />
+    <path d="M432 592 C 520 676, 640 672, 676 584 C 706 512, 716 420, 722 302" stroke-width="40" />
+  </g>
+
+  <!-- the active memory: brightest node, soft glow -->
+  <circle cx="722" cy="302" r="190" fill="url(#glow)" clip-path="url(#tile)" />
+
+  <!-- nodes -->
+  <circle cx="300" cy="724" r="58" fill="#5b8cff" />
+  <circle cx="432" cy="592" r="58" fill="#5b8cff" />
+  <circle cx="676" cy="584" r="50" fill="#48566e" stroke="#5b8cff" stroke-width="16" />
+  <circle cx="722" cy="302" r="78" fill="#7ba2ff" />
+  <circle cx="722" cy="302" r="34" fill="#dbe5ff" />
+</svg>

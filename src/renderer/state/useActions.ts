@@ -6,6 +6,7 @@ import { useAppState, useDispatch } from './store'
 import type { AppState, ModalDescriptor, Route, Theme } from './types'
 import type { Verb } from '../../core/types'
 import i18n from '../i18n'
+import { THEME_KEY } from './storageKeys'
 
 // Id counter for toasts/modals (the renderer may use mutable state).
 let seq = 0
@@ -14,7 +15,7 @@ const nextId = (): number => (seq += 1)
 function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme
   try {
-    localStorage.setItem('claude-total-recall:theme', theme)
+    localStorage.setItem(THEME_KEY, theme)
   } catch {
     /* localStorage may fail in exotic modes; the in-memory theme is enough. */
   }

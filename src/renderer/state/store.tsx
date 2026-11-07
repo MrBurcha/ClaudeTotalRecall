@@ -10,6 +10,7 @@ import type { SyncEngineState } from '../../core/types'
 import { api } from './api'
 import { initialState, reducer, type Action } from './reducer'
 import type { AppState, Theme } from './types'
+import { readStorageMigrated, THEME_KEY } from './storageKeys'
 
 const StateContext = createContext<AppState>(initialState)
 const DispatchContext = createContext<Dispatch<Action>>(() => undefined)
@@ -17,7 +18,7 @@ const DispatchContext = createContext<Dispatch<Action>>(() => undefined)
 /** Reads the persisted theme; the default is dark (dark-first). CSP doesn't govern localStorage. */
 export function readStoredTheme(): Theme {
   try {
-    return localStorage.getItem('claude-total-recall:theme') === 'light' ? 'light' : 'dark'
+    return readStorageMigrated(THEME_KEY) === 'light' ? 'light' : 'dark'
   } catch {
     return 'dark'
   }

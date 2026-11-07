@@ -21,7 +21,7 @@ export type MemoryLocation =
 /**
  * Parses a repo-relative memories path (with or without the leading `memories/`
  * prefix; backslashes tolerated) into a {@link MemoryLocation}. Anything that
- * doesn't match a known bucket — `claudetr.json`, `.gitignore`, a path missing
+ * doesn't match a known bucket — `engram.json` (or `claudetr.json`), `.gitignore`, a path missing
  * its slot segment, the empty string — falls through to `unknown` carrying the
  * original path.
  */

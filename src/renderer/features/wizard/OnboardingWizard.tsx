@@ -260,7 +260,7 @@ export function OnboardingWizard(): JSX.Element {
         <div className="wizard__brand">
           <BrandMark size={22} />
           <div>
-            <div className="brand__name">Claude Total Recall</div>
+            <div className="brand__name">Engram</div>
             <span className="brand__tag">{t('wizard.brandTag')}</span>
           </div>
           <span className="spacer" />

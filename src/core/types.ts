@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Config that lives in the repo (claudetr.json). See §7/§8 of the plan.
+// Config that lives in the repo (engram.json; claudetr.json before #123).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const OsSchema = z.enum(['linux', 'macos', 'windows'])
@@ -49,7 +49,7 @@ export function emptyConfig(remote: string): Config {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Local state (outside the repo, in ~/.config/claudetr/).
+// Local state (outside the repo, in ~/.config/engram/).
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Per-machine auto-sync preferences (outside the repo). See core/syncEngine.ts. */
