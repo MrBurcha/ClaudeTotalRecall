@@ -7,6 +7,21 @@ and the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-11-07
+
+### Fixed
+
+- **A removed machine no longer keeps syncing in the background.** Before, if you removed a machine
+  under Settings → Machines and later opened Engram on it again, it kept syncing your user-level
+  memory without showing up in the list. Now it stops, and Engram asks it to **join again**.
+  The command-line tool refuses to sync it too, with the same explanation.
+
+### Changed
+
+- **Joining again with the same name brings the machine back as it was.** It gets its project folders
+  and pinned files back, as long as they still exist on that disk. Removing a machine by mistake is
+  undoable. A machine you really don't use anymore just stays out.
+
 ## [0.15.1] - 2026-11-07
 
 ### Changed
@@ -781,7 +796,8 @@ produces a cache hit on a real run — v0.9.6 saved the cache under its new, sta
 - macOS (`.dmg`) and Linux (AppImage + deb + pacman) packaging, published by CI on pushing a
   `v*.*.*` tag.
 
-[Unreleased]: https://github.com/MrBurcha/Engram/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/MrBurcha/Engram/compare/v0.15.2...HEAD
+[0.15.2]: https://github.com/MrBurcha/Engram/releases/tag/v0.15.2
 [0.15.1]: https://github.com/MrBurcha/Engram/releases/tag/v0.15.1
 [0.15.0]: https://github.com/MrBurcha/Engram/releases/tag/v0.15.0
 [0.14.0]: https://github.com/MrBurcha/ClaudeTotalRecall/releases/tag/v0.14.0

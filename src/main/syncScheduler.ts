@@ -94,6 +94,7 @@ export class SyncScheduler {
     lastError: null,
     errorKind: null,
     blockedBy: null,
+    removedFromRepo: false,
   }
 
   private ready = false
@@ -277,6 +278,10 @@ export class SyncScheduler {
       this.applyOutcome({ kind: 'error', message: errorMessage(e) })
     } finally {
       this.inFlight = false
+      if (this.ready && !(await this.isReady())) {
+        this.ready = false
+        this.disarm()
+      }
       if (this.rerunQueued) {
         this.rerunQueued = false
         if (!this.pausedByConflict) void this.cycle()
@@ -307,11 +312,27 @@ export class SyncScheduler {
     })
   }
 
+  /**
+   * Ready = this machine has an identity AND the repo still lists it. One that was
+   * removed from the repo (by another machine) must not keep syncing as an invisible
+   * machine: it stops, and the app asks it to rejoin.
+   */
   private async isReady(): Promise<boolean> {
     const machineId = await svc.currentMachineId(this.adapter).catch(() => null)
     if (!machineId) return false
     const config = await svc.loadRepoConfig(this.adapter).catch(() => null)
-    return !!config
+    if (!config) return false
+    const removed = !config.machines[machineId]
+    if (removed !== this.state.removedFromRepo) {
+      // The cycle that pulls the removal fails its last step on purpose (core refuses a
+      // machine the repo no longer lists): that is not a sync failure to show.
+      this.setState(
+        removed
+          ? { removedFromRepo: true, status: 'idle', lastError: null, errorKind: null }
+          : { removedFromRepo: false },
+      )
+    }
+    return !removed
   }
 
   // ── arming/disarming watch + poll + pending beat ─────────────────────────────

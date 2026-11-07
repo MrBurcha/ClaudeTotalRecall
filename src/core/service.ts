@@ -248,6 +248,88 @@ export interface RegisterResult {
   machineId: string
   machine: Machine
   alreadyRegistered: boolean
+  /** per-machine paths brought back from before this machine was removed (rejoin) */
+  restored: number
+}
+
+type MachinePaths = Record<string, Record<string, string>>
+interface ConfigSnapshot {
+  projects?: Record<string, { folders?: MachinePaths; slotKinds?: Record<string, 'file' | 'dir'> }>
+  pinnedFiles?: MachinePaths
+}
+
+/**
+ * The newest shared-config version in git history where `id` was still registered
+ * (before someone removed it), or null. Read leniently: an old snapshot only lends
+ * paths, it's never written back as a whole.
+ */
+async function lastSnapshotWith(git: Git, id: string): Promise<ConfigSnapshot | null> {
+  const log = await git.raw([
+    'log',
+    '--format=%H',
+    '-n',
+    '300',
+    '--',
+    CONFIG_FILE,
+    LEGACY_CONFIG_FILE,
+  ])
+  if (log.code !== 0) return null
+  for (const hash of log.stdout.split(/\r?\n/).filter(Boolean)) {
+    for (const file of [CONFIG_FILE, LEGACY_CONFIG_FILE]) {
+      const show = await git.raw(['show', `${hash}:${file}`])
+      if (show.code !== 0) continue
+      try {
+        const snap = JSON.parse(show.stdout) as ConfigSnapshot & {
+          machines?: Record<string, unknown>
+        }
+        if (snap.machines && snap.machines[id]) return snap
+      } catch {
+        /* unreadable version: look further back */
+      }
+      break
+    }
+  }
+  return null
+}
+
+/**
+ * Rejoin (#123 follow-up): a machine registering under a name it had before gets back
+ * the project folders and pinned files it had then — only paths that still exist on
+ * this disk, and only for projects that still exist. Makes "remove machine" undoable.
+ */
+async function restoreMachinePaths(
+  adapter: PlatformAdapter,
+  git: Git,
+  config: Config,
+  id: string,
+): Promise<number> {
+  const snap = await lastSnapshotWith(git, id)
+  if (!snap) return 0
+  let restored = 0
+  for (const [name, past] of Object.entries(snap.projects ?? {})) {
+    const project = config.projects[name]
+    if (!project) continue // deleted since: don't resurrect it
+    for (const [slot, paths] of Object.entries(past.folders ?? {})) {
+      const path = paths?.[id]
+      if (typeof path !== 'string' || project.folders[slot]?.[id]) continue
+      if (!(await pathExists(adapter.normalize(path)))) continue
+      project.folders[slot] = { ...(project.folders[slot] ?? {}), [id]: path }
+      const kind = past.slotKinds?.[slot]
+      if (kind && !project.slotKinds?.[slot]) {
+        project.slotKinds = { ...(project.slotKinds ?? {}), [slot]: kind }
+      }
+      restored++
+    }
+  }
+  for (const [pin, paths] of Object.entries(snap.pinnedFiles ?? {})) {
+    const path = paths?.[id]
+    if (typeof path !== 'string' || config.pinnedFiles?.[pin]?.[id]) continue
+    if (!(await pathExists(adapter.normalize(path)))) continue
+    config.pinnedFiles = { ...(config.pinnedFiles ?? {}) }
+    config.pinnedFiles[pin] = { ...(config.pinnedFiles[pin] ?? {}), [id]: path }
+    restored++
+  }
+  return restored
 }
 
 export function registerMachine(adapter: PlatformAdapter, name?: string): Promise<RegisterResult> {
@@ -270,6 +352,7 @@ async function registerMachineLocked(
   await pushPendingCommits(git)
 
   let alreadyRegistered = false
+  let restored = 0
   const maxAttempts = 6
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await git.fetch()
@@ -284,6 +367,7 @@ async function registerMachineLocked(
       alreadyRegistered = true
       break
     }
+    restored = existing ? 0 : await restoreMachinePaths(adapter, git, config, machineId)
     config.machines[machineId] = machine
     await saveConfig(await resolveConfigPath(adapter), config)
     await git.add()
@@ -307,7 +391,7 @@ async function registerMachineLocked(
   await ensureSettingsLocal(adapter)
   // Anchor the activity ledger's HEAD so the first incoming can attribute its source.
   await seedActivityHead(adapter, await git.revParse('HEAD'))
-  return { machineId, machine, alreadyRegistered }
+  return { machineId, machine, alreadyRegistered, restored }
 }
 
 /**
@@ -1305,6 +1389,15 @@ async function buildContext(adapter: PlatformAdapter): Promise<SyncContext> {
     throw new AppError(
       'machine.notRegisteredLocal',
       'Machine not registered (local.json missing). Run `engram register`.',
+    )
+  }
+  // Removed from the repo by another machine: stop here rather than keep syncing as an
+  // invisible machine with no project paths. Registering again lets it rejoin.
+  if (!config.machines[local.machineId]) {
+    throw new AppError(
+      'machine.notInRepo',
+      `This machine ("${local.machineId}") was removed from the repo. Register it again to resume syncing: engram register --name ${local.machineId}`,
+      { machineId: local.machineId },
     )
   }
   const localOverrides = await loadSettingsLocal(adapter)

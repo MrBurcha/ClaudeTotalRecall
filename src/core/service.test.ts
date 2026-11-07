@@ -842,3 +842,59 @@ describe('automatic shared-config rename (#123)', () => {
     expect(await svc.advanceSharedConfigRename(a)).toBe('done')
   })
 })
+
+describe('removing a machine and having it rejoin', () => {
+  it('a removed machine stops syncing, and rejoining with the same name restores its paths', async () => {
+    const svc = await import('./service')
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a1 = adapterFor(join(base, 'home1'))
+    const a2 = adapterFor(join(base, 'home2'))
+    await connectRepo(remote, a1)
+    await svc.registerMachine(a1, 'desk')
+    await connectRepo(remote, a2)
+    await svc.registerMachine(a2, 'laptop')
+    // laptop maps a project folder (exists) and a pinned file that will vanish later.
+    const mem = join(base, 'home2', 'proj-mem')
+    await mkdir(mem, { recursive: true })
+    const pinned = join(base, 'home2', 'notes.txt')
+    await writeFile(pinned, 'x\n')
+    await svc.createProject(a2, 'alpha')
+    await svc.setProjectFolder(a2, 'alpha', 'memory', mem)
+    await svc.setPinnedFile(a2, 'notes', pinned)
+
+    // desk removes laptop.
+    await svc.removeMachine(a1, 'laptop')
+    const after = await svc.loadRepoConfig(a1)
+    expect(after.machines.laptop).toBeUndefined()
+    expect(after.projects.alpha.folders.memory).toBeUndefined()
+    expect(after.pinnedFiles?.notes).toBeUndefined()
+
+    // laptop, once it has the removal, can't sync anymore — no invisible machine.
+    await svc.pullRepo(a2)
+    await expect(
+      svc.buildVerbPlan(a2, 'outgoing', { id: 'x', createdAt: new Date().toISOString() }),
+    ).rejects.toMatchObject({ code: 'machine.notInRepo', params: { machineId: 'laptop' } })
+
+    // It rejoins under the same name: the folder comes back; the deleted file doesn't.
+    await rm(pinned)
+    const r = await svc.registerMachine(a2, 'laptop')
+    expect(r.restored).toBe(1)
+    const back = await svc.loadRepoConfig(a2)
+    expect(back.machines.laptop).toBeDefined()
+    expect(back.projects.alpha.folders.memory.laptop).toBe(mem)
+    expect(back.pinnedFiles?.notes).toBeUndefined()
+    await expect(
+      svc.buildVerbPlan(a2, 'outgoing', { id: 'y', createdAt: new Date().toISOString() }),
+    ).resolves.toBeTruthy()
+  })
+
+  it('a brand-new name restores nothing', async () => {
+    const svc = await import('./service')
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const a = adapterFor(join(base, 'home'))
+    await connectRepo(remote, a)
+    expect((await svc.registerMachine(a, 'fresh')).restored).toBe(0)
+  })
+})

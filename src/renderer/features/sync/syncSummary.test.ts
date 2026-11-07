@@ -20,6 +20,7 @@ function engine(over: Partial<SyncEngineState> = {}): SyncEngineState {
     lastError: null,
     errorKind: null,
     blockedBy: null,
+    removedFromRepo: false,
     ...over,
   }
 }

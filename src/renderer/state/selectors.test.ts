@@ -7,7 +7,12 @@ const okPreflight: PreflightResult = { ok: true, checks: [] }
 const badPreflight: PreflightResult = { ok: false, checks: [] }
 
 function cfg(projects: Config['projects'] = {}): Config {
-  return { version: 1, repo: { remote: 'git@x' }, machines: {}, projects }
+  return {
+    version: 1,
+    repo: { remote: 'git@x' },
+    machines: { m1: { os: 'linux', hostname: 'h', home: '/h' } },
+    projects,
+  }
 }
 
 describe('onboardingStep', () => {
@@ -129,5 +134,24 @@ describe('sidebarNotice', () => {
     expect(
       sidebarNotice({ updates: { update: latestPage, wrongBuild: currentPage } }),
     ).toMatchObject({ kind: 'wrongBuild', url: PAGE, variant: null })
+  })
+})
+
+describe('a machine removed from the repo (rejoin)', () => {
+  it('goes back to the register step, from the config or the engine flag', async () => {
+    const { onboardingStep, removedFromRepo } = await import('./selectors')
+    const base = {
+      preflight: { ok: true, checks: [] },
+      config: { version: 1, repo: { remote: 'r' }, machines: { desk: {} }, projects: {} },
+    } as never
+    expect(onboardingStep({ ...(base as object), machineId: 'laptop' } as never)).toBe('register')
+    expect(removedFromRepo({ ...(base as object), machineId: 'desk' } as never)).toBe(false)
+    expect(
+      removedFromRepo({
+        ...(base as object),
+        machineId: 'desk',
+        syncEngine: { removedFromRepo: true },
+      } as never),
+    ).toBe(true)
   })
 })
