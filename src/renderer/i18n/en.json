@@ -85,7 +85,13 @@
       "error": "Sync failed",
       "noAccess": "No access to the repo",
       "upToDate": "Up to date",
-      "blocked": "Paused on this window"
+      "blocked": "Paused on this window",
+      "pending_one": "{{count}} change not uploaded",
+      "pending_other": "{{count}} changes not uploaded",
+      "toDownload_one": "{{count}} change to bring in",
+      "toDownload_other": "{{count}} changes to bring in",
+      "noLocalChanges": "No changes on this machine",
+      "checking": "Checking for changes…"
     },
     "meta": {
       "toResolve_one": "{{count}} file to resolve",
@@ -98,7 +104,10 @@
       "autoOn": "automatic on",
       "autoOff": "automatic off",
       "blockedApp": "another copy of the app is syncing this machine; close it and this one takes over",
-      "blockedCli": "a command-line sync is running; this one resumes when it finishes"
+      "blockedCli": "a command-line sync is running; this one resumes when it finishes",
+      "movingSoon": "syncing on its own in a moment",
+      "autoOffWaiting": "automatic sync is off — nothing moves until you sync",
+      "neverChecked": "not checked with the repo yet"
     },
     "errorDetails": {
       "show": "Show details",
@@ -110,7 +119,8 @@
     "conflictCard_other": "Sync is paused by {{count}} conflicts. Resolve them so it keeps going on its own.",
     "resolveConflict": "Resolve conflict",
     "firstProject": "Add your first project to sync specific folders?",
-    "createProject": "Create project"
+    "createProject": "Create project",
+    "turnAutoOn": "Turn automatic on"
   },
   "relativeTime": {
     "now": "just now",
@@ -151,7 +161,12 @@
     "hintIncomingCount": "repo → machine · {{count}} to pull",
     "automatic": "Automatic",
     "syncing": "Syncing…",
-    "syncNow": "Sync now"
+    "syncNow": "Sync now",
+    "autoOffConfirm": {
+      "title": "Turn off automatic sync?",
+      "body": "Changes on this machine won't upload, and changes from your other machines won't come in, until you sync manually or turn it back on. The sync bar will show what's waiting.",
+      "confirm": "Turn off"
+    }
   },
   "palette": {
     "ariaLabel": "Command palette",
@@ -333,12 +348,12 @@
     "syncingDown": "Syncing: pulling from the repo.",
     "overview": "Constellation of machines around the repo.",
     "connected": "Machine {{machineId}} connected to the repo.",
-    "toUpload_one": "{{count}} to push",
-    "toUpload_other": "{{count}} to push",
-    "toDownload_one": "{{count}} to pull",
-    "toDownload_other": "{{count}} to pull",
     "upToDate": "Machine {{machineId}}: up to date with the repo.",
-    "machineStatus": "Machine {{machineId}}: {{parts}}."
+    "machineStatus": "Machine {{machineId}}: {{parts}}.",
+    "pendingUp_one": "{{count}} waiting to upload",
+    "pendingUp_other": "{{count}} waiting to upload",
+    "pendingDown_one": "{{count}} waiting to come in",
+    "pendingDown_other": "{{count}} waiting to come in"
   },
   "planDrift": {
     "title": "The disk changed",
@@ -581,7 +596,8 @@
       "count_other": "{{count}} results",
       "truncated": "Showing the first {{limit}} results — refine your search.",
       "hint": "Enter opens the first result · Esc clears"
-    }
+    },
+    "savedNotUploaded": "Saved on this machine — not uploaded yet (automatic sync is off)."
   },
   "conflicts": {
     "title_one": "Resolve {{count}} conflict",

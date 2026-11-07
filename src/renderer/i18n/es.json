@@ -85,7 +85,13 @@
       "error": "Falló la sincronización",
       "noAccess": "Sin acceso al repo",
       "upToDate": "Al día",
-      "blocked": "En pausa en esta ventana"
+      "blocked": "En pausa en esta ventana",
+      "pending_one": "{{count}} cambio sin subir",
+      "pending_other": "{{count}} cambios sin subir",
+      "toDownload_one": "{{count}} cambio por traer",
+      "toDownload_other": "{{count}} cambios por traer",
+      "noLocalChanges": "Sin cambios en esta máquina",
+      "checking": "Buscando cambios…"
     },
     "meta": {
       "toResolve_one": "{{count}} archivo por resolver",
@@ -98,7 +104,10 @@
       "autoOn": "automático activado",
       "autoOff": "automático desactivado",
       "blockedApp": "otra copia de la app está sincronizando esta máquina; ciérrala y esta toma el control",
-      "blockedCli": "hay una sincronización por línea de comandos en curso; esta sigue cuando termine"
+      "blockedCli": "hay una sincronización por línea de comandos en curso; esta sigue cuando termine",
+      "movingSoon": "se sincroniza solo en un momento",
+      "autoOffWaiting": "la sincronización automática está apagada — nada se mueve hasta que sincronices",
+      "neverChecked": "todavía sin revisar contra el repo"
     },
     "errorDetails": {
       "show": "Ver detalle",
@@ -110,7 +119,8 @@
     "conflictCard_other": "La sincronización está frenada por {{count}} conflictos. Resuélvelos para que siga sola.",
     "resolveConflict": "Resolver conflicto",
     "firstProject": "¿Agregas tu primer proyecto para sincronizar carpetas específicas?",
-    "createProject": "Crear proyecto"
+    "createProject": "Crear proyecto",
+    "turnAutoOn": "Activar automática"
   },
   "relativeTime": {
     "now": "recién",
@@ -151,7 +161,12 @@
     "hintIncomingCount": "repo → máquina · {{count}} por bajar",
     "automatic": "Automático",
     "syncing": "Sincronizando…",
-    "syncNow": "Sincronizar ahora"
+    "syncNow": "Sincronizar ahora",
+    "autoOffConfirm": {
+      "title": "¿Apagar la sincronización automática?",
+      "body": "Los cambios de esta máquina no se van a subir, y los de tus otras máquinas no van a llegar, hasta que sincronices a mano o la vuelvas a activar. La barra de sincronización va a mostrar lo que quede pendiente.",
+      "confirm": "Apagar"
+    }
   },
   "palette": {
     "ariaLabel": "Paleta de comandos",
@@ -333,12 +348,12 @@
     "syncingDown": "Sincronizando: bajando del repo.",
     "overview": "Constelación de máquinas alrededor del repo.",
     "connected": "Máquina {{machineId}} conectada al repo.",
-    "toUpload_one": "{{count}} para subir",
-    "toUpload_other": "{{count}} para subir",
-    "toDownload_one": "{{count}} para bajar",
-    "toDownload_other": "{{count}} para bajar",
     "upToDate": "Máquina {{machineId}}: al día con el repo.",
-    "machineStatus": "Máquina {{machineId}}: {{parts}}."
+    "machineStatus": "Máquina {{machineId}}: {{parts}}.",
+    "pendingUp_one": "{{count}} esperando subir",
+    "pendingUp_other": "{{count}} esperando subir",
+    "pendingDown_one": "{{count}} esperando llegar",
+    "pendingDown_other": "{{count}} esperando llegar"
   },
   "planDrift": {
     "title": "El disco cambió",
@@ -581,7 +596,8 @@
       "count_other": "{{count}} resultados",
       "truncated": "Se muestran los primeros {{limit}} resultados; afina tu búsqueda.",
       "hint": "Enter abre el primer resultado · Esc limpia"
-    }
+    },
+    "savedNotUploaded": "Guardado en esta máquina — todavía sin subir (la sincronización automática está apagada)."
   },
   "conflicts": {
     "title_one": "Resuelve {{count}} conflicto",

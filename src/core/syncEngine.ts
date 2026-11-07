@@ -11,7 +11,7 @@ import {
   syncOutgoing,
   syncIncoming,
 } from './service'
-import type { Plan, PlanAction } from './types'
+import type { PendingSummary, Plan, PlanAction } from './types'
 
 /**
  * Result of an auto-sync cycle.
@@ -193,6 +193,27 @@ export async function runSyncCycle(adapter: PlatformAdapter): Promise<SyncOutcom
     }
     return { kind: 'error', message: errorMessage(err) }
   }
+}
+
+/**
+ * Counts what's waiting to move (#139) — a dry run, never the network or a write:
+ * - up: what the next cycle would push from this machine (same `safeActions` filter
+ *   as `attemptCycle`, so a not-yet-seen remote file isn't counted as a local
+ *   deletion), plus files in local commits the remote doesn't have yet;
+ * - down: files the remote changed as of the last fetch that HEAD doesn't have yet.
+ * Paths are deduplicated: an edited file that also sits in an unpushed commit counts once.
+ */
+export async function pendingSummary(
+  adapter: PlatformAdapter,
+  now: () => number = Date.now,
+): Promise<PendingSummary> {
+  const baseline = await loadBaseline(adapter)
+  const plan = await buildVerbPlan(adapter, 'outgoing', newMeta())
+  const git = repoGit(adapter)
+  const up = new Set(safeActions(plan, baseline).map((a) => a.logicalPath))
+  for (const f of await git.changedFiles('@{upstream}...HEAD')) up.add(f)
+  const down = await git.changedFiles('HEAD...@{upstream}')
+  return { up: up.size, down: down.length, checkedAt: now() }
 }
 
 /**

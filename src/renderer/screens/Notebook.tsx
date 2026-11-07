@@ -176,11 +176,14 @@ export function Notebook(): JSX.Element {
 
   const save = async (): Promise<void> => {
     if (!selected) return
-    await runNb(async () => {
-      await api.notebookWrite(selected, draft)
-      setEditing(false)
-      setFile(await api.notebookRead(selected))
-    }, t('notebook.saved'))
+    await runNb(
+      async () => {
+        await api.notebookWrite(selected, draft)
+        setEditing(false)
+        setFile(await api.notebookRead(selected))
+      },
+      state.syncEngine?.auto === false ? t('notebook.savedNotUploaded') : t('notebook.saved'),
+    )
   }
 
   const copy = async (): Promise<void> => {

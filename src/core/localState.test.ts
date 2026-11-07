@@ -144,3 +144,14 @@ describe('settings.local.json', () => {
     expect(await loadSettingsLocal(adapter)).toEqual({ keep: 'me' })
   })
 })
+
+describe('last synced at (#139)', () => {
+  it('round-trips and survives a missing or corrupt file as null', async () => {
+    const { loadLastSyncedAt, saveLastSyncedAt, syncMetaPath } = await import('./localState')
+    expect(await loadLastSyncedAt(adapter)).toBeNull()
+    await saveLastSyncedAt(adapter, 1234)
+    expect(await loadLastSyncedAt(adapter)).toBe(1234)
+    await writeFile(syncMetaPath(adapter), '{oops', 'utf8')
+    expect(await loadLastSyncedAt(adapter)).toBeNull()
+  })
+})

@@ -51,6 +51,9 @@ function createWindow(): BrowserWindow {
   })
 
   win.on('ready-to-show', () => win.show())
+  // Coming back to the window recounts what's pending, so the sync bar is current
+  // even with auto-sync off (#139). Read-only and throttled inside the engine.
+  win.on('focus', () => void scheduler?.refreshPending())
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null
   })

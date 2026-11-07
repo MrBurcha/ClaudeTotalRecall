@@ -46,6 +46,16 @@
 .const-link--down {
   animation-direction: reverse;
 }
+/* Waiting, not moving (#139): a still, dashed link — never the flow animation. */
+.const-link--pending {
+  stroke: color-mix(in srgb, var(--warn) 60%, var(--link));
+  stroke-width: 1.75;
+  stroke-dasharray: 5 5;
+}
+.const-dirbadge.const-dirbadge--pending {
+  fill: var(--warn);
+  font-weight: 600;
+}
 .const-link--dirty {
   stroke: color-mix(in srgb, var(--warn) 55%, var(--link));
 }
@@ -137,7 +147,7 @@
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   fill: var(--accent);
-  text-anchor: middle;
+  text-anchor: start;
 }
 
 /*

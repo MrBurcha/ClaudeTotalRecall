@@ -191,6 +191,15 @@ function makeActions(dispatch: Dispatch<Action>, stateRef: { current: AppState }
   /** Toggles auto-sync on/off, keeping the current interval. */
   const setAutoSync = async (enabled: boolean): Promise<void> => {
     const intervalMs = stateRef.current.syncEngine?.intervalMs ?? 120_000
+    // Turning it off is a deliberate state, not a silent one (#139): say what it means.
+    if (!enabled && stateRef.current.syncEngine?.auto) {
+      const ok = await confirm({
+        title: i18n.t('sync.autoOffConfirm.title'),
+        body: i18n.t('sync.autoOffConfirm.body'),
+        confirmLabel: i18n.t('sync.autoOffConfirm.confirm'),
+      })
+      if (!ok) return
+    }
     try {
       dispatch({ t: 'syncState', state: await api.syncSetAuto(enabled, intervalMs) })
     } catch (e) {

@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import type { Machine, RepoStatus } from '../../../core/types'
+import type { Machine, PendingSummary, RepoStatus } from '../../../core/types'
 import { Icon, type IconName } from '../../components/Icon'
 import { usePrefersReducedMotion } from '../../hooks/useMediaQuery'
 import type { ActiveOp } from '../../state/types'
@@ -19,6 +19,31 @@ function shorten(label: string): string {
 
 function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ')
+}
+
+/**
+ * Where the link's count sits: beside the link (not on it) and past the machine's
+ * label, which sits right under the node — on a short link the midpoint lands on it.
+ */
+function badgeAnchor(l: { x1: number; y1: number; x2: number; y2: number }): {
+  x: number
+  y: number
+} {
+  const dx = l.x2 - l.x1
+  const dy = l.y2 - l.y1
+  const len = Math.hypot(dx, dy) || 1
+  // Perpendicular, flipped to point right so the text reads away from the link.
+  let nx = -dy / len
+  let ny = dx / len
+  if (nx < 0) {
+    nx = -nx
+    ny = -ny
+  }
+  const at = 0.68
+  return {
+    x: l.x1 + dx * at + nx * 9,
+    y: l.y1 + dy * at + ny * 9 + 4,
+  }
 }
 
 /** Icon positioned inside the SVG via foreignObject (reuses the Icon component). */
@@ -48,19 +73,30 @@ function Glyph({
   )
 }
 
+/** What's waiting on the current machine's link: the engine's file counts, else git's. */
+function waiting(
+  status: RepoStatus | null,
+  pending: PendingSummary | null,
+): { up: number; down: number } {
+  if (pending) return { up: pending.up, down: pending.down }
+  return { up: status?.ahead ?? 0, down: status?.behind ?? 0 }
+}
+
 function describe(
   t: TFunction,
   currentId: string | null,
   status: RepoStatus | null,
+  pending: PendingSummary | null,
   activeOp: ActiveOp | null,
 ): string {
   if (activeOp)
     return t(activeOp.verb === 'outgoing' ? 'constellation.syncingUp' : 'constellation.syncingDown')
   if (!currentId) return t('constellation.overview')
-  if (!status) return t('constellation.connected', { machineId: currentId })
+  if (!status && !pending) return t('constellation.connected', { machineId: currentId })
+  const w = waiting(status, pending)
   const parts: string[] = []
-  if (status.ahead > 0) parts.push(t('constellation.toUpload', { count: status.ahead }))
-  if (status.behind > 0) parts.push(t('constellation.toDownload', { count: status.behind }))
+  if (w.up > 0) parts.push(t('constellation.pendingUp', { count: w.up }))
+  if (w.down > 0) parts.push(t('constellation.pendingDown', { count: w.down }))
   if (parts.length === 0) return t('constellation.upToDate', { machineId: currentId })
   return t('constellation.machineStatus', { machineId: currentId, parts: parts.join(', ') })
 }
@@ -69,12 +105,15 @@ export function Constellation({
   machines,
   currentId,
   status,
+  pending = null,
   activeOp,
   tone = 'ok',
 }: {
   machines: Record<string, Machine>
   currentId: string | null
   status: RepoStatus | null
+  /** what's waiting to move, counted by the engine (#139) */
+  pending?: PendingSummary | null
   activeOp: ActiveOp | null
   /** hero color according to the auto-sync engine */
   tone?: 'ok' | 'syncing' | 'conflict' | 'offline' | 'error'
@@ -85,21 +124,33 @@ export function Constellation({
   const { vault, nodes, links } = computeConstellation(machines, currentId, { w: W, h: H })
   const currentLink = links.find((l) => l.isCurrent) ?? null
 
-  // Only the current machine's link carries a real direction (the backend
-  // doesn't know the state of the other machines).
+  // Motion means "moving right now" and nothing else (#139): only a running sync or
+  // a manual operation animates. Something merely WAITING (unpushed Notebook saves,
+  // edits with auto-sync off) is a static state — a dashed link plus a count — or it
+  // reads as a sync that never ends. Only the current machine's link carries a real
+  // direction (the backend doesn't know the state of the other machines).
+  const active = !!activeOp || tone === 'syncing'
+  const w = waiting(status, pending)
   let direction: FlowDirection | null = null
   if (activeOp) direction = activeOp.verb === 'outgoing' ? 'up' : 'down'
-  else if (status && status.ahead > 0) direction = 'up'
-  else if (status && status.behind > 0) direction = 'down'
-  // One engine cycle moves in both directions: if there's no clear direction, we upload.
-  if (!direction && tone === 'syncing') direction = 'up'
+  // One engine cycle moves both ways: show the side with work, uploading by default.
+  else if (active) direction = w.up === 0 && w.down > 0 ? 'down' : 'up'
 
-  const active = !!activeOp || tone === 'syncing'
   const enabled = !reduced && direction !== null && currentLink !== null
-  useConstellationMotion(particlesRef, currentLink, direction, enabled, active ? 1.8 : 1)
+  useConstellationMotion(particlesRef, currentLink, direction, enabled, 1.8)
 
-  const pending =
-    direction === 'up' ? (status?.ahead ?? 0) : direction === 'down' ? (status?.behind ?? 0) : 0
+  const waitingNow = !active && (w.up > 0 || w.down > 0)
+  const badge = waitingNow
+    ? [w.up > 0 ? `↑${w.up}` : '', w.down > 0 ? `↓${w.down}` : ''].filter(Boolean).join(' ')
+    : reduced && direction
+      ? direction === 'up'
+        ? w.up > 0
+          ? `↑${w.up}`
+          : ''
+        : w.down > 0
+          ? `↓${w.down}`
+          : ''
+      : ''
 
   return (
     <div className={cx('constellation', tone !== 'ok' && `constellation--${tone}`)}>
@@ -108,7 +159,7 @@ export function Constellation({
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label={describe(t, currentId, status, activeOp)}
+        aria-label={describe(t, currentId, status, pending, activeOp)}
       >
         <circle className="const-ring" cx={vault.x} cy={vault.y} r={66} />
         <circle className="const-ring" cx={vault.x} cy={vault.y} r={116} />
@@ -120,6 +171,7 @@ export function Constellation({
               'const-link',
               l.isCurrent && direction && 'const-link--flow',
               l.isCurrent && direction === 'down' && 'const-link--down',
+              l.isCurrent && waitingNow && 'const-link--pending',
               l.isCurrent && status?.dirty && 'const-link--dirty',
             )}
             x1={l.x1}
@@ -146,13 +198,12 @@ export function Constellation({
           </g>
         )}
 
-        {reduced && direction && currentLink && pending > 0 && (
+        {currentLink && badge && (
           <text
-            className="const-dirbadge"
-            x={(currentLink.x1 + currentLink.x2) / 2}
-            y={(currentLink.y1 + currentLink.y2) / 2 - 6}
+            className={cx('const-dirbadge', waitingNow && 'const-dirbadge--pending')}
+            {...badgeAnchor(currentLink)}
           >
-            {direction === 'up' ? `↑${pending}` : `↓${pending}`}
+            {badge}
           </text>
         )}
 

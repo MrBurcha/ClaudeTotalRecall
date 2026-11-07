@@ -295,3 +295,46 @@ describe('the sync cycle under the working-copy lock (#111)', () => {
     expect((await git.status()).ahead).toBe(0)
   })
 })
+
+describe('pendingSummary (#139)', () => {
+  it('counts local edits and unpushed commits up, fetched remote changes down — without touching the remote', async () => {
+    const { pendingSummary } = await import('./syncEngine')
+    const notebook = await import('./notebook')
+    const base = await newBase()
+    const remote = await bareRemote(base)
+    const home1 = join(base, 'home1')
+    await mkdir(join(home1, '.claude', 'commands'), { recursive: true })
+    await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'v1\n')
+    const a1 = await joinMachine(base, 'm1', home1)
+    expect((await runSyncCycle(a1)).kind).toBe('synced')
+
+    const fixed = () => 42
+    expect(await pendingSummary(a1, fixed)).toEqual({ up: 0, down: 0, checkedAt: 42 })
+
+    const remoteHead = async () =>
+      (await run('git', ['--git-dir', remote, 'rev-parse', 'main'])).stdout.trim()
+    const before = await remoteHead()
+
+    // An edit on disk + a Notebook save (a local commit) → both count up.
+    await writeFile(join(home1, '.claude', 'CLAUDE.md'), 'v2\n')
+    await writeFile(join(home1, '.claude', 'commands', 'new.md'), 'new\n')
+    await notebook.createNote(a1, { relPath: 'general/n.md', content: 'x\n' })
+    const p = await pendingSummary(a1)
+    expect(p.up).toBe(3)
+    expect(p.down).toBe(0)
+    expect(await remoteHead()).toBe(before) // counting never pushes
+
+    // Another machine pushes; once m1 has FETCHED (no pull), it counts down.
+    const home2 = join(base, 'home2')
+    const a2 = await joinMachine(base, 'm2', home2)
+    expect((await runSyncCycle(a2)).kind).toBe('synced')
+    await mkdir(join(home2, '.claude', 'agents'), { recursive: true })
+    await writeFile(join(home2, '.claude', 'agents', 'helper.md'), 'agent\n')
+    expect((await runSyncCycle(a2)).kind).toBe('synced')
+    expect((await pendingSummary(a1)).down).toBe(0) // not fetched yet: unknown, not invented
+    await service.repoGit(a1).fetch()
+    const q = await pendingSummary(a1)
+    expect(q.down).toBeGreaterThanOrEqual(1)
+    expect(q.up).toBe(3) // the remote moving doesn't make local work look different
+  })
+})
