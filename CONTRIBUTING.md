@@ -5,7 +5,7 @@ are welcome.
 
 ## Development setup
 
-Requirements: [Node.js 20](https://nodejs.org), plus `git` and `gh` (authenticated with
+Requirements: [Node.js 24](https://nodejs.org) (with its bundled npm 11), plus `git` and `gh` (authenticated with
 `gh auth login && gh auth setup-git`).
 
 ```bash
